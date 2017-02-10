@@ -1,5 +1,6 @@
 package sk.uniza.fri.cp.CPUEmul;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.TreeMap;
 
@@ -15,22 +16,28 @@ public class Program {
 	 * indexy instrukcii na ktorych je break
 	 */
 	private TreeMap<Integer, Integer> breaks;
+
 	/**
 	 * navestia pre riadenie preruseni... nemozu sa opakovat
 	 */
-	private TreeMap<String, Integer> interuptionLabels;
+	private TreeMap<String, Integer> interruptionLabels;
+
 	/**
 	 * prevodnik medzi riadkom v editore a indexom instrukcie v programe pre
 	 * zachytenie breaku
 	 * <riadok, index instrukcie>
 	 */
+
 	private TreeMap<Integer, Integer> lineOfInstruction;
 	private ArrayList<Byte> memory;
 	private ArrayList<Instruction> instructions;
 
 
-	public Program(){
-
+	public Program(ArrayList<Instruction> instructions, ArrayList<Byte> memory, TreeMap<Integer, Integer> lineOfInstruction, TreeMap<String, Integer> interruptionLabels){
+        this.instructions = instructions;
+        this.memory = memory;
+        this.lineOfInstruction = lineOfInstruction;
+        this.interruptionLabels = interruptionLabels;
 	}
 
 	/**

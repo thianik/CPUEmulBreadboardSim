@@ -7,50 +7,46 @@ package sk.uniza.fri.cp.CPUEmul;
  */
 public class Instruction {
 
-	private String firstOperand;
-	private String secondOperand;
+	private String firstParameter;
+	private String secondParameter;
 	private enumInstructionsSet type;
 
-	public Instruction(){
-
+	public Instruction(enumInstructionsSet typeOfInstruction){
+		this.type = typeOfInstruction;
+		this.firstParameter = null;
+		this.secondParameter = null;
 	}
 
-	public void finalize() throws Throwable {
-
-	}
-	public String getfirstOperand(){
-		return firstOperand;
-	}
-
-	public String getsecondOperand(){
-		return secondOperand;
+	public Instruction(enumInstructionsSet typeOfInstruction, String firstParameter){
+		this.type = typeOfInstruction;
+		this.firstParameter = firstParameter;
+		this.secondParameter = null;
 	}
 
-	public enumInstructionsSet gettype(){
+	public Instruction(enumInstructionsSet typeOfInstruction, String firstParameter, String secondParameter){
+		this.type = typeOfInstruction;
+		this.firstParameter = firstParameter;
+		this.secondParameter = secondParameter;
+	}
+
+	public String getFirstParameter() {
+		return firstParameter;
+	}
+
+	public void setFirstParameter(String firstParameter) {
+		this.firstParameter = firstParameter;
+	}
+
+	public String getSecondParameter() {
+		return secondParameter;
+	}
+
+	public void setSecondParameter(String secondParameter) {
+		this.secondParameter = secondParameter;
+	}
+
+	public enumInstructionsSet getType(){
 		return type;
 	}
 
-	/**
-	 * 
-	 * @param newVal
-	 */
-	public void setfirstOperand(String newVal){
-		firstOperand = newVal;
-	}
-
-	/**
-	 * 
-	 * @param newVal
-	 */
-	public void setsecondOperand(String newVal){
-		secondOperand = newVal;
-	}
-
-	/**
-	 * 
-	 * @param newVal
-	 */
-	public void settype(enumInstructionsSet newVal){
-		type = newVal;
-	}
 }//end Instruction
