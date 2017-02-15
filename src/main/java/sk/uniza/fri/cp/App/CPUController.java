@@ -1,32 +1,40 @@
 package sk.uniza.fri.cp.App;
 
-import javafx.collections.ObservableList;
+import javafx.beans.property.ReadOnlyIntegerWrapper;
+import javafx.beans.property.ReadOnlyObjectWrapper;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableStringValue;
+import javafx.beans.value.ObservableValue;
+import javafx.collections.*;
 import javafx.concurrent.WorkerStateEvent;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 
 import java.net.URL;
-import java.util.Collection;
-import java.util.ResourceBundle;
+import java.util.*;
 
 //CodeArea zvyraznovanie slov
 import javafx.scene.Node;
+import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.StackPane;
+import org.fxmisc.flowless.VirtualFlow;
+import org.fxmisc.flowless.VirtualizedScrollPane;
 import org.fxmisc.richtext.*;
 import org.fxmisc.richtext.model.*;
-import java.util.Collections;
+
 import java.util.function.IntFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javafx.scene.control.*;
 import javafx.scene.control.Button;
-import javafx.scene.control.MenuItem;
 import javafx.scene.control.TextField;
 
 import sk.uniza.fri.cp.App.io.ConsoleOutputStream;
 import sk.uniza.fri.cp.App.io.ConsolePrintWriter;
+import sk.uniza.fri.cp.CPUEmul.CPU;
 import sk.uniza.fri.cp.CPUEmul.Exceptions.InvalidCodeLinesException;
 import sk.uniza.fri.cp.CPUEmul.Parser;
 import sk.uniza.fri.cp.CPUEmul.Program;
@@ -40,6 +48,8 @@ import sk.uniza.fri.cp.CPUEmul.Program;
  */
 public class CPUController implements Initializable {
 
+    private final String STYLE_PARAGRAPH_ERROR = "paragraph-error";
+
 	private char stateDispayRegisters;
 	private char stateDisplayStackAddr;
 	private char stateDisplayStackData;
@@ -47,9 +57,22 @@ public class CPUController implements Initializable {
 	private char stateDisplayProgMemoryData;
 
     private Program program;
-    private ObservableList<Integer> breakpointLines;
+    private CPU cpu;
+    private boolean codeParsed; //indikator, ci je zavedeny aktualny program
+    private TreeSet<Integer> breakpointLines;
+    private ObservableSet<Integer> observableBreakpointLines;
 
-	@FXML private CodeArea codeEditor;
+    //Priznaky vykonavania programu
+    private boolean CPUStart;
+
+    //Editor kodu
+    @FXML private StackPane codeAreaPane;
+    private CodeArea codeEditor;
+
+    //konzola
+    @FXML private StackPane consolePane;
+    private InlineCssTextArea console;
+    private ConsolePrintWriter cpw_error;
 
 	//vyber zobrazenia registrov / pamati
 	@FXML private ToggleGroup btnGroupRegisters;
@@ -66,7 +89,6 @@ public class CPUController implements Initializable {
 	@FXML private Button btnReset;
 	@FXML private Button btnStop;
 
-
 	//registre
 	@FXML private TextField tfRegA;
 	@FXML private TextField tfRegB;
@@ -79,9 +101,10 @@ public class CPUController implements Initializable {
 	@FXML private TextField tfFlagZ;
 	@FXML private TextField tfFlagIE;
 
-	//konzola
-	@FXML private InlineCssTextArea console;
-	private ConsolePrintWriter cpw_error;
+	//pamate
+    @FXML private TableView<StackCell> tableStack;
+    @FXML private TableColumn<StackCell, Integer> tableColumnStackAddr;
+    @FXML private TableColumn<StackCell, Integer> tableColumnStackData;
 
 	@FXML private ProgressBar progressBar;
 	@FXML private Label lbStatus;
@@ -123,15 +146,29 @@ public class CPUController implements Initializable {
 	 * Spustene pri inicializacii okna
 	 */
 	public void initialize(URL location, ResourceBundle resources) {
-	    //breakpointLines init
+	    //inizializacia atributov
+
+        //inicializacia tabulky zasobnika
+        tableColumnStackAddr.setCellValueFactory(val -> new ReadOnlyObjectWrapper(val.getValue().getAddress()) );
+        tableColumnStackData.setCellValueFactory(val -> new ReadOnlyObjectWrapper(val.getValue().getData()) );
+
+        //Inicializacia konzoly
+        console = new InlineCssTextArea();
+        console.setEditable(false);
+        consolePane.getChildren().add(new VirtualizedScrollPane<>(console));
+        //ERROR STREAM
+        cpw_error = new ConsolePrintWriter(new ConsoleOutputStream(console, "red"));
+
+        //struktura pre breakpointy
+        breakpointLines = new TreeSet<>();
+        observableBreakpointLines = FXCollections.synchronizedObservableSet( FXCollections.observableSet(breakpointLines) );
 
 		//Inicializacia editora kodu
-		//codeEditor.setParagraphGraphicFactory(LineNumberFactory.get(codeEditor));	//zobrazenie riadkovania
-
-        IntFunction<Node> breakpointFactory = new BreakpointFactory();
-        IntFunction<Node> lineNumberFactory = LineNumberFactory.get(codeEditor);
+        codeEditor = new CodeArea();
+        codeAreaPane.getChildren().add(new VirtualizedScrollPane<>(codeEditor));
+        IntFunction<Node> breakpointFactory = new BreakpointFactory(codeEditor, observableBreakpointLines); //breakpointy
+        IntFunction<Node> lineNumberFactory = LineNumberFactory.get(codeEditor); //cisla riadkov
         codeEditor.setParagraphGraphicFactory(line -> {
-
             HBox hbox = new HBox(
                     breakpointFactory.apply(line),
                     lineNumberFactory.apply(line)
@@ -141,15 +178,19 @@ public class CPUController implements Initializable {
         });	//zobrazenie riadkovania
 
 		codeEditor.richChanges()
-				.filter(ch -> !ch.getInserted().equals(ch.getRemoved())) // XXX
-				.subscribe(change -> codeEditor.setStyleSpans(0, computeHighlighting(codeEditor.getText())));
+				.filter(ch -> !ch.getInserted().equals(ch.getRemoved()))
+				.subscribe(change -> {
+				    codeEditor.setStyleSpans(0, computeHighlighting(codeEditor.getText()));
+				    codeParsed = false; //zmena v kode -> program nie je aktualny
+				});
+
 
 		//Listenery na zmenu zobrazenia registrov a pamati
-		btnGroupRegisters.selectedToggleProperty().addListener( (observable, oldValue, newValue)->stateDispayRegisters=onToggleGroupChange(btnGroupRegisters, oldValue, newValue));
-		btnGroupStackAddr.selectedToggleProperty().addListener( (observable, oldValue, newValue)->stateDisplayStackAddr=onToggleGroupChange(btnGroupStackAddr, oldValue, newValue));
-		btnGroupStackData.selectedToggleProperty().addListener( (observable, oldValue, newValue)->stateDisplayStackData=onToggleGroupChange(btnGroupStackData, oldValue, newValue));
-		btnGroupProgMemoryAddr.selectedToggleProperty().addListener( (observable, oldValue, newValue)->stateDisplayProgMemoryAddr=onToggleGroupChange(btnGroupProgMemoryAddr, oldValue, newValue));
-		btnGroupProgMemoryData.selectedToggleProperty().addListener( (observable, oldValue, newValue)->stateDisplayProgMemoryData=onToggleGroupChange(btnGroupProgMemoryData, oldValue, newValue));
+		btnGroupRegisters.selectedToggleProperty().addListener( (observable, oldValue, newValue)->{stateDispayRegisters=onToggleGroupChange(btnGroupRegisters, oldValue, newValue); updateGUIState();});
+		btnGroupStackAddr.selectedToggleProperty().addListener( (observable, oldValue, newValue)->{stateDisplayStackAddr=onToggleGroupChange(btnGroupStackAddr, oldValue, newValue); updateGUIState();});
+		btnGroupStackData.selectedToggleProperty().addListener( (observable, oldValue, newValue)->{stateDisplayStackData=onToggleGroupChange(btnGroupStackData, oldValue, newValue); updateGUIState();});
+		btnGroupProgMemoryAddr.selectedToggleProperty().addListener( (observable, oldValue, newValue)->{stateDisplayProgMemoryAddr=onToggleGroupChange(btnGroupProgMemoryAddr, oldValue, newValue); updateGUIState();});
+		btnGroupProgMemoryData.selectedToggleProperty().addListener( (observable, oldValue, newValue)->{stateDisplayProgMemoryData=onToggleGroupChange(btnGroupProgMemoryData, oldValue, newValue); updateGUIState();});
 
 		//inicializacia stavov zobrazenia registrov a pamati na aktualne vybrane tlacidla
 		stateDispayRegisters = ( (ToggleButton) btnGroupRegisters.getSelectedToggle()).getText().charAt(0);
@@ -158,9 +199,9 @@ public class CPUController implements Initializable {
 		stateDisplayProgMemoryAddr = ( (ToggleButton) btnGroupProgMemoryAddr.getSelectedToggle()).getText().charAt(0);
 		stateDisplayProgMemoryData = ( (ToggleButton) btnGroupProgMemoryData.getSelectedToggle()).getText().charAt(0);
 
-		//Inicializacia konzolovych streamov
-		//ERROR STREAM
-		cpw_error = new ConsolePrintWriter(new ConsoleOutputStream(console, "red"));
+
+
+
 
 		//SANDBOX
 		writeConsoleLn("Ahojky");
@@ -168,65 +209,29 @@ public class CPUController implements Initializable {
 		writeConsoleLn("manuky", "blue");
 		writeConsoleLn("manuky");
 
-	}
+		String sampleCode = "mvi a,20\n" +
+                "mvi b,5\n" +
+                "\n" +
+                "start:\n" +
+                "\tsub a,b\n" +
+                "\tpus a\n" +
+                "\tjnz start";
+		codeEditor.replaceText(0, 0, sampleCode);
+    }
 
-	/**
-	 * Funkcia vracia reprezentaciu vybraneho zobrazenia informacii v danej skupine prepinacich tlacidiel.
-	 * Pri odznaceni tlacidla ho opat zaznaci spat.
-	 *
-	 * @param btnGroup Skupina prepinacich tlacidiel, na ktorej bola vykonana zmena
-	 * @param oldValue Posledne aktivovane tlacidlo
-	 * @param newValue Nove aktivovane tlacidlo
-	 * @return Reprezentacia vybraneho zobrazenia D/H/B/A
-	 */
-	private char onToggleGroupChange(ToggleGroup btnGroup, Toggle oldValue, Toggle newValue){
-		ToggleButton tb;
-		if(newValue != null) {
-			tb = (ToggleButton) newValue;
-		} else {
-			btnGroup.selectToggle(oldValue);
-			tb = (ToggleButton) oldValue;
-		}
-		return tb.getText().charAt(0);
-	}
 
-	/**
-	 * Farebne zvyraznovanie v editore kodu
-	 */
-	private static StyleSpans<Collection<String>> computeHighlighting(String text) {
-		Matcher matcher = PATTERN.matcher(text);
-		int lastKwEnd = 0;
-		StyleSpansBuilder<Collection<String>> spansBuilder
-				= new StyleSpansBuilder<>();
-		while(matcher.find()) {
-			String styleClass =
-					matcher.group("KEYWORDSARITHMETICANDLOGIC") != null ? "keyword-arithmetic-and-logic" :
-					matcher.group("KEYWORDSSHIFTANDROTATE") != null ? "keyword-shift-and-rotate" :
-					matcher.group("KEYWORDSMOVE") != null ? "keyword-move" :
-					matcher.group("KEYWORDSBRANCH") != null ? "keyword-branch" :
-					matcher.group("KEYWORDSSPECIAL") != null ? "keyword-special" :
-					matcher.group("LABEL") != null ? "label" :
-					matcher.group("COMMENT") != null ? "comment" :
-					null; /* never happens */ assert styleClass != null;
-			spansBuilder.add(Collections.emptyList(), matcher.start() - lastKwEnd);
-			spansBuilder.add(Collections.singleton(styleClass), matcher.end() - matcher.start());
-			lastKwEnd = matcher.end();
-		}
-		spansBuilder.add(Collections.emptyList(), text.length() - lastKwEnd);
-		return spansBuilder.create();
-	}
-
-	/**
-	 *
-	 * @param lineIndex Index riadku pre zvyraznenie
-	 */
-	public void heightlightCodeLineError(int lineIndex){
-        codeEditor.setParagraphStyle(lineIndex, Collections.singleton("paragraph-error"));
-	}
-
-	public void clearCodeHeightligting(){
+    /**
+     * Zmaze dany styl zo vsetkych paragrafov v editore
+     * @param style Styl, ktory sa ma zmazat
+     */
+	public void clearCodeStyle(String style){
         for (int i = 0; i < codeEditor.getParagraphs().size(); i++){
-            codeEditor.clearParagraphStyle(i);
+            if(codeEditor.getParagraph(i)
+                    .getParagraphStyle()
+                    .stream()
+                    .anyMatch( s -> s.contains(style))){
+                RichTextFXHelpers.tryRemoveParagraphStyle(codeEditor, i, style);
+            }
         }
     }
 
@@ -234,9 +239,7 @@ public class CPUController implements Initializable {
         codeEditor.clearParagraphStyle(lineIndex);
     }
 
-	private void updateState(){
 
-	}
 
 	/**
 	 * Zapis textu na konzolu
@@ -272,12 +275,22 @@ public class CPUController implements Initializable {
 	/**
 	 * nacita text studenta (program) do suboru
 	 */
+	@FXML
 	private void handleLoadAction(){
 
 	}
 
+	@FXML
 	private void handleSaveAction(){
 
+	}
+
+	@FXML
+	private void handleButtonUnbreakAllAction(){
+        System.out.println("Breaks:" + breakpointLines);
+	    observableBreakpointLines.clear();
+
+		observableBreakpointLines.addListener((SetChangeListener<Integer>) change -> System.out.println("Breaks:" + breakpointLines));
 	}
 
 
@@ -287,58 +300,12 @@ public class CPUController implements Initializable {
 	 */
 	@FXML
 	private void handleButtonParseAction(){
-	    //pocet riadkov v editore pre update progress baru
-	    int lines = codeEditor.getParagraphs().size();
-	    //vytvorenie parsera
-        Parser parser = new Parser(codeEditor.getText(), lines, cpw_error);
-        Thread parserThread = new Thread(parser);
-        //zastavenie vlakna ak skonci aplikacia
-        parserThread.setDaemon(true);
-
-        //vycistenie editoru ak boli chyby
-        clearCodeHeightligting();
-
-        //zobrazenie stavu
-        progressBar.progressProperty().unbind();
-        progressBar.progressProperty().bind(parser.progressProperty());
-        lbStatus.setText("Parsujem...");
-
-        //spustenie vlakna pre parsovanie kodu
-        parserThread.start();
-
-        parser.setOnSucceeded(new EventHandler<WorkerStateEvent>() {
-            @Override
-            public void handle(WorkerStateEvent event) {
-                writeConsoleLn("Program úspešne zavedený!", "green");
-                program = parser.getValue();
-
-                lbStatus.setText("Program zavedený");
-            }
-        });
-
-        parser.setOnFailed(new EventHandler<WorkerStateEvent>() {
-            @Override
-            public void handle(WorkerStateEvent event) {
-                InvalidCodeLinesException ex = (InvalidCodeLinesException) parser.getException();
-
-                //zvyraznenie riadkov s chybovym kodom
-                for (int line :
-                        ex.getLines()) {
-                    heightlightCodeLineError(line);
-                }
-
-                //posun konzoly na koniec
-                console.setEstimatedScrollY(console.getParagraphs().size() * 50);
-
-                //zobrazenie stavu
-                lbStatus.setText("Chyba v kóde");
-            }
-        });
+	    parseCode();
 	}
 
 	@FXML
 	private void handleButtonPauseAction(){
-        clearCodeHeightligting();
+
 	}
 
 	@FXML
@@ -348,7 +315,14 @@ public class CPUController implements Initializable {
 
 	@FXML
 	private void handleButtonStartAction(){
+	    CPUStart = true;
 
+	    //ak kod este nie je zavedeny
+	    if(!codeParsed) {
+	        parseCode();
+        } else {
+	        startExecution();
+        }
 	}
 
 	@FXML
@@ -394,6 +368,26 @@ public class CPUController implements Initializable {
 
 	}
 
+    /**
+     * Funkcia vracia reprezentaciu vybraneho zobrazenia informacii v danej skupine prepinacich tlacidiel.
+     * Pri odznaceni tlacidla ho opat zaznaci spat.
+     *
+     * @param btnGroup Skupina prepinacich tlacidiel, na ktorej bola vykonana zmena
+     * @param oldValue Posledne aktivovane tlacidlo
+     * @param newValue Nove aktivovane tlacidlo
+     * @return Reprezentacia vybraneho zobrazenia D/H/B/A
+     */
+    private char onToggleGroupChange(ToggleGroup btnGroup, Toggle oldValue, Toggle newValue){
+        ToggleButton tb;
+        if(newValue != null) {
+            tb = (ToggleButton) newValue;
+        } else {
+            btnGroup.selectToggle(oldValue);
+            tb = (ToggleButton) oldValue;
+        }
+        return tb.getText().charAt(0);
+    }
+
 
     /**
      * obsluha konzoly
@@ -402,5 +396,237 @@ public class CPUController implements Initializable {
     private void handleButtonConsoleClearAction(){
         console.clear();
     }
+
+
+    /**
+     * Farebne zvyraznovanie v editore kodu
+     */
+    private StyleSpans<Collection<String>> computeHighlighting(String text) {
+        Matcher matcher = PATTERN.matcher(text);
+        int lastKwEnd = 0;
+        StyleSpansBuilder<Collection<String>> spansBuilder
+                = new StyleSpansBuilder<>();
+        while(matcher.find()) {
+            String styleClass =
+                    matcher.group("KEYWORDSARITHMETICANDLOGIC") != null ? "keyword-arithmetic-and-logic" :
+                            matcher.group("KEYWORDSSHIFTANDROTATE") != null ? "keyword-shift-and-rotate" :
+                                    matcher.group("KEYWORDSMOVE") != null ? "keyword-move" :
+                                            matcher.group("KEYWORDSBRANCH") != null ? "keyword-branch" :
+                                                    matcher.group("KEYWORDSSPECIAL") != null ? "keyword-special" :
+                                                            matcher.group("LABEL") != null ? "label" :
+                                                                    matcher.group("COMMENT") != null ? "comment" :
+                                                                            null; /* never happens */ assert styleClass != null;
+            spansBuilder.add(Collections.emptyList(), matcher.start() - lastKwEnd);
+            spansBuilder.add(Collections.singleton(styleClass), matcher.end() - matcher.start());
+            lastKwEnd = matcher.end();
+        }
+        spansBuilder.add(Collections.emptyList(), text.length() - lastKwEnd);
+        return spansBuilder.create();
+    }
+
+    private void parseCode(){
+        //pocet riadkov v editore pre update progress baru
+        int lines = codeEditor.getParagraphs().size();
+        //vytvorenie parsera
+        Parser parserTask = new Parser(codeEditor.getText(), lines);
+
+        //vycistenie editoru ak boli chyby
+        clearCodeStyle(STYLE_PARAGRAPH_ERROR);
+
+        //zobrazenie stavu
+        progressBar.progressProperty().unbind();
+        progressBar.progressProperty().bind(parserTask.progressProperty());
+        lbStatus.setText("Parsujem...");
+
+        Thread parserThread = new Thread(parserTask);
+        //zastavenie vlakna ak skonci aplikacia
+        parserThread.setDaemon(true);
+
+        //spustenie vlakna pre parsovanie kodu
+        parserThread.start();
+
+        parserTask.setOnSucceeded(new EventHandler<WorkerStateEvent>() {
+            @Override
+            public void handle(WorkerStateEvent event) {
+                writeConsoleLn("Program úspešne zavedený!", "green");
+                program = parserTask.getValue();
+
+                codeParsed = true; //kod je uspesne prevedeny na program a moze byt vykonany
+                lbStatus.setText("Program zavedený");
+
+                //ak ma byt spustene vykonavanie CPU
+                if(CPUStart)
+                    startExecution();
+            }
+        });
+
+        parserTask.setOnFailed(new EventHandler<WorkerStateEvent>() {
+            @Override
+            public void handle(WorkerStateEvent event) {
+                InvalidCodeLinesException ex = (InvalidCodeLinesException) parserTask.getException();
+
+                //zvyraznenie riadkov s chybovym kodom
+                for (int line :
+                        ex.getLines()) {
+                    RichTextFXHelpers.addParagraphStyle(codeEditor, line, STYLE_PARAGRAPH_ERROR);
+                }
+
+                //vypisanie chybnych riadkov s popoisom na konzolu
+                for (String msg :
+                        ex.getErrors()) {
+                    writeConsoleLn("[Parser] " + msg, "red");
+                }
+
+                //posun konzoly na koniec
+                console.setEstimatedScrollY(console.getParagraphs().size() * 50);
+
+                codeParsed = false;
+                CPUStart = false;
+                //zobrazenie stavu
+                lbStatus.setText("Chyba v kóde");
+            }
+        });
+    }
+
+    private void startExecution(){
+        //vytvorenie CPU a spustenie vykonavania
+        cpu = new CPU(program, new ConsoleOutputStream(console), false, false);
+        Thread cpuThread = new Thread(cpu);
+        cpuThread.start();
+        lbStatus.setText("Program spustený");
+
+        //po usepsnom vykonani programu
+        cpu.setOnSucceeded(new EventHandler<WorkerStateEvent>() {
+            @Override
+            public void handle(WorkerStateEvent event) {
+                lbStatus.setText("Program ukončený");
+                CPUStart = false;
+                //cpu = null;
+                updateGUIState();
+            }
+        });
+
+        //pri zmene stavu procesora
+        cpu.messageProperty().addListener(new ChangeListener<String>() {
+            @Override
+            public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
+                updateGUIState();
+            }
+        });
+    }
+
+
+    private void updateGUIState(){
+        if(cpu != null) {
+            tfRegA.setText(getDisplayRepresentation(cpu.getRegA(), stateDispayRegisters));
+            tfRegB.setText(getDisplayRepresentation(cpu.getRegB(), stateDispayRegisters));
+            tfRegC.setText(getDisplayRepresentation(cpu.getRegC(), stateDispayRegisters));
+            tfRegD.setText(getDisplayRepresentation(cpu.getRegD(), stateDispayRegisters));
+
+            tfRegPC.setText(getDisplayRepresentation(cpu.getRegPC(), stateDispayRegisters));
+            tfRegSP.setText(getDisplayRepresentation(cpu.getRegSP(), stateDispayRegisters));
+            tfRegMP.setText(getDisplayRepresentation(cpu.getRegMP(), stateDispayRegisters));
+
+            tfFlagCY.setText(cpu.isFlagCY() ? "1" : "0");
+            tfFlagZ.setText(cpu.isFlagZ() ? "1" : "0");
+            tfFlagIE.setText(cpu.isFlagIE() ? "1" : "0");
+
+            updateStack();
+        } else {
+            tfRegA.setText(getDisplayRepresentation((byte) 0, stateDispayRegisters));
+            tfRegB.setText(getDisplayRepresentation((byte) 0, stateDispayRegisters));
+            tfRegC.setText(getDisplayRepresentation((byte) 0, stateDispayRegisters));
+            tfRegD.setText(getDisplayRepresentation((byte) 0, stateDispayRegisters));
+
+            tfRegPC.setText(getDisplayRepresentation((short) 0, stateDispayRegisters));
+            tfRegSP.setText(getDisplayRepresentation((short) 0, stateDispayRegisters));
+            tfRegMP.setText(getDisplayRepresentation((short) 0, stateDispayRegisters));
+
+            tfFlagCY.setText("-");
+            tfFlagZ.setText("-");
+            tfFlagIE.setText("-");
+        }
+    }
+
+    private void updateStack(){
+        byte[] stack = cpu.getStack();
+        int SP = Short.toUnsignedInt(cpu.getRegSP());
+
+        tableStack.getItems().clear();
+        //nulta adresa
+        tableStack.getItems().add(new StackCell(0, stack[0]));
+        //pridavanie poloziek tabulky
+        if(SP != 0){
+            int i = 65535;
+            while(i >= SP){
+                tableStack.getItems().add(new StackCell(i, stack[i]));
+                i--;
+            }
+        }
+    }
+
+    /*
+    mvi a,20
+mvi b,5
+
+start:
+	sub a,b
+	pus a
+	jnz start
+     */
+
+    private String getDisplayRepresentation(byte value, char displayState){
+        switch (displayState){
+            case 'D':
+                return Integer.toString(value & 0xFF );
+            case 'B':
+                return Integer.toBinaryString((value & 0xFF)  + 0x100).substring(1);
+            case 'H':
+                return "0x" + Integer.toHexString((value & 0xFF)  + 0x100).substring(1);
+            case 'A':
+                return String.valueOf((char) value);
+        }
+        return "";
+    }
+//    mvi a,5
+//    mvi b,10
+//    mvi c, 15
+//    mvi d,20
+//    add a,b
+
+    private String getDisplayRepresentation(short value, char displayState){
+        switch (displayState){
+            case 'D':
+                return Integer.toString(value & 0xFFFF);
+            case 'B':
+                return Integer.toBinaryString((value & 0xFFFF) + 0x10000).substring(1);
+            case 'H':
+                return "0x" + Integer.toHexString((value & 0xFFFF) + 0x10000).substring(1);
+            case 'A':
+                char L = (char) value;
+                char H = (char) (value >> 4);
+                return String.format("%c%c", H, L);
+        }
+        return "";
+    }
+
+    private static class StackCell{
+        private final int address;
+        private final int data;
+
+        StackCell(int address, int data){
+            this.address = address;
+            this.data = data;
+        }
+
+        public int getAddress() {
+            return address;
+        }
+
+        public int getData() {
+            return data;
+        }
+    }
+
 
 }//end CPUController

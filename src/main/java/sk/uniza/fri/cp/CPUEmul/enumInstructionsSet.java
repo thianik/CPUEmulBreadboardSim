@@ -5,32 +5,27 @@ package sk.uniza.fri.cp.CPUEmul;
  * @version 1.0
  * @created 07-feb-2017 18:40:27
  */
-public enum enumInstructionsSet {
-    //REGEX
-    //0-255 -> ^([0-1]?\\d?\\d|2[0-4]\\d|25[0-5])$|^0[xX]\\\\p{XDigit}{1,2}$
-    //0x0-0xff -> ^0[xX]\\p{XDigit}{1,2}$
-    //0-65535 -> ^([0-5]?\\d?\\d?\\d?\\d|6[0-4]\\d\\d\\d|65[0-4]\\d\\d|655[0-2]\\d|6553[0-5])$
-    //0x0-0xffff -> ^0[xX]\\p{XDigit}{1,4}$
+public enum enumInstructionsSet implements iRegexes{
 
     //artimeticke a logicke inst.
     ADD("(?i)A|B|C|D", "(?i)A|B|C|D"),
     ADC("(?i)A|B|C|D", "(?i)A|B|C|D"),
-    ADI("(?i)A|B|C|D", "^([0-1]?\\d?\\d|2[0-4]\\d|25[0-5])$|^0[xX]\\p{XDigit}{1,2}$"),
+    ADI("(?i)A|B|C|D", rByte),
     SUB("(?i)A|B|C|D", "(?i)A|B|C|D"),
-    SBC("(?i)A|B|C|D", "(?i)A|B|C|D"),
-    SBI("(?i)A|B|C|D", "^([0-1]?\\d?\\d|2[0-4]\\d|25[0-5])$|^0[xX]\\p{XDigit}{1,2}$"),
+    SUC("(?i)A|B|C|D", "(?i)A|B|C|D"),
+    SBI("(?i)A|B|C|D", rByte),
     AND("(?i)A|B|C|D", "(?i)A|B|C|D"),
-    ANI("(?i)A|B|C|D", "^([0-1]?\\d?\\d|2[0-4]\\d|25[0-5])$|^0[xX]\\p{XDigit}{1,2}$"),
+    ANI("(?i)A|B|C|D", rByte),
     ORR("(?i)A|B|C|D", "(?i)A|B|C|D"),
-    ORI("(?i)A|B|C|D", "^([0-1]?\\d?\\d|2[0-4]\\d|25[0-5])$|^0[xX]\\p{XDigit}{1,2}$"),
+    ORI("(?i)A|B|C|D", rByte),
     XOR("(?i)A|B|C|D", "(?i)A|B|C|D"),
-    XRI("(?i)A|B|C|D", "^([0-1]?\\d?\\d|2[0-4]\\d|25[0-5])$|^0[xX]\\p{XDigit}{1,2}$"),
+    XRI("(?i)A|B|C|D", rByte),
     INC("(?i)A|B|C|D"),
     INX("(?i)S|M"),
     DEC("(?i)A|B|C|D"),
     DCX("(|?i)S|M"),
     CMP("(?i)A|B|C|D", "(?i)A|B|C|D"),
-    CMI("(?i)A|B|C|D", "^([0-1]?\\d?\\d|2[0-4]\\d|25[0-5])$|^0[xX]\\p{XDigit}{1,2}$"),
+    CMI("(?i)A|B|C|D", rByte),
 
     //inst. presunu a rotacie
     SHL("(?i)A|B|C|D", "[1-8]"),
@@ -43,16 +38,16 @@ public enum enumInstructionsSet {
 
     //inst. prenosu dat
     MOV("(?i)A|B|C|D", "(?i)A|B|C|D"),
-    MVI("(?i)A|B|C|D", "^([0-1]?\\d?\\d|2[0-4]\\d|25[0-5])$|^0[xX]\\p{XDigit}{1,2}$"),
-    MXI("(?i)S|M", "^([0-5]?\\d?\\d?\\d?\\d|6[0-4]\\d\\d\\d|65[0-4]\\d\\d|655[0-2]\\d|6553[0-5])$|^0[xX]\\p{XDigit}{1,4}$"),
+    MVI("(?i)A|B|C|D", rByte),
+    MXI("(?i)S|M", rShort),
     MVX("(?i)S|M|C", "(?i)A|S|M"),
     MMR("(?i)A|B|C|D", "(?i)A|B|C|D"),
-    LMI("(?i)A|B|C|D", "^([0-5]?\\d?\\d?\\d?\\d|6[0-4]\\d\\d\\d|65[0-4]\\d\\d|655[0-2]\\d|6553[0-5])$|^0[xX]\\p{XDigit}{1,4}$"),
+    LMI("(?i)A|B|C|D", rShort),
     LMR("(?i)A|B|C|D"),
-    SMI("^([0-5]?\\d?\\d?\\d?\\d|6[0-4]\\d\\d\\d|65[0-4]\\d\\d|655[0-2]\\d|6553[0-5])$|^0[xX]\\p{XDigit}{1,4}$", "(?i)A|B|C|D"),
+    SMI(rShort, "(?i)A|B|C|D"),
     SMR("(?i)A|B|C|D"),
-    INN("(?i)A|B|C|D", "^([0-5]?\\d?\\d?\\d?\\d|6[0-4]\\d\\d\\d|65[0-4]\\d\\d|655[0-2]\\d|6553[0-5])$|^0[xX]\\p{XDigit}{1,4}$"),
-    OUT("^([0-5]?\\d?\\d?\\d?\\d|6[0-4]\\d\\d\\d|65[0-4]\\d\\d|655[0-2]\\d|6553[0-5])$|^0[xX]\\p{XDigit}{1,4}$", "(?i)A|B|C|D"),
+    INN("(?i)A|B|C|D", rShort),
+    OUT(rShort, "(?i)A|B|C|D"),
     PUS("(?i)A|B|C|D|F|M"),
     POP("(?i)A|B|C|D|F|M"),
     STR("(?i)A|B|C|D", "(?i)A|B|C|D"),
@@ -74,7 +69,7 @@ public enum enumInstructionsSet {
     //specialne instrukcie
     EIT(),DIT(),
     SCALL("(?i)KPR|KEY|DSP"),
-    BYTE("^([0-1]?\\d?\\d|2[0-4]\\d|25[0-5])$|^0[xX]\\p{XDigit}{1,2}$");
+    BYTE(rByte);
 
     private int numOfParameters;
     private String firstRegex;

@@ -1,8 +1,11 @@
 package sk.uniza.fri.cp.CPUEmul;
 
-import java.lang.reflect.Array;
+import javafx.collections.ListChangeListener;
+import javafx.collections.ObservableList;
+
 import java.util.ArrayList;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
 /**
  * Uchovava instrukcie programu, navestia, breaky a umoznuje k nim pristup
@@ -15,7 +18,7 @@ public class Program {
 	/**
 	 * indexy instrukcii na ktorych je break
 	 */
-	private TreeMap<Integer, Integer> breaks;
+	private TreeSet<Integer> breaks;
 
 	/**
 	 * navestia pre riadenie preruseni... nemozu sa opakovat
@@ -28,68 +31,63 @@ public class Program {
 	 * <riadok, index instrukcie>
 	 */
 
-	private TreeMap<Integer, Integer> lineOfInstruction;
+	private TreeMap<Integer, Integer> lineIndexToInstructionIndex;
 	private ArrayList<Byte> memory;
 	private ArrayList<Instruction> instructions;
 
 
-	public Program(ArrayList<Instruction> instructions, ArrayList<Byte> memory, TreeMap<Integer, Integer> lineOfInstruction, TreeMap<String, Integer> interruptionLabels){
+	public Program(ArrayList<Instruction> instructions, ArrayList<Byte> memory, TreeMap<Integer, Integer> lineIndexToInstructionIndex, TreeMap<String, Integer> interruptionLabels){
         this.instructions = instructions;
         this.memory = memory;
-        this.lineOfInstruction = lineOfInstruction;
+        this.lineIndexToInstructionIndex = lineIndexToInstructionIndex;
         this.interruptionLabels = interruptionLabels;
+
+        this.breaks = new TreeSet<>();
 	}
 
 	/**
-	 * 
-	 * @param instruction
-	 * @param lineInCode
+	 * Metoda zavadza listenera na zmenu v breakpointoch, ktore prevadza na indexy instrukcii clenskom liste triedy
+	 * @param obsBreakIndexes
 	 */
-	public void addInstruction(Instruction instruction, int lineInCode){
+	public void setListenerOnBreakpointsChange(ObservableList<Integer> obsBreakIndexes){
+		//vycistenie zoznamu
+		breaks.clear();
+		//pridanie vsetkych aktualnych breakpointov
+		obsBreakIndexes.forEach(index ->
+				breaks.add(lineIndexToInstructionIndex.get(index)));
 
-	}
-
-	public void clearBreaks(){
-
+		//registracia listenera na zmenu v breakpointoch
+		obsBreakIndexes.addListener(
+				(ListChangeListener<Integer>) c ->{
+					breaks.clear();
+					obsBreakIndexes.forEach(index ->
+							breaks.add(lineIndexToInstructionIndex.get(index)));
+				});
 	}
 
 	/**
-	 * 
-	 * @param address
+	 * Vracia instrukciu na adrese (indexe)
+	 * @param address Adresa instrukcie v pamati (index instrukcie)
 	 */
-	public void getByte(int address){
-
+	public Instruction getInstruction(int address){
+		try {
+			return instructions.get(address);
+		} catch (IndexOutOfBoundsException e){
+			return null;
+		}
 	}
 
 	/**
-	 * 
-	 * @param address
+	 * Vrcia bajt na adrese v pamati programu
+	 * @param address Adresa bajtu v pamati programu
 	 */
-	public void getInstruction(int address){
-
+	public byte getByte(int address){
+		if(address > memory.size()-1) return 0;
+		return memory.get(address);
 	}
 
-	/**
-	 * 
-	 * @param value
-	 */
-	public void saveByte(byte value){
-
+	public boolean isSetBreak(int instructionAddress){
+		return breaks.contains(instructionAddress);
 	}
 
-	/**
-	 * 
-	 * @param lineInCode
-	 */
-	public boolean setBreak(int lineInCode){
-		return false;
-	}
-
-	/**
-	 * 
-	 * @param lineInCode
-	 */
-	public boolean unsetBreak(int lineInCode){
-		return false;
-	}
-}//end Program
+}

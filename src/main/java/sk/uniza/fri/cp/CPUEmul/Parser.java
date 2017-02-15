@@ -1,15 +1,12 @@
 package sk.uniza.fri.cp.CPUEmul;
 
-import javafx.application.Platform;
 import javafx.concurrent.Task;
 import sk.uniza.fri.cp.CPUEmul.Exceptions.InvalidCodeLinesException;
-import sun.reflect.generics.tree.Tree;
 
 import java.io.*;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 /**
  * Parsuje prikazy z editoru do pola pre vykonavanie
@@ -29,7 +26,7 @@ public class Parser extends Task<Program>{
 
     //PROGRAM
     private ArrayList<Instruction> instructions;
-    private TreeMap<Integer, Integer> lineOfInstruction; //prevodnik medzi riadkom a instrukciou
+    private TreeMap<Integer, Integer> lineIndexToInstructionIndex; //prevodnik medzi riadkom a instrukciou
     private ArrayList<Byte> progMemory;
     private TreeMap<String, Integer> interruptionLabels;
 
@@ -44,17 +41,17 @@ public class Parser extends Task<Program>{
     //uchovavanie chyb pre vypis na konzolu
     private ArrayList<String> errors;
     private ArrayList<Integer> errorLines;
-    private PrintWriter printWriter;
+    //private PrintWriter printWriter;
 
 
-	public Parser(String code, int numberOfCodeLines, PrintWriter pw){
+	public Parser(String code, int numberOfCodeLines){
         this.code = code;
         numOfCodeLines = numberOfCodeLines;
-        printWriter = pw;
+        //printWriter = pw;
         instructions = new ArrayList<>(numberOfCodeLines);
         instructionsWithLabels = new ArrayList<>();
         progMemory = new ArrayList<>();
-        lineOfInstruction = new TreeMap<>();
+        lineIndexToInstructionIndex = new TreeMap<>();
         interruptionLabels = new TreeMap<>();
 
         hasError = false;
@@ -149,6 +146,18 @@ public class Parser extends Task<Program>{
                             parametersError = true;
                         }
 
+                        //instrukcia MVX je specialna
+                        if(codeInstruction == enumInstructionsSet.MVX){
+                            //ak je prvy operand register C a druhy A - chyba
+                            if(instructionParts[1].matches("(?i)C") && instructionParts[2].matches("(?i)A")){
+                                addError("Nesprávny druhý parameter inštrukcie '" + instructionParts[0] + "', povolené sú iba reg. S,M", lineIndex);
+                                parametersError = true;
+                            } else if (instructionParts[1].matches("(?i)S|M") && instructionParts[2].matches("(?i)S|M")){
+                                addError("Nesprávny druhý parameter inštrukcie '" + instructionParts[0] + "', povolený je iba reg. A", lineIndex);
+                                parametersError = true;
+                            }
+                        }
+
                         //ak je cela instrukcia aj s parametrami v poriadku, mozeme ju zaviest do programu (ak je aj chybny, kontroluje sa este spravnost navesti v instrukciach)
                         if(!parametersError){
                             switch (codeInstruction.getNumOfParameters()){
@@ -158,7 +167,7 @@ public class Parser extends Task<Program>{
                                 case 1:
                                     //ak je instrukcia BYTE, zaved konstantu do pamate ale nie instrukciu do programu
                                     if(codeInstruction == enumInstructionsSet.BYTE){
-                                        byte b = (byte) Integer.parseInt(instructionParts[1]);
+                                        byte b = (byte) parseConstant(instructionParts[1]);
                                         progMemory.add(b);
                                     } else {
                                         instructions.add(new Instruction(codeInstruction, instructionParts[1]));
@@ -175,8 +184,8 @@ public class Parser extends Task<Program>{
                                 instructionsWithLabels.add(instructions.size()-1);
                             }
 
-                            //zradenie do pervodnika medzi riadkami kodu a indexami instrukcii (pre breaky)
-                            lineOfInstruction.put(lineIndex, instructions.size()-1);
+                            //zaradenie do pervodnika medzi riadkami kodu a indexami instrukcii (pre breaky)
+                            lineIndexToInstructionIndex.put(lineIndex, instructions.size()-1);
                         }
 
                     } else { //pocet parametrov neodpoveda
@@ -206,18 +215,18 @@ public class Parser extends Task<Program>{
 
         //zostavenie programu
         if(!hasError){
-            return new Program(instructions, progMemory, lineOfInstruction, interruptionLabels);
+            return new Program(instructions, progMemory, lineIndexToInstructionIndex, interruptionLabels);
         } else {
-            //kod obsahuje chyby
-            //vypisat chyby na konzolu
-            printErrors();
-
             //vyhodit vynimku s chybnymi riadkami
-            int[] arr = errorLines.stream().filter(Objects::nonNull).mapToInt(i -> i).toArray();
-            throw new InvalidCodeLinesException(arr);
+            int[] lines = errorLines.stream().filter(Objects::nonNull).mapToInt(i -> i).toArray();
+            String[] errorsMsgs = errors.toArray(new String[0]);
+            throw new InvalidCodeLinesException(lines, errorsMsgs);
         }
     }
 
+    /**
+     * Metoda prevadza navestia na indexy, kam navestie ukazuje
+     */
     private void transformLabelsToIndexes(){
 	    //prechadzaj vsetky instrukcie, ktore pouzivaju navestie
         for (Integer indexOfInstruction: instructionsWithLabels) {
@@ -249,7 +258,7 @@ public class Parser extends Task<Program>{
      * @return Index riadku na ktorom je instrukcia, ak sa nenasla, vracia -1
      */
     private int getLineOfInstruction(int instructionIndex){
-        for (Map.Entry<Integer, Integer> entry : lineOfInstruction.entrySet()) {
+        for (Map.Entry<Integer, Integer> entry : lineIndexToInstructionIndex.entrySet()) {
             if (Objects.equals(instructionIndex, entry.getValue())) {
                 return entry.getKey();
             }
@@ -268,19 +277,88 @@ public class Parser extends Task<Program>{
         hasError = true;
     }
 
-    private void printErrors(){
-        Platform.runLater(new Runnable() {
-            @Override
-            public void run() {
-                printWriter.println("");
-                printWriter.println("---------------------------------------");
-                printWriter.println("[Parser] NEPODARILO SA ZAVIESŤ PROGRAM!");
-                for (String err :
-                        errors) {
-                    printWriter.println("[Parser] " + err);
-                }
-            }
-        });
+
+    //STATICKE
+
+    /**
+     * Funkcia prijima retazec a kontroluje, ci obsahuje instrukciu, ktora nemusi byt spravna
+     * @param line Retazec s instrukciou
+     * @return True - riadok obsahuje instrukciu
+     */
+    public static boolean isInstrucionLine(String line){
+        //odstranenie komentarov
+        Pattern patternComment = Pattern.compile(COMMENT_PATTERN);
+        line = patternComment.matcher(line).replaceAll("");
+        if(line.isEmpty()) return false;
+
+        //odstranenie navestia
+        Pattern patternLabel = Pattern.compile(LABEL_PATTERN);
+        line = patternLabel.matcher(line).replaceAll("");
+        if(line.isEmpty()) return false;
+
+        line = line.trim();
+
+        //pokus sa rozdelit instrukciu a parametre
+        String[] instructionParts = line.split("\\s*,\\s*|\\s+"); //rozdelenie instrukcie (medzery a ciarka)
+
+        //je instrukcia platna?
+        try {
+            enumInstructionsSet codeInstruction = enumInstructionsSet.valueOf(instructionParts[0].toUpperCase());
+            return true;
+        } catch (IllegalArgumentException e){
+            return false;
+        }
+    }
+
+    public static int parseConstant(String constant){
+        //dec
+        if(constant.matches("^[1-9][0-9]*")){
+            return Integer.parseInt(constant);
+        }
+
+        //hexa
+        if(constant.matches("0x.+")){
+            return Integer.parseInt(constant.substring(2), 16);
+        }
+
+        //binary
+        if(constant.matches("[0-1]+b$")){
+            return Integer.parseInt(constant.substring(0, constant.length()-1), 2);
+        }
+
+        //octa
+        if(constant.matches("^0[0-7]+")){
+            return Integer.parseInt(constant, 8);
+        }
+
+        return -1;
     }
 
 }//end Parser
+
+/*
+byte 0
+byte 10
+byte 255
+byte 256
+byte 300
+
+byte 0x0
+byte 0xff
+byte 0xf
+byte 0x01
+byte 0xff1
+
+byte 0b
+byte 1b
+byte 11111111b
+byte 111111111b
+byte 00011110b
+
+byte 0377
+byte 077
+byte 0777
+byte 00
+byte 0
+byte 0123
+ */
