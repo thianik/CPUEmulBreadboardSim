@@ -1,5 +1,6 @@
 package sk.uniza.fri.cp.CPUEmul;
 
+import com.sun.org.apache.xerces.internal.impl.xpath.regex.Match;
 import javafx.concurrent.Task;
 import sk.uniza.fri.cp.CPUEmul.Exceptions.InvalidCodeLinesException;
 
@@ -65,6 +66,11 @@ public class Parser extends Task<Program>{
     protected Program call() throws InvalidCodeLinesException {
         int lineIndex = 0;
 
+        //Priprava na parsovanie instrukcie
+        List<String> instructionParts = new ArrayList<>(3);
+        Pattern instructionPattern = Pattern.compile("[^\\s\"',]+|'.'");
+        Matcher instructionMatcher;
+
         //odstranenie vsetkych komentarov
         Pattern pat = Pattern.compile(COMMENT_PATTERN);
         code = pat.matcher(code).replaceAll("");
@@ -122,38 +128,43 @@ public class Parser extends Task<Program>{
                 }
 
                 //inak sa pokus rozdelit instrukciu a parametre
-                String[] instructionParts = line.split("\\s*,\\s*|\\s+"); //rozdelenie instrukcie (medzery a ciarka)
+                //String[] instructionParts = line.split("\\s*,\\s*|\\s+"); //rozdelenie instrukcie (medzery a ciarka)
+                instructionParts.clear();
+                instructionMatcher = instructionPattern.matcher(line);
+                while (instructionMatcher.find()){
+                    instructionParts.add(instructionMatcher.group());
+                }
 
                 //je instrukcia platna?
                 try {
-                    enumInstructionsSet codeInstruction = enumInstructionsSet.valueOf(instructionParts[0].toUpperCase());
+                    enumInstructionsSet codeInstruction = enumInstructionsSet.valueOf(instructionParts.get(0).toUpperCase());
 
                     //ak je platna
                     //kontrola poctu parametrov
-                    if(codeInstruction.getNumOfParameters() == instructionParts.length-1) { //porovnanie pozadovanych parametrov s poctom nacitanych (-1 lebo instrukcia samotna)
+                    if(codeInstruction.getNumOfParameters() == instructionParts.size()-1) { //porovnanie pozadovanych parametrov s poctom nacitanych (-1 lebo instrukcia samotna)
                         boolean parametersError = false;
 
                         //kontrola spravnosti parametrov
-                        if(codeInstruction.getNumOfParameters() > 0 && !instructionParts[1].matches(codeInstruction.getFirstRegex())){ //kontrola prveho parametra
+                        if(codeInstruction.getNumOfParameters() > 0 && !instructionParts.get(1).matches(codeInstruction.getFirstRegex())){ //kontrola prveho parametra
                             //ak nezodpoveda predpisu
-                            addError("Nesprávny prvý parameter inštrukcie '" + instructionParts[0] + "'", lineIndex);
+                            addError("Nesprávny prvý parameter inštrukcie '" + instructionParts.get(0) + "'", lineIndex);
                             parametersError = true;
                         }
 
-                        if(codeInstruction.getNumOfParameters() > 1 && !instructionParts[2].matches(codeInstruction.getSecondRegex())){ //kontrola druheho parametra
+                        if(codeInstruction.getNumOfParameters() > 1 && !instructionParts.get(2).matches(codeInstruction.getSecondRegex())){ //kontrola druheho parametra
                             //ak nezodpoveda predpisu
-                            addError("Nesprávny druhý parameter inštrukcie '" + instructionParts[0] + "'", lineIndex);
+                            addError("Nesprávny druhý parameter inštrukcie '" + instructionParts.get(0) + "'", lineIndex);
                             parametersError = true;
                         }
 
                         //instrukcia MVX je specialna
                         if(codeInstruction == enumInstructionsSet.MVX){
                             //ak je prvy operand register C a druhy A - chyba
-                            if(instructionParts[1].matches("(?i)C") && instructionParts[2].matches("(?i)A")){
-                                addError("Nesprávny druhý parameter inštrukcie '" + instructionParts[0] + "', povolené sú iba reg. S,M", lineIndex);
+                            if(instructionParts.get(1).matches("(?i)C") && instructionParts.get(2).matches("(?i)A")){
+                                addError("Nesprávny druhý parameter inštrukcie '" + instructionParts.get(0) + "', povolené sú iba reg. S,M", lineIndex);
                                 parametersError = true;
-                            } else if (instructionParts[1].matches("(?i)S|M") && instructionParts[2].matches("(?i)S|M")){
-                                addError("Nesprávny druhý parameter inštrukcie '" + instructionParts[0] + "', povolený je iba reg. A", lineIndex);
+                            } else if (instructionParts.get(1).matches("(?i)S|M") && instructionParts.get(2).matches("(?i)S|M")){
+                                addError("Nesprávny druhý parameter inštrukcie '" + instructionParts.get(0) + "', povolený je iba reg. A", lineIndex);
                                 parametersError = true;
                             }
                         }
@@ -167,14 +178,14 @@ public class Parser extends Task<Program>{
                                 case 1:
                                     //ak je instrukcia BYTE, zaved konstantu do pamate ale nie instrukciu do programu
                                     if(codeInstruction == enumInstructionsSet.BYTE){
-                                        byte b = (byte) parseConstant(instructionParts[1]);
+                                        byte b = (byte) parseConstant(instructionParts.get(1));
                                         progMemory.add(b);
                                     } else {
-                                        instructions.add(new Instruction(codeInstruction, instructionParts[1]));
+                                        instructions.add(new Instruction(codeInstruction, instructionParts.get(1)));
                                     }
                                     break;
                                 case 2:
-                                    instructions.add(new Instruction(codeInstruction, instructionParts[1], instructionParts[2]));
+                                    instructions.add(new Instruction(codeInstruction, instructionParts.get(1), instructionParts.get(2)));
                                     break;
                             }
 
@@ -189,12 +200,12 @@ public class Parser extends Task<Program>{
                         }
 
                     } else { //pocet parametrov neodpoveda
-                        addError("Zlý počet parametrov inštrukcie '" + instructionParts[0] + "', požadovaný počet '" + codeInstruction.getNumOfParameters() + "'", lineIndex);
+                        addError("Zlý počet parametrov inštrukcie '" + instructionParts.get(0) + "', požadovaný počet '" + codeInstruction.getNumOfParameters() + "'", lineIndex);
                     }
 
                 } catch (IllegalArgumentException e){
                     //ak instrukcia nie je platna (nie je v zozname instrukcii)
-                    addError("Neplatná inštrukcia '" + instructionParts[0] + "'", lineIndex);
+                    addError("Neplatná inštrukcia '" + instructionParts.get(0) + "'", lineIndex);
                 }
 
                 lineIndex++;
@@ -329,6 +340,11 @@ public class Parser extends Task<Program>{
         //octa
         if(constant.matches("^0[0-7]+")){
             return Integer.parseInt(constant, 8);
+        }
+
+        //char
+        if(constant.matches(iRegexes.rByteChar)){
+            return (int) constant.charAt(1);
         }
 
         return -1;

@@ -559,7 +559,7 @@ public class CPUController implements Initializable {
         if(SP != 0){
             int i = 65535;
             while(i >= SP){
-                tableStack.getItems().add(new StackCell(i, stack[i]));
+                tableStack.getItems().add(new StackCell(i, Byte.toUnsignedInt(stack[i])));
                 i--;
             }
         }
