@@ -37,6 +37,8 @@ public class ConsoleOutputStream extends OutputStream {
                 console.setStyle(paragraph, "-fx-fill: " + color);
             });
         }
+        console.moveTo(console.getText().length());
+        console.requestFollowCaret();
     }
 
     @Override

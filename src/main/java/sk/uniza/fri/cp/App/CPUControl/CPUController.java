@@ -178,8 +178,7 @@ public class CPUController implements Initializable {
 	    //inizializacia atributov
         f_intBylevel = true;
         execution_line = new SimpleIntegerProperty(-1);
-        //TODO pri odstraneni sample kody odpoznamkovat fileSaved
-        //fileSaved = true; //aj cisty kod je kvazi ulozeny
+        fileSaved = true; //aj cisty kod je kvazi ulozeny
 
         initializeGUITables();
 
@@ -203,7 +202,7 @@ public class CPUController implements Initializable {
                 .filter(ch -> !ch.getInserted().getText().equals(ch.getRemoved().getText()))
                 .subscribe(change -> {
                     f_code_parsed = false; //zmena v kode -> program nie je aktualny
-                    cpu = null;
+                    //cpu = null;
                     btnStart.setText(BTN_TXT_START);
 
                     if(fileSaved) { //ozacenie v liste, ze kod nie je ulozeny
@@ -244,6 +243,8 @@ public class CPUController implements Initializable {
         displayFormRAMAddr = DataRepresentation.eRepresentation.Dec;
         displayFormRAMData = DataRepresentation.eRepresentation.Dec;
 
+        updateGUI();
+
         //inicializacia tlacitok
         btnParse.setDisable(false);
         btnStart.setDisable(false);
@@ -269,20 +270,14 @@ public class CPUController implements Initializable {
         });
 
 		//SANDBOX
-		writeConsoleLn("Ahojky");
+		/*writeConsoleLn("Ahojky");
 		writeConsoleLn("bauky", "red");
 		writeConsoleLn("manuky", "blue");
 		writeConsoleLn("manuky");
 
-		String sampleCode = "mvi a,20\n" +
-                "mvi b,5\n" +
-                "\n" +
-                "start:\n" +
-                "\tsub a,b\n" +
-                "\tpus a\n" +
-                "\tjnz start";
+		String sampleCode = "Nacitajte subor";
 		codeEditor.replaceText(0, 0, sampleCode);
-		fileSaved = true;
+		fileSaved = true;*/
     }
 
     public void keyboardInput(KeyEvent event){
@@ -402,12 +397,17 @@ public class CPUController implements Initializable {
 	 */
 	public void writeConsoleLn(String text, String color){
 		int paragraph = console.getCurrentParagraph();
+
+		//ak uz v iradku nieco je, skoc na novy
+		if(console.getParagraph(paragraph).getText().length() > 0) {
+            console.appendText("\n");
+            paragraph = console.getCurrentParagraph();
+        }
+
 		console.setStyle(paragraph, "-fx-fill: " + color);
 		console.appendText(text + "\n");
 		console.moveTo(console.getText().length());
 		console.requestFollowCaret();
-
-
 	}
 
 	/**
@@ -706,18 +706,6 @@ public class CPUController implements Initializable {
             cpu.cancel();
 	}
 
-	@FXML
-    private void handleButtonDevInt01Action(ActionEvent ae){
-        /*Bus.getBus().setDataBus((byte)1);
-        Bus.getBus().setIT(true);
-        try {
-            Thread.sleep(500);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        Bus.getBus().setIT(false);*/
-    }
-
     @FXML
     private void handleButtonDevInt01ActionPressed(){
         Bus.getBus().setDataBus((byte)1);
@@ -801,6 +789,10 @@ public class CPUController implements Initializable {
             @Override
             public void handle(WorkerStateEvent event) {
                 writeConsoleLn("Program úspešne zavedený!", "green");
+
+                if(program != null) //odhlasenie stareho listenera na zmeny v braekpointoch
+                    program.removeListenerOnBreakpointsChange(observableBreakpointLines);
+
                 program = parserTask.getValue();
                 program.setListenerOnBreakpointsChange(observableBreakpointLines);
 
@@ -1071,18 +1063,15 @@ public class CPUController implements Initializable {
                 tableViewStackItems.get(65535 - i + 1).setData(stack[i]);
             }
             StackTableCell.setStackHead(SP);
-            tableViewStack.getColumns().get(0).setVisible(false);
-            tableViewStack.getColumns().get(0).setVisible(true);
-
         } else {
             for (int i = 0; i < tableViewStackItems.size(); i++) {
                 tableViewStackItems.get(i).setData((byte) 0);
             }
             StackTableCell.setStackHead(0);
-            tableViewStack.getColumns().get(0).setVisible(false);
-            tableViewStack.getColumns().get(0).setVisible(true);
         }
 
+        tableViewStack.getColumns().get(0).setVisible(false);
+        tableViewStack.getColumns().get(0).setVisible(true);
         handleButtonToStackHeadAction();
     }
 
@@ -1108,6 +1097,8 @@ public class CPUController implements Initializable {
             for (int i = 0; i < tableViewRAMItems.size(); i++)
                 tableViewRAMItems.get(i).setData((byte) 0);
         }
+        tableViewRAM.getColumns().get(0).setVisible(false);
+        tableViewRAM.getColumns().get(0).setVisible(true);
     }
 
     private void updateExecutionLine(int lineIndex){

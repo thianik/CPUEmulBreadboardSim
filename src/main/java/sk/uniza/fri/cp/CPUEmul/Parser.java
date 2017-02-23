@@ -329,10 +329,6 @@ public class Parser extends Task<Program>{
     }
 
     public static int parseConstant(String constant){
-        //dec
-        if(constant.matches("^[1-9][0-9]*")){
-            return Integer.parseInt(constant);
-        }
 
         //hexa
         if(constant.matches("0x.+")){
@@ -349,39 +345,21 @@ public class Parser extends Task<Program>{
             return Integer.parseInt(constant, 8);
         }
 
+        //dec
+        if(constant.matches("(^[1-9][0-9]*)|(^0$)")){
+            return Integer.parseInt(constant);
+        }
+
         //char
         if(constant.matches(iRegexes.rByteChar)){
             return (int) constant.charAt(1);
         }
 
-        return -1;
+        try{
+            return Integer.parseInt(constant);
+        } catch (NumberFormatException e){
+            return -1;
+        }
     }
 
 }//end Parser
-
-/*
-byte 0
-byte 10
-byte 255
-byte 256
-byte 300
-
-byte 0x0
-byte 0xff
-byte 0xf
-byte 0x01
-byte 0xff1
-
-byte 0b
-byte 1b
-byte 11111111b
-byte 111111111b
-byte 00011110b
-
-byte 0377
-byte 077
-byte 0777
-byte 00
-byte 0
-byte 0123
- */

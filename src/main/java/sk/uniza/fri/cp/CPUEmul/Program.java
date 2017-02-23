@@ -35,6 +35,7 @@ public class Program {
 	private ArrayList<Byte> memory;
 	private ArrayList<Instruction> instructions;
 
+	private SetChangeListener breakpointsListener;
 
 	public Program(ArrayList<Instruction> instructions, ArrayList<Byte> memory, TreeMap<Integer, Integer> lineIndexToInstructionIndex, TreeMap<Integer, Integer> interruptionLabels){
         this.instructions = instructions;
@@ -56,13 +57,22 @@ public class Program {
 		obsBreakIndexes.forEach(index ->
 				breaks.add(lineIndexToInstructionIndex.get(index)));
 
+		breakpointsListener = new SetChangeListener() {
+			@Override
+			public void onChanged(Change change) {
+				breaks.clear();
+				obsBreakIndexes.forEach(index ->
+						breaks.add(lineIndexToInstructionIndex.get(index)));
+			}
+		};
+
 		//registracia listenera na zmenu v breakpointoch
-		obsBreakIndexes.addListener(
-				(SetChangeListener<Integer>) c ->{
-					breaks.clear(); //todo tu da deje nieco co by sa asi nemalo - mnohonasobne volanie
-					obsBreakIndexes.forEach(index ->
-							breaks.add(lineIndexToInstructionIndex.get(index)));
-				});
+		obsBreakIndexes.addListener(breakpointsListener);
+	}
+
+	public void removeListenerOnBreakpointsChange(ObservableSet<Integer> obsBreakIndexes){
+		if(breakpointsListener != null)
+			obsBreakIndexes.removeListener(breakpointsListener);
 	}
 
 	/**

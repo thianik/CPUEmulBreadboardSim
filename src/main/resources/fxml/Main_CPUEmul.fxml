@@ -85,7 +85,7 @@
                         <Button fx:id="btnPause" layoutX="450.0" layoutY="18.0" mnemonicParsing="false" onAction="#handleButtonPauseAction" text="Pauza" />
                         <Button fx:id="btnReset" layoutX="370.0" layoutY="18.0" mnemonicParsing="false" onAction="#handleButtonResetAction" text="Reset" />
                         <Button fx:id="btnStop" layoutX="535.0" layoutY="18.0" mnemonicParsing="false" onAction="#handleButtonStopAction" text="Stop" />
-                        <Button mnemonicParsing="false" onAction="#handleButtonDevInt01Action" onMousePressed="#handleButtonDevInt01ActionPressed" onMouseReleased="#handleButtonDevInt01ActionReleased" text="DEV - Int01" textFill="#b20b0b" />
+                        <Button mnemonicParsing="false" onMousePressed="#handleButtonDevInt01ActionPressed" onMouseReleased="#handleButtonDevInt01ActionReleased" text="DEV - Int01" textFill="#b20b0b" />
                     </buttons>
                   </ButtonBar>
                </children>

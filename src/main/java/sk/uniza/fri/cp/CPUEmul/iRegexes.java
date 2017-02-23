@@ -5,7 +5,8 @@ package sk.uniza.fri.cp.CPUEmul;
  */
 public interface iRegexes {
 
-    public String rByteDec = "^([0-1]?\\d?\\d|2[0-4]\\d|25[0-5])$";
+    //public String rByteDec = "^([0-1]?\\d?\\d|2[0-4]\\d|25[0-5])$";
+    public String rByteDec = "^([0-1]?\\d?\\d|2[0-4]\\d|25[0-5])$";;
     public String rByteHex = "^0[xX]\\p{XDigit}{1,2}$";
     public String rByteOct = "^0([0-2]?[0-7]{1,2}|3[0-7]{0,2})$";
     public String rByteBin = "^[0-1]{1,8}b$";

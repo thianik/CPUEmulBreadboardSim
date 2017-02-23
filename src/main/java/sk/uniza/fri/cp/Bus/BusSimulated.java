@@ -28,7 +28,7 @@ public class BusSimulated extends Bus {
         super.setMW_(MW_);
 
         if(!MW_)
-            System.out.println("Data write: " + Integer.toBinaryString( Byte.toUnsignedInt( super.getDataBus() ) ).substring(8) );
+            System.out.println("Data write: " + Integer.toBinaryString(Byte.toUnsignedInt(super.getDataBus())) );
     }
 
     @Override
@@ -36,7 +36,7 @@ public class BusSimulated extends Bus {
         super.setIW_(IW_);
 
         if(!IW_)
-            System.out.println("Data write: " + Integer.toBinaryString( Byte.toUnsignedInt( super.getDataBus() ) ).substring(8) );
+            System.out.println("Data write: " + Integer.toBinaryString(Byte.toUnsignedInt(super.getDataBus())));
     }
 
     @Override

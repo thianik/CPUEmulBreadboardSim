@@ -257,7 +257,7 @@ public class CPU extends Task<Void> {
     /**
      * Vykonanie konkretnej instrukcie
      */
-    private void execute(Instruction instruction) throws InterruptedException {
+    public void execute(Instruction instruction) throws InterruptedException {
         int Rd;
         int Rs;
         int K;
@@ -299,7 +299,7 @@ public class CPU extends Task<Void> {
             case SUC:
                 Rd = getRegisterVal(instruction.getFirstParameter());
                 Rs = getRegisterVal(instruction.getSecondParameter());
-                Rd -= Rs - (flagCY?1:0);
+                Rd -= Rs + (flagCY?1:0);
                 setRegisterVal(instruction.getFirstParameter(), Rd);
                 flagZ = ((Rd & 0xFF) == 0);
                 flagCY = (Rd < 0);
@@ -406,7 +406,7 @@ public class CPU extends Task<Void> {
             case SCR:
                 Rd = getRegisterVal(instruction.getFirstParameter());
                 K = Integer.parseInt(instruction.getSecondParameter());
-                flagCY = ((Rd & (1<<(K-1))) == 1);							//TODO riadne overit posuvy a rotacie
+                flagCY = ((Rd & (1<<(K-1))) != 0);							//TODO riadne overit posuvy a rotacie
                 Rd >>= K;
                 setRegisterVal(instruction.getFirstParameter(), Rd);
                 flagZ = ((Rd & 0xFF) == 0);
@@ -437,7 +437,7 @@ public class CPU extends Task<Void> {
                 Rd = getRegisterVal(instruction.getFirstParameter());
                 K = Integer.parseInt(instruction.getSecondParameter());
                 Rd = (Rd >> K) | (Rd << (8-K));
-                flagCY = ((Rd & 0x80) == 1);
+                flagCY = ((Rd & 0x80) != 0);
                 setRegisterVal(instruction.getFirstParameter(), Rd);
                 flagZ = ((Rd & 0xFF) == 0);
                 break;
@@ -449,7 +449,7 @@ public class CPU extends Task<Void> {
                 setRegisterVal(instruction.getFirstParameter(), Parser.parseConstant( instruction.getSecondParameter() ));
                 break;
             case MVX:
-                if(instruction.getFirstParameter().toUpperCase() == "C"){
+                if(instruction.getFirstParameter().toUpperCase().equals("C")){
                     Rs = getRegisterVal(instruction.getSecondParameter());
                     int L = Rs & 0xFF;
                     int H = Rs >> 8;
@@ -480,7 +480,7 @@ public class CPU extends Task<Void> {
                 break;
             case INN:
                 addr = (short) Parser.parseConstant(instruction.getSecondParameter());
-                read(enumInstructionsSet.INN, addr, instruction.getSecondParameter());
+                read(enumInstructionsSet.INN, addr, instruction.getFirstParameter());
                 break;
             case OUT:
                 addr = (short) Parser.parseConstant(instruction.getFirstParameter());

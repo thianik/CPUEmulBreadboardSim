@@ -25,7 +25,7 @@ public class CodeEditorFactory {
      * Specifikacie pre zvyraznovanie slov v editore
      */
     private static final String[] KEYWORDS_ARITHMETIC_AND_LOGIC = new String[] {
-            "ADD","ADC","ADI","SUB","SBC","SBI","AND","ANI","ORR","ORI","XOR","XRI","INC","INX","DEC","DCX","CMP","CMI"	};
+            "ADD","ADC","ADI","SUB","SUC","SBI","AND","ANI","ORR","ORI","XOR","XRI","INC","INX","DEC","DCX","CMP","CMI"	};
     private static final String[] KEYWORDS_SHIFT_AND_ROTATE = new String[] {
             "SHL","SHR","SCR","RTL","RCL","RTR","RCR" };
     private static final String[] KEYWORDS_MOVE = new String[] {

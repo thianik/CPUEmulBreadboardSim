@@ -23,7 +23,7 @@ public enum enumInstructionsSet implements iRegexes{
     INC("(?i)A|B|C|D"),
     INX("(?i)S|M"),
     DEC("(?i)A|B|C|D"),
-    DCX("(|?i)S|M"),
+    DCX("(?i)S|M"),
     CMP("(?i)A|B|C|D", "(?i)A|B|C|D"),
     CMI("(?i)A|B|C|D", rByte),
 
