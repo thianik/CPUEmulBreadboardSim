@@ -29,7 +29,7 @@ public class Parser extends Task<Program>{
     private ArrayList<Instruction> instructions;
     private TreeMap<Integer, Integer> lineIndexToInstructionIndex; //prevodnik medzi riadkom a instrukciou
     private ArrayList<Byte> progMemory;
-    private TreeMap<String, Integer> interruptionLabels;
+    private TreeMap<Integer, Integer> interruptionLabels; //<cislo prerusenia, adresa instrukcie>
 
 
     //POMOCNE
@@ -101,7 +101,14 @@ public class Parser extends Task<Program>{
                             //navestie zacina int -> musi byt int00 az int0f
                             if(label.matches("int0\\p{XDigit}")){
                                 //splna podmienky navestia pre prerusenie
-                                interruptionLabels.put(label, instructions.size()); //index nasledujucej instrukcie, ktora bude pridana
+                                int intNumber = Integer.parseInt(label.substring(4,5), 16);
+
+                                if(!interruptionLabels.containsKey(intNumber)){
+                                    interruptionLabels.put(intNumber, instructions.size()); //index nasledujucej instrukcie, ktora bude pridana
+                                } else{
+                                    addError("Návestie pre prerušenie " + label + " už existuje", lineIndex);
+                                }
+
                             } else {
                                 //asi to malo byt prerusenie ale je v zlom tvare
                                 addError("Nesprávny tvar návestia pre prerušenie '" + label + "'", lineIndex);
@@ -111,7 +118,7 @@ public class Parser extends Task<Program>{
                             labels.put(label, instructions.size()); //index nasledujucej instrukcie, ktora bude pridana
                         }
                     } else {
-                        addError("Návestie " + label + " už existuje na riadku " + labels.get(label), lineIndex);
+                        addError("Návestie " + label + " už existuje", lineIndex);
                     }
 
                     //odstran navestie z riadku

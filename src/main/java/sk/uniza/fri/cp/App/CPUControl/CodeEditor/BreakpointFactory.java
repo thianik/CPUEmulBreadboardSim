@@ -1,8 +1,6 @@
-package sk.uniza.fri.cp.App;
+package sk.uniza.fri.cp.App.CPUControl.CodeEditor;
 
-import javafx.collections.ObservableSet;
-import javafx.collections.SetChangeListener;
-import javafx.collections.WeakSetChangeListener;
+import javafx.collections.*;
 import javafx.event.EventHandler;
 import javafx.geometry.Pos;
 import javafx.scene.Cursor;
@@ -12,7 +10,9 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.paint.*;
 import javafx.scene.shape.Circle;
 import org.fxmisc.richtext.CodeArea;
+import sk.uniza.fri.cp.CPUEmul.Parser;
 
+import java.util.TreeSet;
 import java.util.function.IntFunction;
 
 /**
@@ -36,7 +36,7 @@ public class BreakpointFactory implements IntFunction<Node> {
      * @param area CodeArea kodu, kam sa pridavaju preakpointy
      * @param list Zoznam indexov paragrafov, na ktorych je nastaveny breakpoint
      */
-    public BreakpointFactory(CodeArea area, ObservableSet<Integer> list){
+    BreakpointFactory(CodeArea area, ObservableSet<Integer> list){
         this.area = area;
         this.list = list;
 
@@ -83,11 +83,27 @@ public class BreakpointFactory implements IntFunction<Node> {
                     list.remove(value);
                 }
                 else { //zavedenie breakpointu
-                    //pridaj breakpoint tag k stylom paragrafu
-                    RichTextFXHelpers.addParagraphStyle(area , value, tagBreak);
+                    int indexOfInstructionLine = value;
+                    int numOfParagraphs = area.getParagraphs().size();
+                    //hladaj najblizsi paragraf s instrukciou
 
-                    //pridaj paragraf do listu
-                    list.add(value);
+                    while (!Parser.isInstrucionLine(area.getParagraph(indexOfInstructionLine).getText())) {
+                        if(indexOfInstructionLine < numOfParagraphs - 1)
+                            indexOfInstructionLine++;
+                        else{
+                            indexOfInstructionLine = -1;
+                            break;
+                        }
+                    }
+
+                    //ak sa nasiel riadok s instrukciou
+                    if(indexOfInstructionLine != -1){
+                        //pridaj breakpoint tag k stylom paragrafu
+                        RichTextFXHelpers.addParagraphStyle(area , indexOfInstructionLine, tagBreak);
+
+                        //pridaj paragraf do listu
+                        list.add(indexOfInstructionLine);
+                    }
                 }
             }
         });
@@ -111,20 +127,26 @@ public class BreakpointFactory implements IntFunction<Node> {
     private void updateBreakpointsListByParagraphs(){
         //pomocne cislo aby sa nezmazali vsetky breaky
         // (ak je iba jeden, pri jeho presuvani sa zavola clearBreakpoints lebo list je prazdny)
-        list.add(-1);
+        //list.add(-1);
+
+
+        TreeSet<Integer> temp = new TreeSet<>();
 
         //prehladaj kazdy paragraph
         for (int i = 0; i < area.getParagraphs().size(); i++) {
             //ak obsahuje styl pre break, pridaj jeho index do listu
             if( area.getParagraph(i).getParagraphStyle().stream().anyMatch(style -> style.equals(tagBreak)) ) {
-                list.add(i);
-            } else {
+                temp.add(i);
+            } /*else {
                 list.remove(i);
-            }
+            }*/
         }
 
+        list.retainAll(temp);
+        list.addAll(temp);
+
         //odstranenie pomocnej
-        list.remove(-1);
+        //list.remove(-1);
     }
 
     /**

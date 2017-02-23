@@ -5,7 +5,7 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 
 /**
- * PREROBIT PODLA KONVENCII A UNIVERZALNE
+ * TODO PREROBIT ConsoleWriter a Stream PODLA KONVENCII A UNIVERZALNE
  *
  *
  * Created by Moris on 8.2.2017.

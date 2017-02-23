@@ -1,5 +1,6 @@
 package sk.uniza.fri.cp.App.io;
 
+import javafx.application.Platform;
 import org.fxmisc.richtext.InlineCssTextArea;
 
 import java.io.IOException;
@@ -25,9 +26,17 @@ public class ConsoleOutputStream extends OutputStream {
 
     @Override
     public void write(int b) throws IOException {
-        int paragraph = console.getCurrentParagraph();
-        console.appendText(String.valueOf((char) b));
-        console.setStyle(paragraph, "-fx-fill: " + color);
+        if(Platform.isFxApplicationThread()) {
+            int paragraph = console.getCurrentParagraph();
+            console.appendText(String.valueOf((char) b));
+            console.setStyle(paragraph, "-fx-fill: " + color);
+        } else {
+            Platform.runLater(()->{
+                int paragraph = console.getCurrentParagraph();
+                console.appendText(String.valueOf((char) b));
+                console.setStyle(paragraph, "-fx-fill: " + color);
+            });
+        }
     }
 
     @Override

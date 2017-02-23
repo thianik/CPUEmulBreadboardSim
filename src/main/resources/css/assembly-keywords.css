@@ -36,10 +36,28 @@
 }
 */
 
+.execution-line{
+    -fx-background-color: #ffb1ae !important;
+}
+
 .paragraph-error{
     -fx-background-color: #ffb1ae;
 }
 
 .break{
     -fx-background-color: #ff8331;
+}
+
+/* Tabulky */
+.table-row-cell:data-changed{
+    -fx-background-color: #fdadbd;
+}
+
+.table-row-cell:stack-head{
+    -fx-background-color: #7eb6fd;
+}
+
+/* SplitPane */
+.split-pane *.split-pane-divider {
+    -fx-padding: 0 1 0 1;
 }

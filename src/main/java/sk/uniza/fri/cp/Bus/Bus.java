@@ -1,166 +1,176 @@
 package sk.uniza.fri.cp.Bus;
 
 
+import sk.uniza.fri.cp.CPUEmul.CPU;
+
+import java.util.Random;
+import java.util.concurrent.CountDownLatch;
+
 /**
  * Sprostredkuva komunikaciu medzi CPU a doskou (fyzickou / simulovanou)
+ * Singleton
+ *
  * @author Moris
  * @version 1.0
  * @created 07-feb-2017 18:40:27
  */
 public class Bus {
+    //public static final int SYNCH_WAIT_TIME_MS = 500;     //cas cakania na nastavenie dat pri synchronnej komunikacii
 
-	private short address;
-	private short control;
-	private byte data;
+	protected static Bus instance;
 
-	public Bus(){
+	private short addressBus;
+	private byte dataBus;
 
-	}
+	//signaly
+	//vystupne
+	private boolean MW_;
+	private boolean MR_;
+	private boolean IW_;
+	private boolean IR_;
+	private boolean IA_;
+	//vstupne
+	private boolean IT;
+	private boolean RY;
+	private boolean BQ;
+	private boolean BA;
 
-	public void finalize() throws Throwable {
+	private CountDownLatch cdlRY;
 
-	}
-	public short getAddress(){
-		return address;
+	private Random rand;
+
+	//TODO Bus privatny konstruktor pri zruseni simulovanej zbernice
+	Bus(){
+        MW_ = MR_ = IW_ = IR_ = IA_ = true;
+
+		rand = new Random();
 	}
 
 	public static Bus getBus(){
-		return null;
+		if(instance == null){
+			instance = new Bus();
+		}
+
+		return instance;
 	}
 
-	public byte getData(){
-		return data;
+	synchronized public short getAddressBus() {
+		return addressBus;
 	}
 
-	public boolean isBA(){
-		return false;
+	synchronized public void setAddressBus(short addressBus) {
+		this.addressBus = addressBus;
 	}
 
-	public boolean isBQ(){
-		return false;
+	synchronized public byte getDataBus() {
+		return dataBus;
 	}
 
-	public boolean isIA(){
-		return false;
+	synchronized public void setDataBus(byte dataBus) {
+		this.dataBus = dataBus;
 	}
 
-	public boolean isIR(){
-		return false;
+	synchronized public void setRandomAddress(){
+	    this.addressBus = (short) rand.nextInt(65535);
 	}
 
-	public boolean isIT(){
-		return false;
+	synchronized public void setRandomData(){
+        this.dataBus = (byte) rand.nextInt(256);
 	}
 
-	public boolean isIW(){
-		return false;
+	synchronized public boolean isMW_() {
+		return MW_;
 	}
 
-	public boolean isMR(){
-		return false;
+	synchronized public void setMW_(boolean MW_) {
+        this.MW_ = MW_;
 	}
 
-	public boolean isMW(){
-		return false;
+    synchronized public void setMW_(boolean MW_, CountDownLatch cdlRY) {
+        this.MW_ = MW_;
+        this.cdlRY = cdlRY;
+    }
+
+	synchronized public boolean isMR_() {
+		return MR_;
 	}
 
-	public boolean isRY(){
-		return false;
+    synchronized public void setMR_(boolean MR_) {
+        this.MR_ = MR_;
+    }
+
+	synchronized public void setMR_(boolean MR_, CountDownLatch cdlRY) {
+	    this.MR_ = MR_;
+        this.cdlRY = cdlRY;
 	}
 
-	/**
-	 * 
-	 * @param newVal
-	 */
-	public void setAddress(short newVal){
-		address = newVal;
+	synchronized public boolean isIW_() {
+		return IW_;
 	}
 
-	/**
-	 * 
-	 * @param newVal
-	 */
-	public void setBA(boolean newVal){
-
+	synchronized public void setIW_(boolean IW_) {
+        this.IW_ = IW_;
 	}
 
-	/**
-	 * 
-	 * @param newVal
-	 */
-	public void setBQ(boolean newVal){
+    synchronized public void setIW_(boolean IW_, CountDownLatch cdlRY) {
+        this.IW_ = IW_;
+        this.cdlRY = cdlRY;
+    }
 
+	synchronized public boolean isIR_() {
+		return IR_;
 	}
 
-	/**
-	 * 
-	 * @param newVal
-	 */
-	public void setData(byte newVal){
-		data = newVal;
+	synchronized public void setIR_(boolean IR_) {
+        this.IR_ = IR_;
 	}
 
-	/**
-	 * 
-	 * @param newVal
-	 */
-	public void setIA(boolean newVal){
+    synchronized public void setIR_(boolean IR_, CountDownLatch cdlRY) {
+        this.IR_ = IR_;
+        this.cdlRY = cdlRY;
+    }
 
+	synchronized public boolean isIA_() {
+		return IA_;
 	}
 
-	/**
-	 * 
-	 * @param newVal
-	 */
-	public void setIR(boolean newVal){
-
+	synchronized public void setIA_(boolean IA_) {
+		this.IA_ = IA_;
 	}
 
-	/**
-	 * 
-	 * @param newVal
-	 */
-	public void setIT(boolean newVal){
-
+	synchronized public boolean isIT() {
+		return IT;
 	}
 
-	/**
-	 * 
-	 * @param newVal
-	 */
-	public void setIW(boolean newVal){
-
+	synchronized public void setIT(boolean IT) {
+		this.IT = IT;
 	}
 
-	/**
-	 * 
-	 * @param newVal
-	 */
-	public void setMR(boolean newVal){
-
+	synchronized public boolean isRY() {
+		return RY;
 	}
 
-	/**
-	 * 
-	 * @param newVal
-	 */
-	public void setMW(boolean newVal){
-
+	synchronized public void setRY(boolean RY){
+        this.RY = RY;
+        if(cdlRY != null && RY) {
+            cdlRY.countDown();
+            cdlRY = null;
+        }
 	}
 
-	public void setRandomAddress(){
-
+	synchronized public boolean isBQ() {
+		return BQ;
 	}
 
-	public void setRandomData(){
-
+	synchronized public void setBQ(boolean BQ) {
+		this.BQ = BQ;
 	}
 
-	/**
-	 * 
-	 * @param newVal
-	 */
-	public void setRY(boolean newVal){
+	synchronized public boolean isBA() {
+		return BA;
+	}
 
+	synchronized public void setBA(boolean BA) {
+		this.BA = BA;
 	}
 }//end Bus

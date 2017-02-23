@@ -1,11 +1,11 @@
 package sk.uniza.fri.cp.CPUEmul;
 
-import javafx.collections.ListChangeListener;
-import javafx.collections.ObservableList;
+import javafx.collections.ObservableSet;
+import javafx.collections.SetChangeListener;
+import org.apache.commons.lang3.ArrayUtils;
+import sk.uniza.fri.cp.CPUEmul.Exceptions.NonExistingInterruptLabelException;
 
-import java.util.ArrayList;
-import java.util.TreeMap;
-import java.util.TreeSet;
+import java.util.*;
 
 /**
  * Uchovava instrukcie programu, navestia, breaky a umoznuje k nim pristup
@@ -23,7 +23,7 @@ public class Program {
 	/**
 	 * navestia pre riadenie preruseni... nemozu sa opakovat
 	 */
-	private TreeMap<String, Integer> interruptionLabels;
+	private TreeMap<Integer, Integer> interruptionLabels; //<cislo prerusenia 0-15, adresa nasledujucej instrukcie>
 
 	/**
 	 * prevodnik medzi riadkom v editore a indexom instrukcie v programe pre
@@ -36,7 +36,7 @@ public class Program {
 	private ArrayList<Instruction> instructions;
 
 
-	public Program(ArrayList<Instruction> instructions, ArrayList<Byte> memory, TreeMap<Integer, Integer> lineIndexToInstructionIndex, TreeMap<String, Integer> interruptionLabels){
+	public Program(ArrayList<Instruction> instructions, ArrayList<Byte> memory, TreeMap<Integer, Integer> lineIndexToInstructionIndex, TreeMap<Integer, Integer> interruptionLabels){
         this.instructions = instructions;
         this.memory = memory;
         this.lineIndexToInstructionIndex = lineIndexToInstructionIndex;
@@ -49,7 +49,7 @@ public class Program {
 	 * Metoda zavadza listenera na zmenu v breakpointoch, ktore prevadza na indexy instrukcii clenskom liste triedy
 	 * @param obsBreakIndexes
 	 */
-	public void setListenerOnBreakpointsChange(ObservableList<Integer> obsBreakIndexes){
+	public void setListenerOnBreakpointsChange(ObservableSet<Integer> obsBreakIndexes){
 		//vycistenie zoznamu
 		breaks.clear();
 		//pridanie vsetkych aktualnych breakpointov
@@ -58,8 +58,8 @@ public class Program {
 
 		//registracia listenera na zmenu v breakpointoch
 		obsBreakIndexes.addListener(
-				(ListChangeListener<Integer>) c ->{
-					breaks.clear();
+				(SetChangeListener<Integer>) c ->{
+					breaks.clear(); //todo tu da deje nieco co by sa asi nemalo - mnohonasobne volanie
 					obsBreakIndexes.forEach(index ->
 							breaks.add(lineIndexToInstructionIndex.get(index)));
 				});
@@ -86,8 +86,34 @@ public class Program {
 		return memory.get(address);
 	}
 
+	public byte[] getMemory(){
+		return ArrayUtils.toPrimitive( memory.toArray(new Byte[0]) );
+	}
+
 	public boolean isSetBreak(int instructionAddress){
 		return breaks.contains(instructionAddress);
+	}
+
+	public int getAddressOfInterrupt(int intNumber) throws NonExistingInterruptLabelException {
+	    if(interruptionLabels.containsKey(intNumber)){
+	        return interruptionLabels.get(intNumber);
+        } else {
+            throw new NonExistingInterruptLabelException(Integer.toString(intNumber));
+        }
+	}
+
+	/**
+	 * hlada a vracia riadok instrukcie
+	 * @param instructionAddress Index instrukcie ku ktorej sa hlada riaok
+	 * @return Index riadku na ktorom je instrukcia, ak sa nenasla, vracia -1
+	 */
+	public int getLineOfInstruction(int instructionAddress){
+		for (Map.Entry<Integer, Integer> entry : lineIndexToInstructionIndex.entrySet()) {
+			if (Objects.equals(instructionAddress, entry.getValue())) {
+				return entry.getKey();
+			}
+		}
+		return -1;
 	}
 
 }

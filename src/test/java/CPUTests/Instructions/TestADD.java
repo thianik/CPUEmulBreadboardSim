@@ -1,6 +1,6 @@
 package CPUTests.Instructions;
-/*
-import org.junit.jupiter.*;
+
+/*import org.junit.jupiter.*;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -19,5 +19,4 @@ public class TestADD {
 
     }
 
-}
-*/
+}*/

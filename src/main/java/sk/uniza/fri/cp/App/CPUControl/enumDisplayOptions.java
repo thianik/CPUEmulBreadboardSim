@@ -1,4 +1,4 @@
-package sk.uniza.fri.cp.App;
+package sk.uniza.fri.cp.App.CPUControl;
 
 /**
  * OBsahuje mozne stavy zobrazenie stavov registrov a obsahu zasobnika
