@@ -22,6 +22,8 @@ import java.util.*;
 
 //CodeArea zvyraznovanie slov
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.StackPane;
@@ -72,6 +74,7 @@ public class CPUController implements Initializable {
     volatile private boolean f_async;
     volatile private boolean f_intBylevel;
     volatile private boolean f_microstep;
+    volatile private boolean f_startPaused; //pri krokovani pred spustenim sa spusta CPU s pauzou
 
     private boolean f_code_parsed; //indikator, ci je zavedeny aktualny program
     private boolean f_in_execution; //indikator, ci sa program vykonava
@@ -125,8 +128,8 @@ public class CPUController implements Initializable {
 	@FXML private Button btnPause;
 	@FXML private Button btnReset;
 	@FXML private Button btnStop;
-	final private String BTN_TXT_START = "Spusti";
-    final private String BTN_TXT_CONTINUE = "Pokračovať";
+	final private String BTN_TXT_START = "Spusti [F5]";
+    final private String BTN_TXT_CONTINUE = "Pokračovať [F5]";
 
 	//registre
 	@FXML private TextField tfRegA;
@@ -168,6 +171,9 @@ public class CPUController implements Initializable {
 	@FXML private AnchorPane anchPaneRegisters;
     @FXML private TitledPane titPaneConsole;
     @FXML private SplitPane splitPaneVert;
+
+    @FXML private Slider sliderSlowDown;
+    @FXML private Label lbSlowDownValue;
 
     private double lastConsoleDividerPos;
 
@@ -248,7 +254,7 @@ public class CPUController implements Initializable {
         //inicializacia tlacitok
         btnParse.setDisable(false);
         btnStart.setDisable(false);
-        btnStep.setDisable(true);
+        btnStep.setDisable(false);
         btnPause.setDisable(true);
         btnReset.setDisable(true);
         btnStop.setDisable(true);
@@ -266,6 +272,25 @@ public class CPUController implements Initializable {
                     lastConsoleDividerPos = splitPaneVert.getDividers().get(0).getPosition();
                     splitPaneVert.getDividers().get(0).setPosition(1);
                 }
+            }
+        });
+
+        //Akceleratory
+        Platform.runLater(()->{
+            btnParse.getScene().getAccelerators().put(new KeyCodeCombination(KeyCode.F4), ()->btnParse.fire());
+            btnStart.getScene().getAccelerators().put(new KeyCodeCombination(KeyCode.F5), ()->btnStart.fire());
+            btnStep.getScene().getAccelerators().put(new KeyCodeCombination(KeyCode.F7), ()->btnStep.fire());
+            btnPause.getScene().getAccelerators().put(new KeyCodeCombination(KeyCode.F9), ()->btnPause.fire());
+            btnReset.getScene().getAccelerators().put(new KeyCodeCombination(KeyCode.F12), ()->btnReset.fire());
+            btnStop.getScene().getAccelerators().put(new KeyCodeCombination(KeyCode.F10), ()->btnStop.fire());
+        });
+
+        //Stavovy riadok - slowdown
+        sliderSlowDown.valueProperty().addListener(new ChangeListener<Number>() {
+            @Override
+            public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
+                lbSlowDownValue.setText(String.valueOf((int) sliderSlowDown.getValue()));
+                if(cpu != null) cpu.enableSlowDown((int) sliderSlowDown.getValue());
             }
         });
 
@@ -512,6 +537,19 @@ public class CPUController implements Initializable {
         chmiSettingsMicrostep.setSelected(isSelected);
     }
 
+    @FXML private CheckMenuItem chmiSettingsSlowDown;
+
+    @FXML
+    private void handleMenuSettingsSlowDownAction(){
+        boolean isSelected = chmiSettingsSlowDown.isSelected();
+        if(cpu != null) {
+            if (isSelected)
+                cpu.enableSlowDown((int) sliderSlowDown.getValue());
+            else
+                cpu.disableSlowDown();
+        }
+        chmiSettingsSlowDown.setSelected(isSelected);
+    }
 
 	/**
 	 * nacita text studenta (program) do suboru
@@ -679,15 +717,9 @@ public class CPUController implements Initializable {
 
 	@FXML
 	private void handleButtonStartAction(){
+        f_startPaused = false;
 	    if(cpu == null || !f_in_execution){
-	        //nie je CPU ktore by nieco vykonavalo
-            if(!f_code_parsed) {
-                //este nie je zavedeny kod
-                parseCode(true);
-            } else {
-                //kod uz je zavedeny, staci spustit CPU
-                startExecution();
-            }
+            startCPUAction();
         } else if(f_paused){
 	        //ak je iba pozastavene vykonavanie
             cpu.continueExecute();
@@ -696,7 +728,10 @@ public class CPUController implements Initializable {
 
 	@FXML
 	private void handleButtonStepAction(){
-        if(cpu == null) return;
+        f_startPaused = true;
+        if(cpu == null || !f_in_execution)
+            startCPUAction();
+        else
             cpu.step();
 	}
 
@@ -717,6 +752,17 @@ public class CPUController implements Initializable {
         Bus.getBus().setIT(false);
         //Bus.getBus().setRandomData();
         updateGUI();
+    }
+
+    private void startCPUAction(){
+        //nie je CPU ktore by nieco vykonavalo
+        if(!f_code_parsed) {
+            //este nie je zavedeny kod
+            parseCode(true);
+        } else {
+            //kod uz je zavedeny, staci spustit CPU
+            startExecution();
+        }
     }
 
     /**
@@ -835,12 +881,18 @@ public class CPUController implements Initializable {
         parserThread.start();
     }
 
+    private ConsoleOutputStream cos;
+
     private void startExecution(){
         //vytvorenie CPU vlakna a spustenie vykonavania
-        cpu = new CPU(program, new ConsoleOutputStream(console), f_async, f_intBylevel, f_microstep);
+        cos = new ConsoleOutputStream(console);
+        cpu = new CPU(program, cos, f_async, f_intBylevel, f_microstep, f_startPaused);
+
+        if(chmiSettingsSlowDown.isSelected())
+            cpu.enableSlowDown((int) sliderSlowDown.getValue());
+
         Thread cpuThread = new Thread(cpu);
         cpuThread.setDaemon(true);
-
 
         //po uspesnom vykonani programu
         cpu.setOnSucceeded(new EventHandler<WorkerStateEvent>() {
@@ -905,8 +957,27 @@ public class CPUController implements Initializable {
                         break;
                     case Waiting:
                         onCPUWaiting();
+                    case UPDATE:
+                        updateGUI();
                 }
             });
+        else
+            switch (state){
+                case Running:
+                    onCPURunning();
+                    break;
+                case Paused:
+                    onCPUPaused(false);
+                    break;
+                case MicroStep:
+                    onCPUPaused(true);
+                    break;
+                case Waiting:
+                    onCPUWaiting();
+                case UPDATE:
+                    updateGUI();
+            }
+
     }
 
     private void onCPURunning(){
@@ -986,12 +1057,14 @@ public class CPUController implements Initializable {
 
         btnParse.setDisable(false);
         btnStart.setDisable(false);
-        btnStep.setDisable(true);
+        btnStep.setDisable(false);
         btnPause.setDisable(true);
         btnReset.setDisable(false);
         btnStop.setDisable(true);
 
         codeEditor.setEditable(true);
+
+        if(cos.isUsed()) console.appendText("\n");
 
         updateGUI();
     }
@@ -1027,9 +1100,9 @@ public class CPUController implements Initializable {
             tfRegSP.setText(DataRepresentation.getDisplayRepresentation((short) 0, displayFormRegisters));
             tfRegMP.setText(DataRepresentation.getDisplayRepresentation((short) 0, displayFormRegisters));
 
-            tfFlagCY.setText("-");
-            tfFlagZ.setText("-");
-            tfFlagIE.setText("-");
+            tfFlagCY.setText("0");
+            tfFlagZ.setText("0");
+            tfFlagIE.setText("0");
         }
     }
 
@@ -1105,6 +1178,8 @@ public class CPUController implements Initializable {
         RichTextFXHelpers.tryRemoveParagraphStyle(codeEditor, execution_line.getValue(), "execution-line");
         if(lineIndex >= 0){
             RichTextFXHelpers.addParagraphStyle(codeEditor, lineIndex, "execution-line");
+            codeEditor.moveTo(lineIndex, 0);
+            codeEditor.requestFollowCaret();
         }
         execution_line.setValue(lineIndex);
     }

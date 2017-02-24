@@ -38,6 +38,8 @@ public class App extends Application {
         //a posielanie ich do CPU
         mainScene.addEventFilter(KeyEvent.KEY_PRESSED, new EventHandler<KeyEvent>() {
             public void handle(KeyEvent ke) {
+                if(ke.getCode().isFunctionKey()) return;
+
                 CPUController controller = loader.getController();
                 if (controller.isExecuting()) {
                      controller.keyboardInput(ke);

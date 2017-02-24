@@ -13,6 +13,7 @@ public class ConsoleOutputStream extends OutputStream {
 
     private InlineCssTextArea console;
     private String color;
+    private boolean isUsed; //indikator, ci bol vypis pouzity
 
     public ConsoleOutputStream(InlineCssTextArea console){
         this.console = console;
@@ -24,21 +25,40 @@ public class ConsoleOutputStream extends OutputStream {
         this.color = color;
     }
 
+    public boolean isUsed(){ return isUsed; }
+
+    private void writeToConsole(int b){
+        if(!isUsed) {
+            console.setStyle(console.getCurrentParagraph(), "-fx-fill: red");
+            console.appendText("[CPU KONZOLA]\n");
+            isUsed = true;
+        }
+
+        int paragraph = console.getCurrentParagraph();
+        if( b == 10) { //LF - novy riadok, rovnaka pozicia
+            int carretCol = console.getCaretColumn();
+            console.appendText("\n");
+            console.appendText(String.format("%" + carretCol + "s", ""));
+        } else if( b == 13) { //CR - vratenie na zaciatok riadku
+            console.moveTo(console.getCurrentParagraph(), 0);
+        } else {
+            int pos = console.getCaretPosition();
+            console.replaceText(pos, pos+1, String.valueOf((char) b));
+        }
+
+        console.setStyle(paragraph, "-fx-fill: " + color + "; -fx-font-family: monospace;");
+        console.requestFollowCaret();
+    }
+
     @Override
     public void write(int b) throws IOException {
         if(Platform.isFxApplicationThread()) {
-            int paragraph = console.getCurrentParagraph();
-            console.appendText(String.valueOf((char) b));
-            console.setStyle(paragraph, "-fx-fill: " + color);
+            writeToConsole(b);
         } else {
             Platform.runLater(()->{
-                int paragraph = console.getCurrentParagraph();
-                console.appendText(String.valueOf((char) b));
-                console.setStyle(paragraph, "-fx-fill: " + color);
+                writeToConsole(b);
             });
         }
-        console.moveTo(console.getText().length());
-        console.requestFollowCaret();
     }
 
     @Override

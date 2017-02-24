@@ -4,6 +4,7 @@ import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.Property;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.concurrent.Task;
+import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import sk.uniza.fri.cp.Bus.Bus;
 import sk.uniza.fri.cp.Bus.BusSimulated;
@@ -44,6 +45,7 @@ public class CPU extends Task<Void> {
     //vnutorne
     private boolean f_int_level_old;    //minula uroven
     private boolean f_pause;
+    private boolean f_eit;  //priznak, ci boli v predchadzajuciej instrukcii povolene prerusenia
 
 	private ObjectProperty<CPUStates> state;    //status CPU
 
@@ -72,19 +74,24 @@ public class CPU extends Task<Void> {
 
     /** Zbernica */
     private Bus bus;
+
+    //SlowDown
+    volatile private boolean slowDown;
+    volatile private int slowDownMs;
+
 	/**
 	 * Konstruktor
 	 * @param program Program s instrukciami pre vykonanie
 	 * @param console Stream na konzolu pre vypis
 	 */
-	public CPU(Program program, OutputStream console, boolean async, boolean intByLevel, boolean microstep){
+	public CPU(Program program, OutputStream console, boolean async, boolean intByLevel, boolean microstep, boolean startPaused){
 		this.program = program;
 		this.console = console;
 
 		//flags
 		this.f_async = async;
 		this.f_microstep = microstep;
-		this.f_pause = false;
+		this.f_pause = startPaused;
 		this.f_int_level = intByLevel;
 
 		state = new SimpleObjectProperty<>(CPUStates.Paused);
@@ -119,7 +126,21 @@ public class CPU extends Task<Void> {
                 }
 
                 state.setValue(CPUStates.Running);
+
+                //povolenie preruseni ak predchadzajuca instrukcia bola EIT
+                if(f_eit){
+                    flagIE = true;
+                    f_eit = false;
+                }
+
+                //vykonanie instrukcie
                 execute(nextInstruction);
+
+                //TODO Docasne updatovanie GUI
+                if(slowDown) {
+                    state.setValue(CPUStates.UPDATE);
+                    Thread.sleep(slowDownMs);
+                }
 
                 //ak je povolene prerusenie a aj vyvolane
                 it = bus.isIT();
@@ -137,10 +158,9 @@ public class CPU extends Task<Void> {
             } catch (InterruptedException e) {
                 if(isCancelled()) return null;
             }
-
         }
 
-		return null;
+        return null;
 	}
 
     /**
@@ -250,6 +270,15 @@ public class CPU extends Task<Void> {
 
     public Property<CPUStates> statesProperty(){
         return state;
+    }
+
+    public void enableSlowDown(int slowDownMs){
+        this.slowDown = true;
+        this.slowDownMs = slowDownMs;
+    }
+
+    public void disableSlowDown(){
+        this.slowDown = false;
     }
 
 
@@ -558,7 +587,7 @@ public class CPU extends Task<Void> {
                 break;
             //Specialne instrukcie
             case EIT:
-                flagIE = true;
+                f_eit = true;
                 break;
             case DIT:
                 flagIE = false;
@@ -576,6 +605,8 @@ public class CPU extends Task<Void> {
                         synchronized (this) {
                             if (key.getCode().isLetterKey() || key.getCode().isDigitKey())
                                 setRegisterVal("d", key.getText().charAt(0));
+                            else if(key.getCode() == KeyCode.ENTER)
+                                setRegisterVal("d", 13);
                             else
                                 setRegisterVal("d", key.getCode().impl_getCode());
                         }
