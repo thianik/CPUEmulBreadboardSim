@@ -172,11 +172,11 @@ public class CPUController implements Initializable {
     @FXML private SplitPane splitPaneVert;
 
     //Kontinualne updateovanie GUI
-    @FXML private Slider sliderUpdateGUIFreq;
-    @FXML private Label lbUpdateGUIFreqValue;
+    @FXML private Slider sliderUpdateGUIInt;
+    @FXML private Label lbUpdateGUIIntValue;
     @FXML private CheckMenuItem chmiSettingsAllowUpdateGUI;
-    @FXML private HBox hboxUpdateGUIFreq;
-    volatile private int GUIUpdateFreq = 10;
+    @FXML private HBox hboxUpdateGUIInt;
+    volatile private int GUIUpdateInt = 10;
 
     private Service updateGUIService = new Service() {
         @Override
@@ -199,7 +199,7 @@ public class CPUController implements Initializable {
                             //ak sa program vykonava ale nie je pauznuty, obnovuj GUI s danou frekvenciou
                             Platform.runLater(() -> updateGUI());
                             try {
-                                Thread.sleep(GUIUpdateFreq);
+                                Thread.sleep(GUIUpdateInt);
                             } catch (InterruptedException e) {
                                 return null;
                             }
@@ -337,11 +337,11 @@ public class CPUController implements Initializable {
         });
 
         //Stavovy riadok - slowdown
-        sliderUpdateGUIFreq.valueProperty().addListener(new ChangeListener<Number>() {
+        sliderUpdateGUIInt.valueProperty().addListener(new ChangeListener<Number>() {
             @Override
             public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
-                lbUpdateGUIFreqValue.setText(String.valueOf((int) sliderUpdateGUIFreq.getValue()));
-                GUIUpdateFreq = (int) sliderUpdateGUIFreq.getValue();
+                lbUpdateGUIIntValue.setText(String.valueOf((int) sliderUpdateGUIInt.getValue()));
+                GUIUpdateInt = (int) sliderUpdateGUIInt.getValue();
             }
         });
 
@@ -595,10 +595,10 @@ public class CPUController implements Initializable {
 
         if (isSelected) {
             updateGUIService.restart();
-            hboxUpdateGUIFreq.setDisable(false);
+            hboxUpdateGUIInt.setDisable(false);
         } else {
             updateGUIService.cancel();
-            hboxUpdateGUIFreq.setDisable(true);
+            hboxUpdateGUIInt.setDisable(true);
         }
 
         chmiSettingsAllowUpdateGUI.setSelected(isSelected);
