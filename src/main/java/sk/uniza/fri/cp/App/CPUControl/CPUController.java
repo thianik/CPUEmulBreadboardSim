@@ -2,15 +2,15 @@ package sk.uniza.fri.cp.App.CPUControl;
 
 import javafx.animation.Animation;
 import javafx.animation.Transition;
-import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.beans.property.*;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.*;
+import javafx.concurrent.Service;
+import javafx.concurrent.Task;
 import javafx.concurrent.WorkerStateEvent;
 import javafx.css.PseudoClass;
-import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -19,6 +19,7 @@ import java.io.*;
 import java.net.URL;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.CountDownLatch;
 
 //CodeArea zvyraznovanie slov
 import javafx.scene.control.cell.PropertyValueFactory;
@@ -78,16 +79,13 @@ public class CPUController implements Initializable {
     volatile private boolean f_startPaused; //pri krokovani pred spustenim sa spusta CPU s pauzou
 
     private boolean f_code_parsed; //indikator, ci je zavedeny aktualny program             DALO BY SA NAHRADIT program != null
-    private boolean f_in_execution; //indikator, ci sa program vykonava
-    private boolean f_paused;    //indikator, ci je prebiehajuci program pozastaveny
+    volatile private SimpleBooleanProperty f_paused;    //indikator, ci je prebiehajuci program pozastaveny
+    volatile private SimpleBooleanProperty f_in_execution; //indikator, ci sa program vykonava
     private SimpleIntegerProperty execution_line;
 
     //Breakpointy
     private TreeSet<Integer> breakpointLines;
     private ObservableSet<Integer> observableBreakpointLines;
-
-    //Priznaky vykonavania programu
-
 
     //Menu
     //Nastavenia
@@ -173,8 +171,58 @@ public class CPUController implements Initializable {
     @FXML private TitledPane titPaneConsole;
     @FXML private SplitPane splitPaneVert;
 
-    @FXML private Slider sliderSlowDown;
-    @FXML private Label lbSlowDownValue;
+    //Kontinualne updateovanie GUI
+    @FXML private Slider sliderUpdateGUIFreq;
+    @FXML private Label lbUpdateGUIFreqValue;
+    @FXML private CheckMenuItem chmiSettingsAllowUpdateGUI;
+    @FXML private HBox hboxUpdateGUIFreq;
+    volatile private int GUIUpdateFreq = 10;
+
+    private Service updateGUIService = new Service() {
+        @Override
+        protected Task createTask() {
+            return new Task() {
+                CountDownLatch cdl;
+
+                private ChangeListener<Boolean> executionListener =  new ChangeListener<Boolean>() {
+                    @Override public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {
+                        if( newValue ) cdl.countDown(); } };
+
+                private ChangeListener<Boolean> pauseListener =  new ChangeListener<Boolean>() {
+                    @Override public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {
+                        if( !newValue ) cdl.countDown(); } };
+
+                @Override
+                protected Object call() throws Exception {
+                    while(!isCancelled()){
+                        if (f_in_execution.getValue() && !f_paused.getValue()) {
+                            //ak sa program vykonava ale nie je pauznuty, obnovuj GUI s danou frekvenciou
+                            Platform.runLater(() -> updateGUI());
+                            try {
+                                Thread.sleep(GUIUpdateFreq);
+                            } catch (InterruptedException e) {
+                                return null;
+                            }
+                        } else {
+                            //inak cakaj na beh programu
+                            cdl = new CountDownLatch(1);
+                            f_in_execution.addListener(executionListener);
+                            f_paused.addListener(pauseListener);
+                            try {
+                                cdl.await();
+                            } catch (InterruptedException e){
+                                return null;
+                            } finally {
+                                f_in_execution.removeListener(executionListener);
+                                f_paused.removeListener(pauseListener);
+                            }
+                        }
+                    }
+                    return null;
+                }
+            };
+        }
+    };
 
     private double lastConsoleDividerPos;
 
@@ -186,6 +234,8 @@ public class CPUController implements Initializable {
         f_intBylevel = true;
         execution_line = new SimpleIntegerProperty(-1);
         fileSaved = true; //aj cisty kod je kvazi ulozeny
+        f_in_execution = new SimpleBooleanProperty(false);
+        f_paused = new SimpleBooleanProperty(false);
 
         initializeGUITables();
 
@@ -287,11 +337,11 @@ public class CPUController implements Initializable {
         });
 
         //Stavovy riadok - slowdown
-        sliderSlowDown.valueProperty().addListener(new ChangeListener<Number>() {
+        sliderUpdateGUIFreq.valueProperty().addListener(new ChangeListener<Number>() {
             @Override
             public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
-                lbSlowDownValue.setText(String.valueOf((int) sliderSlowDown.getValue()));
-                if(cpu != null) cpu.enableSlowDown((int) sliderSlowDown.getValue());
+                lbUpdateGUIFreqValue.setText(String.valueOf((int) sliderUpdateGUIFreq.getValue()));
+                GUIUpdateFreq = (int) sliderUpdateGUIFreq.getValue();
             }
         });
 
@@ -312,7 +362,7 @@ public class CPUController implements Initializable {
     }
 
     public boolean isExecuting(){
-        return f_in_execution;
+        return f_in_execution.getValue();
     }
 
 
@@ -538,25 +588,20 @@ public class CPUController implements Initializable {
         chmiSettingsMicrostep.setSelected(isSelected);
     }
 
-    @FXML private CheckMenuItem chmiSettingsSlowDown;
-    @FXML private HBox hboxSlowDown;
 
     @FXML
-    private void handleMenuSettingsSlowDownAction(){
-        boolean isSelected = chmiSettingsSlowDown.isSelected();
-        if(cpu != null) {
-            if (isSelected)
-                cpu.enableSlowDown((int) sliderSlowDown.getValue());
-             else
-                cpu.disableSlowDown();
+    private void handleMenuSettingsAllowUpdateGUIAction(){
+        boolean isSelected = chmiSettingsAllowUpdateGUI.isSelected();
+
+        if (isSelected) {
+            updateGUIService.restart();
+            hboxUpdateGUIFreq.setDisable(false);
+        } else {
+            updateGUIService.cancel();
+            hboxUpdateGUIFreq.setDisable(true);
         }
 
-        if(isSelected)
-            hboxSlowDown.setDisable(false);
-        else
-            hboxSlowDown.setDisable(true);
-
-        chmiSettingsSlowDown.setSelected(isSelected);
+        chmiSettingsAllowUpdateGUI.setSelected(isSelected);
     }
 
 	/**
@@ -726,9 +771,9 @@ public class CPUController implements Initializable {
 	@FXML
 	private void handleButtonStartAction(){
         f_startPaused = false;
-	    if(cpu == null || !f_in_execution){
+	    if(cpu == null || !f_in_execution.getValue()){
             startCPUAction();
-        } else if(f_paused){
+        } else if(f_paused.getValue()){
 	        //ak je iba pozastavene vykonavanie
             cpu.continueExecute();
         }
@@ -737,7 +782,7 @@ public class CPUController implements Initializable {
 	@FXML
 	private void handleButtonStepAction(){
         f_startPaused = true;
-        if(cpu == null || !f_in_execution)
+        if(cpu == null || !f_in_execution.getValue())
             startCPUAction();
         else
             cpu.step();
@@ -901,9 +946,6 @@ public class CPUController implements Initializable {
         cos = new ConsoleOutputStream(console);
         cpu = new CPU(program, cos, f_async, f_intBylevel, f_microstep, f_startPaused);
 
-        if(chmiSettingsSlowDown.isSelected())
-            cpu.enableSlowDown((int) sliderSlowDown.getValue());
-
         Thread cpuThread = new Thread(cpu);
         cpuThread.setDaemon(true);
 
@@ -970,8 +1012,6 @@ public class CPUController implements Initializable {
                         break;
                     case Waiting:
                         onCPUWaiting();
-                    case UPDATE:
-                        updateGUI();
                 }
             });
         else
@@ -987,15 +1027,15 @@ public class CPUController implements Initializable {
                     break;
                 case Waiting:
                     onCPUWaiting();
-                case UPDATE:
-                    updateGUI();
             }
 
     }
 
     private void onCPURunning(){
-        f_paused = false;
-        f_in_execution = true;
+        f_paused.setValue(false);
+
+        if(!f_in_execution.getValue())
+            f_in_execution.setValue(true);
 
         updateExecutionLine( -1 );
 
@@ -1014,7 +1054,7 @@ public class CPUController implements Initializable {
     }
 
     private void onCPUPaused(boolean isMicrostep){
-        f_paused = true;
+        f_paused.setValue(true);
 
         updateExecutionLine( program.getLineOfInstruction(cpu.getRegPC()-1) );
 
@@ -1038,7 +1078,7 @@ public class CPUController implements Initializable {
     }
 
     private void onCPUWaiting(){
-        f_paused = true;
+        f_paused.setValue(true);
 
         updateExecutionLine( program.getLineOfInstruction(cpu.getRegPC()-1) );
 
@@ -1057,8 +1097,8 @@ public class CPUController implements Initializable {
     }
 
     private void onCPUDone(String statusText){
-        f_in_execution = false;
-        f_paused = false;
+        f_in_execution.setValue(false);
+        f_paused.setValue(false);
 
         updateExecutionLine( -1 );
 

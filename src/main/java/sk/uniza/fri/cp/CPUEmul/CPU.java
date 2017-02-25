@@ -75,10 +75,6 @@ public class CPU extends Task<Void> {
     /** Zbernica */
     private Bus bus;
 
-    //SlowDown
-    volatile private boolean slowDown;
-    volatile private int slowDownMs;
-
 	/**
 	 * Konstruktor
 	 * @param program Program s instrukciami pre vykonanie
@@ -135,12 +131,6 @@ public class CPU extends Task<Void> {
 
                 //vykonanie instrukcie
                 execute(nextInstruction);
-
-                //TODO Docasne updatovanie GUI
-                if(slowDown) {
-                    state.setValue(CPUStates.UPDATE);
-                    Thread.sleep(slowDownMs);
-                }
 
                 //ak je povolene prerusenie a aj vyvolane
                 it = bus.isIT();
@@ -271,17 +261,6 @@ public class CPU extends Task<Void> {
     public Property<CPUStates> statesProperty(){
         return state;
     }
-
-    public void enableSlowDown(int slowDownMs){
-        this.slowDown = true;
-        this.slowDownMs = slowDownMs;
-    }
-
-    public void disableSlowDown(){
-        this.slowDown = false;
-    }
-
-
 
     /**
      * Vykonanie konkretnej instrukcie
