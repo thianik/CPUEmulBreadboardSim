@@ -26,6 +26,7 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.stage.FileChooser;
 import javafx.util.Duration;
@@ -76,7 +77,7 @@ public class CPUController implements Initializable {
     volatile private boolean f_microstep;
     volatile private boolean f_startPaused; //pri krokovani pred spustenim sa spusta CPU s pauzou
 
-    private boolean f_code_parsed; //indikator, ci je zavedeny aktualny program
+    private boolean f_code_parsed; //indikator, ci je zavedeny aktualny program             DALO BY SA NAHRADIT program != null
     private boolean f_in_execution; //indikator, ci sa program vykonava
     private boolean f_paused;    //indikator, ci je prebiehajuci program pozastaveny
     private SimpleIntegerProperty execution_line;
@@ -538,6 +539,7 @@ public class CPUController implements Initializable {
     }
 
     @FXML private CheckMenuItem chmiSettingsSlowDown;
+    @FXML private HBox hboxSlowDown;
 
     @FXML
     private void handleMenuSettingsSlowDownAction(){
@@ -545,9 +547,15 @@ public class CPUController implements Initializable {
         if(cpu != null) {
             if (isSelected)
                 cpu.enableSlowDown((int) sliderSlowDown.getValue());
-            else
+             else
                 cpu.disableSlowDown();
         }
+
+        if(isSelected)
+            hboxSlowDown.setDisable(false);
+        else
+            hboxSlowDown.setDisable(true);
+
         chmiSettingsSlowDown.setSelected(isSelected);
     }
 
@@ -842,6 +850,8 @@ public class CPUController implements Initializable {
                 program = parserTask.getValue();
                 program.setListenerOnBreakpointsChange(observableBreakpointLines);
 
+                updateGUITableProgMemory();
+
                 f_code_parsed = true; //kod je uspesne prevedeny na program a moze byt vykonany
                 lbStatus.setText("Program zavedený");
 
@@ -870,6 +880,9 @@ public class CPUController implements Initializable {
 
                 //posun konzoly na koniec
                 console.setEstimatedScrollY(console.getParagraphs().size() * 50);
+
+                program = null;
+                updateGUITableProgMemory();
 
                 f_code_parsed = false;
                 //zobrazenie stavu
@@ -1149,14 +1162,14 @@ public class CPUController implements Initializable {
     }
 
     private void updateGUITableProgMemory(){
-        if(cpu != null) {
-            byte[] progMem = cpu.getProgMemory();
+        if(program != null){
+            byte[] progMem = program.getMemory();
 
             for (int i = 0; i < progMem.length; i++)
                 tableViewProgMemoryItems.get(i).setData(progMem[i]);
         } else {
-            for (int i = 0; i < tableViewProgMemoryItems.size(); i++)
-                tableViewProgMemoryItems.get(i).setData((byte) 0);
+        for (int i = 0; i < tableViewProgMemoryItems.size(); i++)
+            tableViewProgMemoryItems.get(i).setData((byte) 0);
         }
     }
 
