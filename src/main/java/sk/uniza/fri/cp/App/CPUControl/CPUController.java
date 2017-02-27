@@ -50,7 +50,7 @@ import sk.uniza.fri.cp.CPUEmul.Exceptions.NonExistingInterruptLabelException;
 import sk.uniza.fri.cp.CPUEmul.Parser;
 import sk.uniza.fri.cp.CPUEmul.Program;
 
-import static sk.uniza.fri.cp.App.CPUControl.DataRepresentation.getDisplayRepresentation;
+import static sk.uniza.fri.cp.App.CPUControl.DataRepresentation.*;
 
 
 /**
@@ -62,14 +62,14 @@ import static sk.uniza.fri.cp.App.CPUControl.DataRepresentation.getDisplayRepres
  */
 public class CPUController implements Initializable {
 
-        //uchovanie aktualneho zobrazenia registrov a pamati
-	private DataRepresentation.eRepresentation displayFormRegisters;
-	private DataRepresentation.eRepresentation displayFormStackAddr;
-	private DataRepresentation.eRepresentation displayFormStackData;
-	private DataRepresentation.eRepresentation displayFormProgMemoryAddr;
-	private DataRepresentation.eRepresentation displayFormProgMemoryData;
-    private DataRepresentation.eRepresentation displayFormRAMAddr;
-    private DataRepresentation.eRepresentation displayFormRAMData;
+    //uchovanie aktualneho zobrazenia registrov a pamati
+	private eRepresentation displayFormRegisters;
+	private eRepresentation displayFormStackAddr;
+	private eRepresentation displayFormStackData;
+	private eRepresentation displayFormProgMemoryAddr;
+	private eRepresentation displayFormProgMemoryData;
+    private eRepresentation displayFormRAMAddr;
+    private eRepresentation displayFormRAMData;
 
     private CPU cpu;
     volatile private Program program;
@@ -109,7 +109,6 @@ public class CPUController implements Initializable {
     //konzola
     @FXML private StackPane consolePane;
     private InlineCssTextArea console;
-    private ConsolePrintWriter cpw_error;
 
 	//vyber zobrazenia registrov / pamati
 	@FXML private ToggleGroup btnGroupRegisters;
@@ -165,11 +164,14 @@ public class CPUController implements Initializable {
 	@FXML private ProgressBar progressBar;
 	@FXML private Label lbStatus;
 
+	//SplitPanely pre definovanie chovania bocnych zasuvacich okien
 	@FXML private SplitPane splitPaneHoriz;
 	@FXML private TitledPane titPaneRegisters;
 	@FXML private AnchorPane anchPaneRegisters;
     @FXML private TitledPane titPaneConsole;
     @FXML private SplitPane splitPaneVert;
+
+    private double lastConsoleDividerPos;   //posledna pozicia velkosti konzoly
 
     //Kontinualne updateovanie GUI
     @FXML private Slider sliderUpdateGUIInt;
@@ -224,30 +226,21 @@ public class CPUController implements Initializable {
         }
     };
 
-    private double lastConsoleDividerPos;
-
 	/**
 	 * Spustene pri inicializacii okna
 	 */
 	public void initialize(URL location, ResourceBundle resources) {
 	    //inizializacia atributov
         f_intBylevel = true;
-        execution_line = new SimpleIntegerProperty(-1);
-        fileSaved = true; //aj cisty kod je kvazi ulozeny
         f_in_execution = new SimpleBooleanProperty(false);
         f_paused = new SimpleBooleanProperty(false);
-
-        initializeGUITables();
-
+        execution_line = new SimpleIntegerProperty(-1);
+        fileSaved = true; //aj cisty kod je kvazi ulozeny
 
         //Inicializacia konzoly
         console = new InlineCssTextArea();
         console.setEditable(false);
         consolePane.getChildren().add(new VirtualizedScrollPane<>(console));
-
-
-        //ERROR STREAM
-        cpw_error = new ConsolePrintWriter(new ConsoleOutputStream(console, "red"));
 
         //struktura pre breakpointy
         breakpointLines = new TreeSet<>();
@@ -300,8 +293,6 @@ public class CPUController implements Initializable {
         displayFormRAMAddr = DataRepresentation.eRepresentation.Dec;
         displayFormRAMData = DataRepresentation.eRepresentation.Dec;
 
-        updateGUI();
-
         //inicializacia tlacitok
         btnParse.setDisable(false);
         btnStart.setDisable(false);
@@ -336,7 +327,7 @@ public class CPUController implements Initializable {
             btnStop.getScene().getAccelerators().put(new KeyCodeCombination(KeyCode.F10), ()->btnStop.fire());
         });
 
-        //Stavovy riadok - slowdown
+        //Stavovy riadok - GUI Update
         sliderUpdateGUIInt.valueProperty().addListener(new ChangeListener<Number>() {
             @Override
             public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
@@ -345,15 +336,8 @@ public class CPUController implements Initializable {
             }
         });
 
-		//SANDBOX
-		/*writeConsoleLn("Ahojky");
-		writeConsoleLn("bauky", "red");
-		writeConsoleLn("manuky", "blue");
-		writeConsoleLn("manuky");
-
-		String sampleCode = "Nacitajte subor";
-		codeEditor.replaceText(0, 0, sampleCode);
-		fileSaved = true;*/
+        initializeGUITables();
+        updateGUI();
     }
 
     public void keyboardInput(KeyEvent event){
@@ -1207,6 +1191,8 @@ public class CPUController implements Initializable {
 
             for (int i = 0; i < progMem.length; i++)
                 tableViewProgMemoryItems.get(i).setData(progMem[i]);
+            for (int i = progMem.length; i < tableViewProgMemoryItems.size(); i++)
+                tableViewProgMemoryItems.get(i).setData((byte) 0);
         } else {
         for (int i = 0; i < tableViewProgMemoryItems.size(); i++)
             tableViewProgMemoryItems.get(i).setData((byte) 0);
