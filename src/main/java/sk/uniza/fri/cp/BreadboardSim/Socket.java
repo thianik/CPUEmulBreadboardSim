@@ -1,0 +1,399 @@
+package sk.uniza.fri.cp.BreadboardSim;
+
+import javafx.event.EventHandler;
+import javafx.scene.Group;
+import javafx.scene.input.MouseDragEvent;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.paint.Color;
+import javafx.scene.shape.Arc;
+import javafx.scene.shape.ArcType;
+import javafx.scene.shape.Circle;
+import javafx.scene.shape.Rectangle;
+import sk.uniza.fri.cp.BreadboardSim.Components.Component;
+import sk.uniza.fri.cp.BreadboardSim.Devices.Device;
+
+import java.util.ArrayList;
+
+/**
+ * pri vytvarani kablika pozor na vyjdenie mimo plochy
+ * @author Moris
+ * @version 1.0
+ * @created 17-mar-2017 16:16:35
+ */
+public class Socket extends Group {
+
+	//HIGHLIGHT KONSTANT
+	public static final int OK = 0;
+	public static final int WARNING = 1;
+	public static final int INFO = 2;
+	public static final int COMMON_POTENTIAL = 3;
+
+	private int id;
+	private Component component;
+	private Potential potential;
+	private Pin pin;
+
+	private boolean pinLocked = false;
+
+	//grafika
+	private final double coreRadius;
+	private final double borderRadius;
+	private Rectangle boundingBox;
+	private Circle core;
+	private Circle colorizer;
+
+	private Arc topBorder;
+	private static final Color TOP_BORDER_DEF_COLOR = Color.DARKGRAY;
+	private static final Color TOP_BORDER_HIGHLIGHT_COLOR = Color.DARKBLUE;
+
+	private Arc bottomBorder;
+	private static final Color BOTTOM_BORDER_DEF_COLOR = Color.rgb(160,0,216);
+	private static final Color BOTTOM_BORDER_HIGHLIGHT_COLOR = Color.LIGHTBLUE;
+
+	//Eventy
+    private static Wire creatingWire;
+	//aktualizacia konca kablika, ak sa vytvara
+
+	// zvyraznenie
+	private EventHandler<MouseEvent> onMouseEntered = new EventHandler<MouseEvent>() {
+		@Override
+		public void handle(MouseEvent event) {
+			highlight(INFO);
+		}
+	};
+
+	private EventHandler<MouseEvent> onMouseExited = new EventHandler<MouseEvent>() {
+		@Override
+		public void handle(MouseEvent event) {
+			unhighlight();
+		}
+	};
+
+	/**
+	 * zoznam socketov, ktore boli zvyraznene (aby ich bolo mozne odvyraznit)
+	 */
+	private ArrayList<Socket> highlighted;
+
+	/**
+	 * zaciatok vytvarania kablika, zvyraznienie spojenych socketov
+	 */
+	private EventHandler<MouseEvent> onMousePressed = new EventHandler<MouseEvent>() {
+        @Override
+        public void handle(MouseEvent event) {
+            
+            event.consume();
+        }
+    };
+
+    private EventHandler<MouseEvent> onMouseDragged = new EventHandler<MouseEvent>() {
+        @Override
+        public void handle(MouseEvent event) {
+            Socket socket = (Socket)event.getSource();
+
+            if(creatingWire != null)
+                creatingWire.catchFreeEnd().moveTo(
+                		event.getSceneX() - socket.component.getBoard().getOriginSceneOffsetX(),
+						event.getSceneY() - socket.component.getBoard().getOriginSceneOffsetY());
+
+            event.consume();
+        }
+    };
+
+    private EventHandler<MouseEvent> onMouseReleased = new EventHandler<MouseEvent>() {
+        @Override
+        public void handle(MouseEvent event) {
+
+            if(creatingWire != null){
+                creatingWire.setMouseTransparent(false);
+                creatingWire.setOpacity(1);
+                creatingWire = null;
+            }
+
+            event.consume();
+        }
+    };
+
+	/**
+	 * startFullDrag()
+	 */
+	private EventHandler<MouseEvent> onMouseDragDetected = new EventHandler<MouseEvent>() {
+        @Override
+        public void handle(MouseEvent event) {
+            startFullDrag();
+
+            Socket socket = (Socket) event.getSource();
+
+            creatingWire = new Wire(socket);
+            creatingWire.setMouseTransparent(true);
+            creatingWire.setOpacity(0.5);
+
+            socket.getComponent().getBoard().addItem(creatingWire);
+
+            event.consume();
+        }
+    };
+
+
+	/**
+	 * zvyraznenie pripojenych socketov pripojenych k somuto socketu
+	 */
+	private EventHandler<MouseDragEvent> onMouseDragEntered = new EventHandler<MouseDragEvent>() {
+        @Override
+        public void handle(MouseDragEvent event) {
+            colorizer.setOpacity(0.9);
+            //System.out.println("Socket - drag entered , source: " + event.getSource() + " / gesture source: " + event.getGestureSource());
+
+            event.consume();
+        }
+    };
+	/**
+	 * zruzenie zvyraznenia pripojenych socketov pripojenych k somuto socketu
+	 */
+	private EventHandler<MouseDragEvent> onMouseDragExited = new EventHandler<MouseDragEvent>() {
+        @Override
+        public void handle(MouseDragEvent event) {
+            colorizer.setOpacity(0);
+
+            event.consume();
+        }
+    };
+
+    /**
+     * ked je na mne (socket) pustene tlacidlo
+     */
+    private EventHandler<MouseDragEvent> onMouseDragReleased = new EventHandler<MouseDragEvent>() {
+        @Override
+        public void handle(MouseDragEvent event) {
+            //ak sa vytvara kablik
+            if(creatingWire != null){
+                Socket socket = (Socket) event.getSource();
+
+                if(socket != event.getGestureSource()) {
+                    //pripoj novy koniec na seba
+                    creatingWire.catchFreeEnd().connectSocket(socket);
+
+                }
+                else
+                    creatingWire.delete();
+
+            } else if (event.getGestureSource() instanceof WireEnd){ //ak sa presuva koniec kablika
+                WireEnd end = (WireEnd) event.getGestureSource();
+                Socket socket = (Socket) event.getSource();
+                end.connectSocket(socket);
+            }
+
+            event.consume();
+        }
+    };
+
+	/**
+	 * 
+	 * @param component
+	 * @param id
+	 */
+	public Socket(Component component, int id){
+		this.component = component;
+		this.id = id;
+		this.potential = new Potential(this, null);
+
+		GridSystem grid = this.component.getBoard().getGrid();
+		boundingBox = new Rectangle(grid.getSizeX(), grid.getSizeY());
+		boundingBox.setOpacity(0);
+		boundingBox.setLayoutX(-grid.getSizeX()/2.0);
+        boundingBox.setLayoutY(-grid.getSizeY()/2.0);
+		coreRadius = grid.getSizeX() * 3.0/15.0;
+		borderRadius = grid.getSizeX() * 5.0/15.0;
+
+		//grafika
+		core = new Circle(borderRadius, borderRadius, coreRadius);
+		core.setFill(Color.BLACK);
+
+		topBorder = new Arc(borderRadius, borderRadius, borderRadius, borderRadius, 0.0, 180.0);
+		topBorder.setFill(Color.DARKGRAY);
+		topBorder.setType(ArcType.ROUND);
+
+		bottomBorder = new Arc(borderRadius, borderRadius, borderRadius, borderRadius, 180.0, 180.0);
+		bottomBorder.setFill(Color.LIGHTGRAY);
+		bottomBorder.setType(ArcType.ROUND);
+
+		colorizer = new Circle(borderRadius, borderRadius, borderRadius);
+		colorizer.setFill(Color.ORANGE);
+		colorizer.setOpacity(0);
+
+		//pre relativny offset k stredu socketu
+		Group graphics = new Group(topBorder, bottomBorder, core, colorizer);
+		graphics.setTranslateX(-borderRadius);
+		graphics.setTranslateY(-borderRadius);
+
+		this.getChildren().addAll(boundingBox, graphics);
+
+		this.addEventFilter(MouseEvent.MOUSE_ENTERED, onMouseEntered);
+		this.addEventFilter(MouseEvent.MOUSE_EXITED, onMouseExited);
+		this.addEventFilter(MouseEvent.MOUSE_PRESSED, onMousePressed);
+		this.addEventFilter(MouseEvent.MOUSE_DRAGGED, onMouseDragged);
+        this.addEventFilter(MouseEvent.MOUSE_RELEASED, onMouseReleased);
+        this.addEventFilter(MouseEvent.DRAG_DETECTED, onMouseDragDetected);
+        this.addEventFilter(MouseDragEvent.MOUSE_DRAG_ENTERED, onMouseDragEntered);
+        this.addEventFilter(MouseDragEvent.MOUSE_DRAG_EXITED, onMouseDragExited);
+        this.addEventFilter(MouseDragEvent.MOUSE_DRAG_RELEASED, onMouseDragReleased);
+
+	}
+
+	/**
+	 * 
+	 * @param component
+	 * @param id
+	 * @param potentialValue
+	 */
+	public Socket(Component component, int id, Potential.Value potentialValue){
+		this(component, id);
+		this.potential.setValue(potentialValue);
+	}
+
+	public double getRadius(){
+		return borderRadius;
+	}
+
+	public double getBoardX(){
+        return this.getLocalToSceneTransform().getTx() - component.getBoard().getOriginSceneOffsetX();
+    }
+
+    public double getBoardY(){
+        return this.getLocalToSceneTransform().getTy() - component.getBoard().getOriginSceneOffsetY();
+    }
+
+    public void highlight(int highlihgtType){
+    	switch (highlihgtType){
+			case OK: colorizer.setFill(Color.GREEN);
+				break;
+			case WARNING: colorizer.setFill(Color.RED);
+				break;
+			case INFO: colorizer.setFill(Color.ORANGE);
+				break;
+			case COMMON_POTENTIAL: colorizer.setFill(Color.YELLOW);
+				break;
+		}
+
+		colorizer.setOpacity(0.5);
+	}
+
+	/**
+	 * Zrusenie zvyraznenia soketu
+	 */
+	public void unhighlight(){
+		colorizer.setOpacity(0);
+	}
+
+	/**
+	 * 
+	 * @param value
+	 */
+	public void warning(boolean value){
+
+	}
+
+	/**
+	 * Uzamkne pin v sokete. Znemožní tak pripojenie iného pinu.
+	 * @return Pin uzamknutý
+	 */
+	public void lockPin(){
+		pinLocked = true;
+	}
+
+	public void unlockPin(){
+		pinLocked = false;
+	}
+
+	public boolean hasConnectedPin() { return this.pin != null; }
+
+	public boolean connect(Pin pin){
+		if(pinLocked) return false;
+
+		this.pin = pin;
+		this.pin.setSocket(this);
+		if(pin instanceof InputPin){
+			this.setType(SocketType.IN);
+		} else if (pin instanceof InputOutputPin){
+			this.setType(SocketType.IO);
+		} else if (pin instanceof OutputPin){
+			switch (((OutputPin) pin).getPinDriver()){
+				case TRI_STATE:
+				case OPEN_COLLECTOR:
+					this.setType(SocketType.OCO);
+					break;
+				case PUSH_PULL:
+					this.setType(SocketType.OUT);
+					break;
+			}
+		} else this.setType(SocketType.NC);
+
+		//ak simulacia bezi, pridaj zmenu na zokete
+		if(this.component.getBoard().isSimulationRunning()){
+			this.component.getBoard().addEvent(new BoardEvent(this));
+		}
+
+		return true;
+	}
+
+	public boolean disconnect(){
+		if(pinLocked) return false;
+
+		if(this.pin != null) {
+			this.pin.setSocket(null);
+			this.pin = null;
+		}
+
+		this.setType(SocketType.NC);
+
+		//ak simulacia bezi, pridaj zmenu na sokete
+		if(this.component.getBoard().isSimulationRunning()){
+			this.component.getBoard().addEvent(new BoardChangeEvent(this, Potential.Value.NC));
+		}
+
+		return true;
+	}
+
+	public Potential getPotential(){
+		if(this.potential != null)
+			return this.potential.getPotential();
+
+		return null;
+	}
+
+	public Potential getThisPotential(){
+		return this.potential;
+	}
+
+	public Pin getPin(){
+		return this.pin;
+	}
+
+	public Device getDevice(){
+		if(this.pin != null){
+			return this.pin.getDevice();
+		}
+
+		return null;
+	}
+
+	public Component getComponent(){
+	    return component;
+    }
+
+	public void setType(SocketType socketType){
+		this.potential.setType(socketType);
+	}
+
+	public SocketType getType(){
+		return this.getPotential().getType();
+	}
+
+	/**
+	 * Nastavenie hodnoty potencialu priradeneho tomuto soketu
+	 * @param potentialValue
+	 */
+	public void setPotential(Potential.Value potentialValue){
+		this.potential.setValue(potentialValue);
+	}
+
+}

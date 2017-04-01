@@ -26,11 +26,13 @@
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.FlowPane?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
+<?import org.controlsfx.control.ToggleSwitch?>
 
-<BorderPane prefHeight="640.0" prefWidth="1280.0" xmlns="http://javafx.com/javafx/8.0.111" xmlns:fx="http://javafx.com/fxml/1" fx:controller="sk.uniza.fri.cp.App.CPUControl.CPUController">
+<BorderPane fx:id="rootPane" prefHeight="640.0" prefWidth="1000.0" xmlns="http://javafx.com/javafx/8.0.111" xmlns:fx="http://javafx.com/fxml/1" fx:controller="sk.uniza.fri.cp.App.CPUControl.CPUController">
    <top>
       <VBox BorderPane.alignment="CENTER">
          <children>
@@ -78,7 +80,7 @@
                 </Menu>
               </menus>
             </MenuBar>
-            <HBox>
+            <HBox alignment="CENTER">
                <children>
                   <ButtonBar buttonMinWidth="100.0" maxWidth="1.7976931348623157E308" prefHeight="40.0" prefWidth="200.0">
                     <buttons>
@@ -91,7 +93,16 @@
                         <Button mnemonicParsing="false" onMousePressed="#handleButtonDevInt01ActionPressed" onMouseReleased="#handleButtonDevInt01ActionReleased" text="DEV - Int01" textFill="#b20b0b" />
                     </buttons>
                   </ButtonBar>
+                  <Region HBox.hgrow="ALWAYS" />
+                  <ToggleSwitch fx:id="tsConnectBusUsb" alignment="CENTER" contentDisplay="CENTER" maxHeight="-Infinity" text="Komunikovať cez USB" HBox.hgrow="NEVER">
+                     <HBox.margin>
+                        <Insets />
+                     </HBox.margin>
+                  </ToggleSwitch>
                </children>
+               <padding>
+                  <Insets right="10.0" />
+               </padding>
             </HBox>
          </children>
       </VBox>
@@ -127,7 +138,7 @@
          <items>
             <SplitPane fx:id="splitPaneHoriz" dividerPositions="0.5, 0.5">
                <items>
-                  <HBox maxWidth="220.0" minWidth="20.0" prefWidth="200.0">
+                  <HBox maxWidth="220.0" minWidth="20.0" prefWidth="200.0" SplitPane.resizableWithParent="false">
                      <children>
                         <VBox fillWidth="false" maxWidth="20.0" minWidth="20.0" prefHeight="200.0" prefWidth="20.0" HBox.hgrow="ALWAYS">
                            <children>
@@ -299,13 +310,13 @@
                         </AnchorPane>
                      </content>
                   </TitledPane>
-                  <HBox maxWidth="300.0">
+                  <HBox maxWidth="280.0" SplitPane.resizableWithParent="false">
                      <children>
-                        <TitledPane alignment="CENTER" animated="false" collapsible="false" maxHeight="1.7976931348623157E308" maxWidth="300.0" minWidth="0.0" prefWidth="300.0" text="Pamäť" HBox.hgrow="ALWAYS">
+                        <TitledPane alignment="CENTER" animated="false" collapsible="false" maxHeight="1.7976931348623157E308" maxWidth="300.0" minWidth="0.0" prefWidth="200.0" text="Pamäť" HBox.hgrow="ALWAYS">
                            <content>
                               <AnchorPane maxWidth="1.7976931348623157E308">
                                  <children>
-                                    <TabPane maxWidth="1.7976931348623157E308" minWidth="250.0" rotateGraphic="true" tabClosingPolicy="UNAVAILABLE" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                                    <TabPane maxWidth="1.7976931348623157E308" minWidth="200.0" rotateGraphic="true" tabClosingPolicy="UNAVAILABLE" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
                                        <tabs>
                                           <Tab closable="false" text="Zásobník">
                                              <content>
@@ -313,7 +324,7 @@
                                                    <children>
                                                       <HBox alignment="TOP_CENTER" spacing="5.0" VBox.vgrow="NEVER">
                                                          <children>
-                                                            <HBox alignment="CENTER" maxWidth="1.7976931348623157E308" prefWidth="120.0" spacing="2.0">
+                                                            <HBox alignment="CENTER" maxWidth="1.7976931348623157E308" prefWidth="90.0" spacing="2.0">
                                                                <children>
                                                                   <ToggleButton selected="true" text="Dec">
                                                                      <font>
@@ -336,7 +347,7 @@
                                                             <Separator orientation="VERTICAL" prefWidth="5.0" />
                                                             <HBox alignment="CENTER" prefWidth="120.0">
                                                                <children>
-                                                                  <ToggleButton selected="true" text="Dec">
+                                                                  <ToggleButton minWidth="28.0" selected="true" text="Dec">
                                                                      <font>
                                                                         <Font size="9.0" />
                                                                      </font>
@@ -344,17 +355,17 @@
                                                                         <ToggleGroup fx:id="btnGroupStackData" />
                                                                      </toggleGroup>
                                                                   </ToggleButton>
-                                                                  <ToggleButton text="Hex" toggleGroup="$btnGroupStackData">
+                                                                  <ToggleButton minWidth="28.0" text="Hex" toggleGroup="$btnGroupStackData">
                                                                      <font>
                                                                         <Font size="9.0" />
                                                                      </font>
                                                                   </ToggleButton>
-                                                                  <ToggleButton text="Bin" toggleGroup="$btnGroupStackData">
+                                                                  <ToggleButton minWidth="25.0" text="Bin" toggleGroup="$btnGroupStackData">
                                                                      <font>
                                                                         <Font size="9.0" />
                                                                      </font>
                                                                   </ToggleButton>
-                                                                  <ToggleButton text="ASCII" toggleGroup="$btnGroupStackData">
+                                                                  <ToggleButton minWidth="33.0" text="ASCII" toggleGroup="$btnGroupStackData">
                                                                      <font>
                                                                         <Font size="9.0" />
                                                                      </font>
@@ -368,7 +379,7 @@
                                                       </HBox>
                                                       <TableView fx:id="tableViewStack" maxHeight="1.7976931348623157E308" VBox.vgrow="ALWAYS">
                                                         <columns>
-                                                          <TableColumn fx:id="tableColumnStackAddr" editable="false" minWidth="100.0" prefWidth="125.0" sortable="false" text="Addr" />
+                                                          <TableColumn fx:id="tableColumnStackAddr" editable="false" minWidth="70.0" prefWidth="70.0" sortable="false" text="Addr" />
                                                           <TableColumn fx:id="tableColumnStackData" editable="false" minWidth="100.0" prefWidth="125.0" sortable="false" text="Data" />
                                                         </columns>
                                                          <columnResizePolicy>

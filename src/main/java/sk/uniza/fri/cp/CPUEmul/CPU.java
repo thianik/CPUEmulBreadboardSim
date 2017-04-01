@@ -23,6 +23,7 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * Hlavná trieda CPU emulátora.
   * TODO SYNCHRONIZACIA!!!! ... f_key, key
+ * TODO Odstrnenie asynchronnej komunikacie... alebo jej znefunkcnenie
  * @author Moris
  * @version 1.0
  * @created 07-feb-2017 18:40:27
@@ -30,7 +31,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class CPU extends Task<Void> {
 
     /** Konstanty */
-    private final int SYNCH_WAIT_TIME_MS = 50;     //cas cakania na nastavenie dat pri synchronnej komunikacii
+    private final int SYNCH_WAIT_TIME_MS = 10;     //cas cakania na nastavenie dat pri synchronnej komunikacii
     //private final int ASYNCH_WAIT_TIMEOUT_MS = 500; //cas max. cakania na zmenu signalu RY pri asynchronnej komukinacii
 
 	private OutputStream console; // odkaz na konzolu pre vypis sprav
@@ -48,6 +49,8 @@ public class CPU extends Task<Void> {
     private boolean f_eit;  //priznak, ci boli v predchadzajuciej instrukcii povolene prerusenia
 
 	private ObjectProperty<CPUStates> state;    //status CPU
+
+    private int UsbITCheckSkipped = 0; //preskocenie kazdych x cyklov pred citanim IT cez USB (USB je prilis pomale)
 
 	/** Synchronizacne nastroje */
 	private CountDownLatch cdlHalt;
@@ -111,8 +114,13 @@ public class CPU extends Task<Void> {
 	public Void call() throws NonExistingInterruptLabelException {
         Instruction nextInstruction = null;
         boolean it = false; //interrupt
+        boolean usbConnected = false;
 
         state.setValue(CPUStates.Running);
+
+        bus.setRandomAddress();
+        bus.setRandomData();
+
 		//vykonavaj pokial nie je vlakno ukoncene alebo nie je koniec programu
 		while (!isCancelled() && (nextInstruction = program.getInstruction(Short.toUnsignedInt(regPC++))) != null){
             try {
@@ -133,7 +141,14 @@ public class CPU extends Task<Void> {
                 execute(nextInstruction);
 
                 //ak je povolene prerusenie a aj vyvolane
-                it = bus.isIT();
+                usbConnected = bus.isUsbConnected();
+                //ak nie je pripojenie cez USB alebo bolo vykonanych 16 cyklov
+                if(!usbConnected || UsbITCheckSkipped >= 16 ) {
+                    it = bus.isIT();
+                    UsbITCheckSkipped = 0;
+                }
+                else UsbITCheckSkipped++;
+
                 if(flagIE && it){
                     if (f_int_level) { //preusenie od urovne
                         handleInterrupt();
@@ -414,7 +429,7 @@ public class CPU extends Task<Void> {
             case SCR:
                 Rd = getRegisterVal(instruction.getFirstParameter());
                 K = Integer.parseInt(instruction.getSecondParameter());
-                flagCY = ((Rd & (1<<(K-1))) != 0);							//TODO riadne overit posuvy a rotacie
+                flagCY = ((Rd & (1<<(K-1))) != 0);
                 Rd >>= K;
                 setRegisterVal(instruction.getFirstParameter(), Rd);
                 flagZ = ((Rd & 0xFF) == 0);
@@ -472,12 +487,12 @@ public class CPU extends Task<Void> {
                 Rs = getRegisterVal(instruction.getSecondParameter());
                 setRegisterVal(instruction.getFirstParameter(), program.getByte(Rs));
                 break;
-            case LMI:   //nacitanie pamate do registra s opuzitim priamej adresy
+            case LMI:   //nacitanie pamate do registra s puzitim priamej adresy
                 addr = (short) Parser.parseConstant(instruction.getSecondParameter());
                 read(enumInstructionsSet.LMI, addr, instruction.getFirstParameter());
                 break;
-            case LMR:   //nacitanie pamate do registra s opuzitim adresy v reg MP
-                read(enumInstructionsSet.LMI, regMP, instruction.getFirstParameter());
+            case LMR:   //nacitanie pamate do registra s puzitim adresy v reg MP
+                read(enumInstructionsSet.LMR, regMP, instruction.getFirstParameter());
                 break;
             case SMI:
                 addr = (short) Parser.parseConstant(instruction.getFirstParameter());
@@ -679,7 +694,8 @@ public class CPU extends Task<Void> {
     }
 
     private void microstepAwait(String msg) throws InterruptedException {
-        if(f_microstep) {
+        //ak je zapnute mikrokrokovanie a zaroven sa aj krokuje
+        if(f_microstep && f_pause) {
             String syncMethod = f_async?"Asynchronne - ":"Synchronne - ";
             updateMessage(syncMethod + msg);
             state.setValue(CPUStates.MicroStep);
@@ -697,9 +713,9 @@ public class CPU extends Task<Void> {
         if(f_async){ //ak je nastavene asynchronne vykonavanie
             //nastavenie priznaku citania do nuly
             if(inst == enumInstructionsSet.INN)
-                bus.setIR_(false, cdlRY);
+                bus.setIR_(false);
             else
-                bus.setMR_(false, cdlRY);
+                bus.setMR_(false);
 
             //cakaj na RDY
             updateMessage("Cakanie na RY");
@@ -749,9 +765,9 @@ public class CPU extends Task<Void> {
         if(f_async){ //asynchronne
             //nastavenie priznaku
             if (inst == enumInstructionsSet.OUT)
-                bus.setIW_(false, cdlRY);
+                bus.setIW_(false);
             else
-                bus.setMW_(false, cdlRY);
+                bus.setMW_(false);
 
             //cakaj na RDY
             updateMessage("Cakanie na RY");
@@ -790,8 +806,10 @@ public class CPU extends Task<Void> {
     }
 
     private void readyAwait() throws InterruptedException {
+        state.setValue(CPUStates.AsyncWaiting);
 	    cdlRY.await();
 	    cdlRY = new CountDownLatch(1);
+        state.setValue(CPUStates.Running);
     }
 
 }//end CPU

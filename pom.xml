@@ -6,7 +6,7 @@
 
     <groupId>sk.uniza.fri.cp</groupId>
     <artifactId>CPUEmul-and-BreadboardSim</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.5-SNAPSHOT</version>
 
     <build>
         <plugins>
@@ -52,7 +52,16 @@
             <artifactId>commons-lang3</artifactId>
             <version>3.5</version>
         </dependency>
-
+        <dependency>
+            <groupId>net.java.dev.jna</groupId>
+            <artifactId>jna</artifactId>
+            <version>4.3.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.controlsfx</groupId>
+            <artifactId>controlsfx</artifactId>
+            <version>8.40.12</version>
+        </dependency>
     </dependencies>
 
 </project>

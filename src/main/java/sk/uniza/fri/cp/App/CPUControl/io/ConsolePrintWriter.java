@@ -1,4 +1,4 @@
-package sk.uniza.fri.cp.App.io;
+package sk.uniza.fri.cp.App.CPUControl.io;
 
 import java.io.IOException;
 import java.io.OutputStream;

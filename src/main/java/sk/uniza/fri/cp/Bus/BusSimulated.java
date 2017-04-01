@@ -43,6 +43,8 @@ public class BusSimulated extends Bus {
     public synchronized void setMR_(boolean MR_) {
         super.setMR_(MR_);
 
+        if(USBConnected.getValue()) return;
+
         if(!MR_)
             super.setDataBus((byte) 170);
         else
@@ -53,43 +55,17 @@ public class BusSimulated extends Bus {
     public synchronized void setIR_(boolean IR_) {
         super.setIR_(IR_);
 
+        if(USBConnected.getValue()) return;
+
         if(!IR_)
             super.setDataBus((byte) 170);
         else
             super.setRandomData();
     }
 
-    //ASYNCHRONNE
-
-    @Override
-    synchronized public void setMW_(boolean MW_, CountDownLatch cdlRY) {
-        super.setMW_(MW_, cdlRY);
-
-        answerToWriteAsync(MW_);
-    }
-
-    @Override
-    public synchronized void setIW_(boolean IW_, CountDownLatch cdlRY) {
-        super.setIW_(IW_, cdlRY);
-
-        answerToWriteAsync(IW_);
-    }
-
-    @Override
-    public synchronized void setMR_(boolean MR_, CountDownLatch cdlRY) {
-        super.setMR_(MR_, cdlRY);
-
-        answerToReadAsync(MR_);
-    }
-
-    @Override
-    public synchronized void setIR_(boolean IR_, CountDownLatch cdlRY) {
-        super.setIR_(IR_, cdlRY);
-
-        answerToReadAsync(IR_);
-    }
-
     private void answerToWriteAsync(boolean signal){
+        if(USBConnected.getValue()) return;
+
         //ked ide MW do nuly - perif. odpoveda RDY 1 po zapise
         if(!signal) {
             Thread answer = new Thread(new AnswerWriteAsync(this));
@@ -101,6 +77,8 @@ public class BusSimulated extends Bus {
     }
 
     private void answerToReadAsync(boolean signal){
+        if(USBConnected.getValue()) return;
+
         //ked ide MW do nuly - perif. odpoveda RDY 1 po zapise
         if(!signal) {
             Thread answer = new Thread(new AnswerReadAsync(this));
