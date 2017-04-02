@@ -21,9 +21,12 @@ public abstract class HighlightGroup extends Group implements Selectable {
 
 	private List<Warning> warnings;
 	private Warning sendedWarning;
-	public Warning m_Warning;
+
+	private boolean isSelectable;
 
 	public HighlightGroup(){
+	    this.isSelectable = true;
+
 		EventHandler<MouseEvent> onMouseClickEventHandler = (event) -> {
 			Board board = getBoard();
 
@@ -74,16 +77,28 @@ public abstract class HighlightGroup extends Group implements Selectable {
 		return new Pane(new Label("No description \n" + this.getClass().getSimpleName()));
 	}
 
+    @Override
 	public void select(){
 
 	}
 
+	@Override
 	public void deselect(){
 
 	}
 
+	@Override
 	public void delete(){
 
 	}
 
+    @Override
+    public boolean isSelectable() {
+        return this.isSelectable;
+    }
+
+    @Override
+    public void setSelectable(boolean newValue) {
+        this.isSelectable = newValue;
+    }
 }

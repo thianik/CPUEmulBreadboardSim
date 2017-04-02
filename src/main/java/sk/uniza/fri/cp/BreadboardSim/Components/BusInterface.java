@@ -423,7 +423,8 @@ public class BusInterface extends Component {
             if(this.write //ak je pozardovany zapis zo zbernice do pamate -> vsetky vystupy sa nastavuju podla zbernice
                     || this.interfaceSocket.getThisPotential().getChild() == null  //nije pripojeny kablik
                     || ( this.interfaceSocket.getThisPotential().getChild() != null //alebo je ale nie je to vystup
-                            && this.interfaceSocket.getPotential().getType() != SocketType.OUT))
+                            && (this.interfaceSocket.getPotential().getType() != SocketType.OUT
+                                && this.interfaceSocket.getPotential().getType() != SocketType.WEAK_OUT)))
             {
                 if((data & (1<<this.byteNr)) != 0) {
                     setHigh();

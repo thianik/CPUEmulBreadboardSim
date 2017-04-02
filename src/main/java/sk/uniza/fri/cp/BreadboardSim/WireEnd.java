@@ -77,6 +77,7 @@ public class WireEnd extends Joint {
 	public void connectSocket(Socket socket){
 		if(this.socket == null) {
 			this.socket = socket;
+			this.socket.connect(this);
 			this.socket.localToSceneTransformProperty().addListener(socketPositionChangeListener);
 			setLayoutX(socket.getBoardX());
 			setLayoutY(socket.getBoardY());
@@ -89,11 +90,15 @@ public class WireEnd extends Joint {
 	}
 
 	public void disconnectSocket(){
+	    if(this.socket == null) return;
 		Socket socketToUpdate = this.socket;
 
 		this.socket.localToSceneTransformProperty().removeListener(socketPositionChangeListener);
+		this.socket.disconnect();
 		this.socket = null;
 		this.getWire().updatePotential();
+
+		this.setDefaultColor();
 
 		//ak simulacia bezi, pridaj novy event pre update potencialu odpojeneho soketu
 		if(getBoard().simRunningProperty().getValue())

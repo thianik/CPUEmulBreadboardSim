@@ -18,11 +18,13 @@ import javafx.scene.shape.Rectangle;
  */
 public class Joint extends Movable {
 
+    private static final Color DEFAULT_COLOR = Color.DARKGRAY;
 
 	protected WireSegment[] wireSegments; //segmenty ktore spaja
 
 	private Wire wire;
 	private Group graphic;
+	private Circle colorizer;
 	private Rectangle boundingBox;
 	private double radius;
 
@@ -44,7 +46,7 @@ public class Joint extends Movable {
 		boundingBox.setLayoutX(-grid.getSizeX()/2.0);
 		boundingBox.setLayoutY(-grid.getSizeY()/2.0);
 
-		this.radius = grid.getSizeMin() / 2.5;
+		this.radius = grid.getSizeMin() / 3.5;
 		this.graphic = generateJointGraphic(radius);
 
 		this.getChildren().addAll(boundingBox, graphic);
@@ -85,15 +87,29 @@ public class Joint extends Movable {
 		return this.wireSegments[1];
 	}
 
+	public void setColor(Color color){
+        this.colorizer.setFill(color);
+        this.colorizer.setOpacity(1);
+    }
+
+    public void setDefaultColor(){
+	    this.colorizer.setOpacity(0);
+    }
+
 	protected Group generateJointGraphic(double radius){
 
 		Group graphics = new Group();
 
-		Circle joint = new Circle(radius, radius, radius, Color.BLUE);
+		Circle joint = new Circle(radius, radius, radius, DEFAULT_COLOR);
+        joint.setTranslateX(-radius);
+        joint.setLayoutY(-radius);
 
-		graphics.getChildren().add(joint);
-		joint.setTranslateX(-radius);
-		joint.setLayoutY(-radius);
+
+        this.colorizer = new Circle(0,0,radius, Color.RED);
+        this.colorizer.setOpacity(0);
+
+        graphics.getChildren().addAll(joint,colorizer);
+
 
 		return graphics;
 	}

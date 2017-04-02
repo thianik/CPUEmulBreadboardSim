@@ -248,7 +248,7 @@ public abstract class Device extends Item {
      * Zrusi zvyraznenie soketok ku ktorym sa moze pripojit
      */
     public void unhighlightConnectibleSockets(){
-        socketsToConnectTo.forEach((socket) -> {if( socket!=null ) socket.unhighlight(); });
+        socketsToConnectTo.forEach((socket) -> {if( socket!=null ) socket.unhighlight(socket.getPin()==null?Socket.OK:Socket.WARNING); });
     }
 
     /**

@@ -31,10 +31,13 @@ public class BoardChangeEvent extends BoardEvent {
 
 			if(potential != null) {
 				Potential.Value oldValue = potential.getValue();
-				socket.setPotential(newValue);
 
-				if(oldValue != newValue)
-					potential.getDevicesWithInputs(devices);
+				//ak nenastal skrat, ak by nastal a boli by pripojene zariadenia ktore ho vyvolali, zacal by sa cyklit
+                if(socket.setPotential(newValue))
+                    //a ak sa hodnota zmenila
+    				if(oldValue != newValue)
+    				    //vrat zariadenia s ovplyvnenymi vstupmi
+	    				potential.getDevicesWithInputs(devices);
 			}
 		}
 	}

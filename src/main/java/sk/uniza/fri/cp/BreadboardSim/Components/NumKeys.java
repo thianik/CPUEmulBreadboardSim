@@ -1,12 +1,9 @@
 package sk.uniza.fri.cp.BreadboardSim.Components;
 
-import com.sun.org.apache.bcel.internal.generic.PUSH;
-import com.sun.org.apache.xpath.internal.operations.Bool;
 import javafx.event.Event;
 import javafx.event.EventHandler;
 import javafx.scene.Group;
 import javafx.scene.control.ContextMenu;
-import javafx.scene.control.Menu;
 import javafx.scene.control.MenuItem;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Region;
@@ -131,7 +128,7 @@ public class NumKeys extends Component {
 
 		for (int i = 0; i < 4; i++) {
 			Socket socket = new Socket(this, i);
-			socket.setType(SocketType.OUT); //TODO column ma byt OUT? zmenit na ten WEAK_OUT
+			socket.setType(SocketType.WEAK_OUT);
 			socket.setPotential(Potential.Value.HIGH);
 
 			socket.setLayoutX(grid.getSizeX() * i);

@@ -2,6 +2,7 @@ package sk.uniza.fri.cp.BreadboardSim;
 
 import javafx.event.EventHandler;
 import javafx.scene.Group;
+import javafx.scene.effect.BoxBlur;
 import javafx.scene.input.MouseDragEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.paint.Color;
@@ -22,11 +23,13 @@ import java.util.ArrayList;
  */
 public class Socket extends Group {
 
-	//HIGHLIGHT KONSTANT
-	public static final int OK = 0;
-	public static final int WARNING = 1;
-	public static final int INFO = 2;
-	public static final int COMMON_POTENTIAL = 3;
+	//HIGHLIGHT KONSTANTY
+    public static final int WARNING = 3;
+    public static final int COMMON_POTENTIAL = 2;
+    public static final int OK = 1;
+	public static final int INFO = 0;
+
+	private boolean[] activeHighlights;
 
 	private int id;
 	private Component component;
@@ -34,6 +37,8 @@ public class Socket extends Group {
 	private Pin pin;
 
 	private boolean pinLocked = false;
+
+	private WireEnd connectedWireEnd;
 
 	//grafika
 	private final double coreRadius;
@@ -65,7 +70,7 @@ public class Socket extends Group {
 	private EventHandler<MouseEvent> onMouseExited = new EventHandler<MouseEvent>() {
 		@Override
 		public void handle(MouseEvent event) {
-			unhighlight();
+			unhighlight(INFO);
 		}
 	};
 
@@ -192,9 +197,10 @@ public class Socket extends Group {
 	 * @param id
 	 */
 	public Socket(Component component, int id){
+        this.activeHighlights = new boolean[4];
 		this.component = component;
 		this.id = id;
-		this.potential = new Potential(this, null);
+
 
 		GridSystem grid = this.component.getBoard().getGrid();
 		boundingBox = new Rectangle(grid.getSizeX(), grid.getSizeY());
@@ -216,9 +222,14 @@ public class Socket extends Group {
 		bottomBorder.setFill(Color.LIGHTGRAY);
 		bottomBorder.setType(ArcType.ROUND);
 
-		colorizer = new Circle(borderRadius, borderRadius, borderRadius);
-		colorizer.setFill(Color.ORANGE);
-		colorizer.setOpacity(0);
+        this.colorizer = new Circle(borderRadius, borderRadius, borderRadius+borderRadius*0.3);
+        this.colorizer.setFill(Color.ORANGE);
+        this.colorizer.setMouseTransparent(true);
+        this.colorizer.setOpacity(0);
+        BoxBlur blur = new BoxBlur(borderRadius*0.7,borderRadius*0.7,3);
+        this.colorizer.setEffect(blur);
+
+        this.potential = new Potential(this, null);
 
 		//pre relativny offset k stredu socketu
 		Group graphics = new Group(topBorder, bottomBorder, core, colorizer);
@@ -262,35 +273,56 @@ public class Socket extends Group {
         return this.getLocalToSceneTransform().getTy() - component.getBoard().getOriginSceneOffsetY();
     }
 
-    public void highlight(int highlihgtType){
-    	switch (highlihgtType){
-			case OK: colorizer.setFill(Color.GREEN);
-				break;
-			case WARNING: colorizer.setFill(Color.RED);
-				break;
-			case INFO: colorizer.setFill(Color.ORANGE);
-				break;
-			case COMMON_POTENTIAL: colorizer.setFill(Color.YELLOW);
-				break;
-		}
-
-		colorizer.setOpacity(0.5);
+    /**
+     * Zvýraznenie soketu. Každý typ zvýraznenia má svoju prioritu. Ak je použíté zvýraznenie s vyššou prioritou,
+     * nezobrazí sa zvýraznenie s nižšou prioritou.
+     *
+     * Typy podľa priority:
+     * WARNING - Červené zvýraznenie pri závažnej chybe na sokete (napr. skrat na výstup). Mení farbu aj pripojeného
+     *           konca káblika, ak nejaký je
+     * COMMON_POTENTIAL - Žltá farba. Soket je pripojený na spoločný potenciál s inými soketmi.
+     * OK - Zelená farba. Akcia nad soketom je povolená.
+     * INFO - Oranžová farba. Iné
+     *
+     * @param highlightType Typ zvýraznenia.
+     */
+    public void highlight(int highlightType){
+        this.activeHighlights[highlightType] = true;
+        this.updateHighlight();
 	}
 
 	/**
 	 * Zrusenie zvyraznenia soketu
 	 */
-	public void unhighlight(){
-		colorizer.setOpacity(0);
+	public void unhighlight(int highlightType){
+        this.activeHighlights[highlightType] = false;
+        this.updateHighlight();
 	}
 
-	/**
-	 * 
-	 * @param value
-	 */
-	public void warning(boolean value){
+	private void updateHighlight(){
+        if(this.activeHighlights[WARNING]){
+            this.colorizer.setFill(Color.RED);
+            if(this.connectedWireEnd != null)
+                this.connectedWireEnd.setColor(Color.RED);
+            colorizer.setOpacity(0.8);
+            return;
+        } else if(this.activeHighlights[COMMON_POTENTIAL]){
+            this.colorizer.setFill(Color.YELLOW);
+            this.colorizer.setOpacity(0.5);
+        } else if(this.activeHighlights[OK]){
+            this.colorizer.setFill(Color.GREEN);
+            this.colorizer.setOpacity(0.5);
+        } else if(this.activeHighlights[INFO]){
+            this.colorizer.setFill(Color.ORANGE);
+            this.colorizer.setOpacity(0.5);
+        } else {
+            //ak nie je nic na zvyrazenie
+            this.colorizer.setOpacity(0);
+        }
 
-	}
+        if(this.connectedWireEnd != null)
+            this.connectedWireEnd.setDefaultColor();
+    }
 
 	/**
 	 * Uzamkne pin v sokete. Znemožní tak pripojenie iného pinu.
@@ -306,6 +338,13 @@ public class Socket extends Group {
 
 	public boolean hasConnectedPin() { return this.pin != null; }
 
+	/**
+	 * Pripojenie pinu k soketu. Pri pripojení sa aktualizuje typ soketu na základe pripojeného pinu.
+	 * Pin sa nepripojí, ak je v sokete zamknutý iný pin.
+	 *
+	 * @param pin Pin a pripojenie. Soket na základe neho mení svoj typ.
+	 * @return True ak sa podarilo pripojiť pin, false inak.
+	 */
 	public boolean connect(Pin pin){
 		if(pinLocked) return false;
 
@@ -317,7 +356,8 @@ public class Socket extends Group {
 			this.setType(SocketType.IO);
 		} else if (pin instanceof OutputPin){
 			switch (((OutputPin) pin).getPinDriver()){
-				case TRI_STATE:
+			    //ak je output typu TRI_STATE alebo OPEN_COLLECTOR, ma rovnaku prioritu, TRI_STATE moze byt ale aj v HiZ
+                case TRI_STATE:
 				case OPEN_COLLECTOR:
 					this.setType(SocketType.OCO);
 					break;
@@ -335,14 +375,29 @@ public class Socket extends Group {
 		return true;
 	}
 
+	public void connect(WireEnd wireEnd){
+        this.connectedWireEnd = wireEnd;
+        this.component.addWire(wireEnd.getWire());
+    }
+
 	public boolean disconnect(){
+	    //ak je pripojeny kablik, odpoj ho
+	    if(this.connectedWireEnd != null) {
+	        this.component.removeWire(this.connectedWireEnd.getWire());
+	        this.connectedWireEnd = null;
+	        return true;}
+
+        //ak nie je pripojeny kablik ale pin
+        //ak je zamknuty, return
 		if(pinLocked) return false;
 
+	    //ak nie je zamknuty, odpoj ho
 		if(this.pin != null) {
 			this.pin.setSocket(null);
 			this.pin = null;
 		}
 
+		//a nastav typ soketu na nepripojeny
 		this.setType(SocketType.NC);
 
 		//ak simulacia bezi, pridaj zmenu na sokete
@@ -363,6 +418,10 @@ public class Socket extends Group {
 	public Potential getThisPotential(){
 		return this.potential;
 	}
+
+	public WireEnd getWireEnd(){
+	    return this.connectedWireEnd;
+    }
 
 	public Pin getPin(){
 		return this.pin;
@@ -392,8 +451,10 @@ public class Socket extends Group {
 	 * Nastavenie hodnoty potencialu priradeneho tomuto soketu
 	 * @param potentialValue
 	 */
-	public void setPotential(Potential.Value potentialValue){
-		this.potential.setValue(potentialValue);
+	public boolean setPotential(Potential.Value potentialValue){
+		return this.potential.setValue(potentialValue);
 	}
+
+
 
 }

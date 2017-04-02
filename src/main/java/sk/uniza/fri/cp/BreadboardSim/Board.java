@@ -281,8 +281,8 @@ public class Board extends ScrollPane {
 			if(component.getBoundsInParent().intersects(device.getBoundsInParent())){
 				//ak zoznam neexistuje, vytvor ho
 				if(components == null) components = new LinkedList<>();
-				//ak ano, pridaj ho do zoznamu
-				components.add(component);
+				//ak ano, pridaj ho do zoznamu na zaciatok -> od najvrchnejsich k spodnym
+				components.add(0,component);
 			}
 		}
 

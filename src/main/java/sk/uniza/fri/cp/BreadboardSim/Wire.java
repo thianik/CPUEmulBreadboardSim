@@ -217,6 +217,8 @@ public class Wire extends HighlightGroup {
 	public void delete() {
 		super.delete();
 
+        this.ends[0].disconnectSocket();
+        this.ends[1].disconnectSocket();
 		this.ends[0].getBoard().removeItem(this);
 	}
 }

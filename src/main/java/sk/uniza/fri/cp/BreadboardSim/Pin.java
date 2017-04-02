@@ -15,17 +15,17 @@ public abstract class Pin extends Circle {
 	/** stavy pinu na cipe
 	 * HIGH - +5V
 	 * LOW - 0V
-	 * NOT_CONNECTED - nepripojene piny a vsetky piny ak cip nie je napajany
 	 * HIGH_IMPEDANCE - kvazi NOT_CONNECTED, pin nema vplyv na potencial
+	 * NOT_CONNECTED - nepripojene piny a vsetky piny ak cip nie je napajany
 	**/
-	public enum PinState { HIGH, LOW, NOT_CONNECTED, HIGH_IMPEDANCE	}
+	public enum PinState { HIGH, LOW, HIGH_IMPEDANCE, NOT_CONNECTED	}
 
 	/** typy budicov vystupnych pinov
-	 * OPEN_COLLECTOR -
-	 * TRI_STATE - rovnaky ako OPEN_COLLECTOR
 	 * PUSH_PULL - klasicky vystup, pri napojeni vysupv +5V a GND nedefinovana hodnota
+	 * TRI_STATE - pridáva tretí stav vysokej impedancie, kedy sa "odpája" od obvodu a nemá naň vplyv -> InputOutputPin
+	 * OPEN_COLLECTOR - pin pri hodnote LOW stiahne celu vetvu do LOW, pri HIGH je kvazi "odpojeny"
 	 */
-	public enum PinDriver {	OPEN_COLLECTOR,	PUSH_PULL, TRI_STATE }
+	public enum PinDriver {	PUSH_PULL, TRI_STATE, OPEN_COLLECTOR }
 
 	private Socket socket;
 	private Device device;

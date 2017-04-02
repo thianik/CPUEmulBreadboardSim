@@ -39,20 +39,24 @@ public class SchoolBreadboard extends Component {
 
 		this.busInterface = new BusInterface(board, Bus.getBus());
 		this.busInterface.makeImmovable();
+        this.busInterface.setSelectable(false);
 		this.busInterface.setLayoutX(grid.getSizeX() * 2);
 
 		this.breadboard = new Breadboard(board);
 		this.breadboard.makeImmovable();
+        this.breadboard.setSelectable(false);
 		this.breadboard.setLayoutX(grid.getSizeX() * 2);
 		this.breadboard.setLayoutY(busInterface.getGridHeight());
 
 		this.hexSegmentsPanel = new HexSegmentsPanel(board);
 		this.hexSegmentsPanel.makeImmovable();
+        this.hexSegmentsPanel.setSelectable(false);
 		this.hexSegmentsPanel.setLayoutX(grid.getSizeX() * 2);
 		this.hexSegmentsPanel.setLayoutY(busInterface.getGridHeight() + breadboard.getGridHeight() + grid.getSizeY() );
 
 		this.numKeys = new NumKeys(board);
 		this.numKeys.makeImmovable();
+        this.numKeys.setSelectable(false);
 		this.numKeys.setLayoutX(grid.getSizeX() * 2 + breadboard.getGridWidth() - numKeys.getGridWidth());
 		this.numKeys.setLayoutY(busInterface.getGridHeight() + breadboard.getGridHeight());
 

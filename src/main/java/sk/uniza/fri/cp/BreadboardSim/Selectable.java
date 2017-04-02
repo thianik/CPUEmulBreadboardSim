@@ -21,4 +21,7 @@ public interface Selectable {
 	void select();
 	void deselect();
 	void delete();
+
+	boolean isSelectable();
+	void setSelectable(boolean newValue);
 }

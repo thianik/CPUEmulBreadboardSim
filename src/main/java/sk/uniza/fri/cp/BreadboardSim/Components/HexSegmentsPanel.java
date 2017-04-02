@@ -63,5 +63,10 @@ public class HexSegmentsPanel extends Component {
         this.getChildren().addAll(gndSockets, vccSockets);
 	}
 
-
+    @Override
+    public void setSelectable(boolean newValue) {
+        super.setSelectable(newValue);
+        for (int i = 0; i < hexSegments.length; i++)
+            this.hexSegments[i].setSelectable(newValue);
+    }
 }
