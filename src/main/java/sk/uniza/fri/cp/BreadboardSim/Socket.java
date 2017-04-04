@@ -340,13 +340,13 @@ public class Socket extends Group {
 
 	/**
 	 * Pripojenie pinu k soketu. Pri pripojení sa aktualizuje typ soketu na základe pripojeného pinu.
-	 * Pin sa nepripojí, ak je v sokete zamknutý iný pin.
+	 * Pin sa nepripojí, ak je v sokete zamknutý iný pin alebo je k nemu pripojený káblik.
 	 *
 	 * @param pin Pin a pripojenie. Soket na základe neho mení svoj typ.
 	 * @return True ak sa podarilo pripojiť pin, false inak.
 	 */
 	public boolean connect(Pin pin){
-		if(pinLocked) return false;
+		if(this.pinLocked || (this.connectedWireEnd != null) ) return false;
 
 		this.pin = pin;
 		this.pin.setSocket(this);
@@ -376,6 +376,7 @@ public class Socket extends Group {
 	}
 
 	public void connect(WireEnd wireEnd){
+
         this.connectedWireEnd = wireEnd;
         this.component.addWire(wireEnd.getWire());
     }

@@ -80,17 +80,70 @@ public class BusInterface extends Component {
 
         //super.socketsForDevices.addAll(getPowerSockets());
 
+        this.bus.addressBusProperty().addListener(new ChangeListener<Number>() {
+            @Override
+            public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
+                for (int i = 0; i < 16; i++) {
+                    if((1<<i & newValue.intValue()) != 0)
+                        addressBusCommunicators[i].setHigh();
+                    else
+                        addressBusCommunicators[i].setLow();
+                }
+            }
+        });
+
+        this.bus.dataBusProperty().addListener(new ChangeListener<Number>() {
+            @Override
+            public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
+                //nastavenie aktualnych dat na datovej zbernici pre vsetky instancie komunikatora (ledky)
+                DataBusCommunicator.data = newValue.intValue();
+                for (int i = 0; i < 8; i++) {
+                    //0x140 -> 1 0100 0000 => signal zapisu MW/IW je v nule
+                    if((bus.controlBusProperty().getValue() & 0x140) != 0x140) {
+                        //zapis
+                        ((DataBusCommunicator) dataBusCommunicators[i]).setToWrite(true);
+                    } else {
+                        ((DataBusCommunicator) dataBusCommunicators[i]).setToWrite(false);
+                    }
+
+                    ((DataBusCommunicator) dataBusCommunicators[i]).update();
+                }
+            }
+        });
+
+        this.bus.controlBusProperty().addListener(new ChangeListener<Number>() {
+            @Override
+            public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
+                for (int i = 4; i < 9; i++) { //iba pre vystupne signaly
+                    if((1<<i & newValue.intValue()) != 0)
+                        controlBusCommunicators[i].setHigh();
+                    else
+                        controlBusCommunicators[i].setLow();
+                }
+
+                //MR/IR
+                if((newValue.intValue() & 0xA0) != 0xA0) {
+                    //citanie
+                    for (int i = 0; i < 8; i++)
+                        ((DataBusCommunicator) dataBusCommunicators[i]).setToRead(true);
+                } else {
+                    for (int i = 0; i < 8; i++)
+                        ((DataBusCommunicator) dataBusCommunicators[i]).setToRead(false);
+                }
+            }
+        });
+
         //update zobrazenia lediek pri zmene na zbernici
-        this.bus.getAddressBusEventStream().subscribe((number) -> {
+        /*this.bus.getAddressBusEventStream().subscribe((number) -> {
             for (int i = 0; i < 16; i++) {
                 if((1<<i & number.getNewValue().intValue()) != 0)
                     addressBusCommunicators[i].setHigh();
                 else
 					addressBusCommunicators[i].setLow();
             }
-        });
+        });*/
 
-        this.bus.getDataBusEventStream().subscribe((number) -> {
+       /* this.bus.getDataBusEventStream().subscribe((number) -> {
         	//nastavenie aktualnych dat na datovej zbernici pre vsetky instancie komunikatora (ledky)
         	DataBusCommunicator.data = number.getNewValue().intValue();
 			for (int i = 0; i < 8; i++) {
@@ -104,9 +157,9 @@ public class BusInterface extends Component {
 
                 ((DataBusCommunicator) dataBusCommunicators[i]).update();
             }
-        });
+        });*/
 
-        this.bus.getControlBusEventStream().subscribe((number) ->{
+        /*this.bus.getControlBusEventStream().subscribe((number) ->{
             for (int i = 4; i < 9; i++) { //iba pre vystupne signaly
                 if((1<<i & number.getNewValue().intValue()) != 0)
                     controlBusCommunicators[i].setHigh();
@@ -123,7 +176,7 @@ public class BusInterface extends Component {
                 for (int i = 0; i < 8; i++)
                     ((DataBusCommunicator) dataBusCommunicators[i]).setToRead(false);
             }
-        });
+        });*/
 
 
 
@@ -392,8 +445,10 @@ public class BusInterface extends Component {
 
         public void setToRead(boolean read){
             this.read = read;
-            if(read)
+            if(read) {
+                this.pin.setState(Pin.PinState.HIGH_IMPEDANCE);
                 writeToBus();
+            }
         }
 
         public void setToWrite(boolean write){
@@ -423,8 +478,7 @@ public class BusInterface extends Component {
             if(this.write //ak je pozardovany zapis zo zbernice do pamate -> vsetky vystupy sa nastavuju podla zbernice
                     || this.interfaceSocket.getThisPotential().getChild() == null  //nije pripojeny kablik
                     || ( this.interfaceSocket.getThisPotential().getChild() != null //alebo je ale nie je to vystup
-                            && (this.interfaceSocket.getPotential().getType() != SocketType.OUT
-                                && this.interfaceSocket.getPotential().getType() != SocketType.WEAK_OUT)))
+                            && this.interfaceSocket.getPotential().getType() != SocketType.OUT))
             {
                 if((data & (1<<this.byteNr)) != 0) {
                     setHigh();

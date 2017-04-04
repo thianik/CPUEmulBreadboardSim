@@ -1,8 +1,11 @@
 package sk.uniza.fri.cp.CPUEmul;
 
 /**
- * Created by Moris on 19.2.2017.
+ * Možné stavy CPU emulátora.
+ *
+ * @author Tomáš Hianik
+ * @created 19.2.2017
  */
 public enum CPUStates {
-    Running, Paused, MicroStep, Waiting, AsyncWaiting
+    Idle, Running, Paused, MicroStep, Waiting
 }

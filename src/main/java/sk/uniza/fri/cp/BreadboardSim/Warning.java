@@ -24,8 +24,8 @@ public class Warning {
 	 * @param sender
 	 * @param description
 	 */
-	public int Warning(HighlightGroup sender, String description){
-		return 0;
+	public Warning(HighlightGroup sender, String description){
+
 	}
 
 	public HighlightGroup getSender(){

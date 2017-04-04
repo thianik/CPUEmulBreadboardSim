@@ -15,14 +15,17 @@ import sk.uniza.fri.cp.CPUEmul.Parser;
 import java.util.TreeSet;
 import java.util.function.IntFunction;
 
+//TODO prist na lepsi sposob spravy breakpointov
+
 /**
- * TODO prist na lepsi sposob spravy breakpointov
+ * Faktorka pre breakpointy paragrafov použitých v editore.
  *
- * Created by Moris on 10.2.2017.
+ * @author Tomáš Hianik
+ * @created 10.2.2017.
  */
 public class BreakpointFactory implements IntFunction<Node> {
 
-    private final String tagBreak = "break";
+    private static final String TAG_BREAK = "break";
     private final CodeArea area;
 
     private ObservableSet<Integer> list;    //indexy paragrafov s breakami
@@ -77,7 +80,7 @@ public class BreakpointFactory implements IntFunction<Node> {
             public void handle(MouseEvent event) {
                 if(circ.isVisible()) { //odstranenie breakpointu
                     //odober styl paragrafu
-                    RichTextFXHelpers.tryRemoveParagraphStyle(area, value, tagBreak);
+                    RichTextFXHelpers.tryRemoveParagraphStyle(area, value, TAG_BREAK);
 
                     //odober break z listu
                     list.remove(value);
@@ -99,7 +102,7 @@ public class BreakpointFactory implements IntFunction<Node> {
                     //ak sa nasiel riadok s instrukciou
                     if(indexOfInstructionLine != -1){
                         //pridaj breakpoint tag k stylom paragrafu
-                        RichTextFXHelpers.addParagraphStyle(area , indexOfInstructionLine, tagBreak);
+                        RichTextFXHelpers.addParagraphStyle(area , indexOfInstructionLine, TAG_BREAK);
 
                         //pridaj paragraf do listu
                         list.add(indexOfInstructionLine);
@@ -135,7 +138,7 @@ public class BreakpointFactory implements IntFunction<Node> {
         //prehladaj kazdy paragraph
         for (int i = 0; i < area.getParagraphs().size(); i++) {
             //ak obsahuje styl pre break, pridaj jeho index do listu
-            if( area.getParagraph(i).getParagraphStyle().stream().anyMatch(style -> style.equals(tagBreak)) ) {
+            if( area.getParagraph(i).getParagraphStyle().stream().anyMatch(style -> style.equals(TAG_BREAK)) ) {
                 temp.add(i);
             } /*else {
                 list.remove(i);
@@ -156,8 +159,8 @@ public class BreakpointFactory implements IntFunction<Node> {
         //prejdi kazdy paragraph
         for (int i = 0; i < area.getParagraphs().size(); i++) {
             //ak obsahuje break, odober ho
-            if(area.getParagraph(i).getParagraphStyle().stream().anyMatch(style -> style.equals(tagBreak))){
-                RichTextFXHelpers.tryRemoveParagraphStyle(area, i, tagBreak);
+            if(area.getParagraph(i).getParagraphStyle().stream().anyMatch(style -> style.equals(TAG_BREAK))){
+                RichTextFXHelpers.tryRemoveParagraphStyle(area, i, TAG_BREAK);
             }
         }
     }

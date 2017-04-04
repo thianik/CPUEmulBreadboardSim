@@ -7,26 +7,58 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 /**
- * Created by Moris on 8.2.2017.
+ * Výstupný stream ako obal pre CPU konzolu aka. InlineCssTextArea.
+ *
+ * @author Tomáš Hianik
+ * @created  8.2.2017.
+ * @version 0.3
  */
 public class ConsoleOutputStream extends OutputStream {
 
     private InlineCssTextArea console;
     private String color;
-    private boolean isUsed; //indikator, ci bol vypis pouzity
+    private boolean isUsed; //indikator, ci bol vypis od posledneho nastavenia pouzity
 
+    /**
+     * Vytvorenie výstupého streamu nad InlineCssTextArea.
+     *
+     * @param console Konzola, do ktorej sa bude presmerovávať výstup.
+     */
     public ConsoleOutputStream(InlineCssTextArea console){
         this.console = console;
         this.color = "black";
     }
 
+    /**
+     * Vytvorenie výstupného streamu nad InlineCssTextArea s určenou farbou písma.
+     *
+     * @param console Konzola, do ktorej sa bude presmerovávať výstup.
+     * @param color Farba písama.
+     */
     public ConsoleOutputStream(InlineCssTextArea console, String color){
         this.console = console;
         this.color = color;
     }
 
+    /**
+     * Bol už tento stream od poseldného nastavenia použitý?
+     * Používa sa pri výpise na konzolu pred a po spustení CPU, aby sa zistilo či niečo vypísal.
+     *
+     * @return Truea ak bol použitý, false inak.
+     */
     public boolean isUsed(){ return isUsed; }
 
+    /**
+     * Nastavenie, že stream ešte nebol použitý. Pred spustením vykonávania programu na CPU.
+     */
+    public void setUnused(){ this.isUsed = false; }
+
+    /**
+     * Výpis znaku na koznolu.
+     * Ak sa jedná o prvý znak, vypíše sa najprv reťazec [CPU KONZOLA].
+     *
+     * @param b Znak, ktorý sa má vypísať na konzolu.
+     */
     private void writeToConsole(int b){
         if(!isUsed) {
             console.setStyle(console.getCurrentParagraph(), "-fx-fill: red");
@@ -64,7 +96,7 @@ public class ConsoleOutputStream extends OutputStream {
     @Override
     public void write(byte[] b) throws IOException {
         for (int i = 0; i < b.length - 1; i++){
-            write(b);
+            write(b[i]);
         }
     }
 
@@ -73,7 +105,7 @@ public class ConsoleOutputStream extends OutputStream {
         if(off < 0 || off > b.length-1 || len > b.length-1 - off) throw new IOException("Invalid argument");
 
         for (int i = off; i < len - off; i++){
-            write(b);
+            write(b[i]);
         }
     }
 }

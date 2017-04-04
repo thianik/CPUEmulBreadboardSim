@@ -209,7 +209,9 @@ public class Potential {
             }
 			else if(this.type == SocketType.OUT){
 				//ak je potencial typu OUT -> aspon jeden z predkov je tiez OUT
-				if(this.parent1.type == SocketType.OUT && this.parent2.type == SocketType.OUT){
+				if( (this.parent1.type == SocketType.OUT && this.parent2.type == SocketType.OUT)
+                        || this.parent1.type == SocketType.IO
+                        || this.parent2.type == SocketType.IO){
 					//ak su oba predkovia typu OUT -> moze dojst ku skratu pri roznych hodnotach napatia
                     this.checkShortCircuit();
 				}
@@ -230,11 +232,12 @@ public class Potential {
 			this.value = newVal;
 		}
 
+        this.unhighlightShortCircuitSockets();
+
         //ak je potencial na vrchu stromu a nastal niekde skrat, zobraz to na vystupnych soketoch
-		if(this.shortCircuit && this.child == null) {
-            this.unhighlightShortCircuitSockets();
+		if(this.shortCircuit && this.child == null)
             this.highlightShortCircuitSockets();
-        }
+
 
 
 		//ak ma potencial potomka, aktualizuj jeho hodnotu a vrat oznamenie o moznom skrate (false ak nastal)

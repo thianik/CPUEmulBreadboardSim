@@ -19,8 +19,8 @@ import sk.uniza.fri.cp.BreadboardSim.Movable;
  * Created by Moris on 7.2.2017.
  */
 public class App extends Application {
-    private final int CPU_WINDOW_WIDTH = 1280;
-    private final int CPU_WINDOW_HEIGHT = 640;
+    private static final int CPU_WINDOW_WIDTH = 1280;
+    private static final int CPU_WINDOW_HEIGHT = 640;
 
     public static void main(String[] args) {
         launch();

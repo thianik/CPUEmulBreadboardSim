@@ -144,7 +144,7 @@ public abstract class Chip extends Device {
 		body.setLayoutY(heightReduction);
 
 		Group legs = new Group();
-		final double legWidth = grid.getSizeX()*2/3;
+		final double legWidth = grid.getSizeX()*2.0/3.0;
 		final double legHeight = grid.getSizeY()*0.7;
 		for (int i = 0; i < this.pins.length; i++){
 			Polygon legBase = new Polygon(0, 0,

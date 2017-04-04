@@ -1,13 +1,28 @@
 package sk.uniza.fri.cp.App.CPUControl;
 
 /**
- * Created by Moris on 17.2.2017.
+ * Trieda obsahujúca statické metódy na prevod hodnôt do decimálnej, binárnej hexadecimálnej sústavy alebo
+ * do ASCII. Obsahuje tiež enum možných výsledných prevodov.
+ *
+ * @author Tomáš Hianik
+ * @created  17.2.2017.
  */
-class DataRepresentation {
+final class DataRepresentation {
+
+    /**
+     * Vymenovanie možných reprezentácií.
+     */
     public enum eRepresentation{
         Dec,Hex,Bin,ASCII
     }
 
+    /**
+     * Prevod hodnoty byte do požadovanej reprezentácie.
+     *
+     * @param value Hodnota na prevod
+     * @param displayState Požadovaná reprezentácia
+     * @return String s reprezentáciou hodnoty v danej sústave, resp. ASCII znak
+     */
     static String getDisplayRepresentation(byte value, eRepresentation displayState){
         switch (displayState){
             case Dec:
@@ -22,6 +37,13 @@ class DataRepresentation {
         return "";
     }
 
+    /**
+     * Prevod hodnoty short do požadovanej reprezentácie.
+     *
+     * @param value Hodnota na prevod
+     * @param displayState Požadovaná reprezentácia
+     * @return String s reprezentáciou hodnoty v danej sústave, resp. ASCII znak
+     */
     static String getDisplayRepresentation(short value, eRepresentation displayState){
         switch (displayState){
             case Dec:
@@ -38,4 +60,5 @@ class DataRepresentation {
         return "";
     }
 
+    private DataRepresentation(){}
 }

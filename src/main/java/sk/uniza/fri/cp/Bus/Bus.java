@@ -1,45 +1,32 @@
 package sk.uniza.fri.cp.Bus;
 
-import javafx.beans.Observable;
 import javafx.beans.property.*;
-import javafx.collections.ObservableList;
-import javafx.concurrent.Task;
-import org.reactfx.Change;
-import org.reactfx.EventStream;
-import org.reactfx.EventStreams;
-import org.reactfx.util.Tuple2;
 
 import java.util.Random;
-import java.util.concurrent.CountDownLatch;
 
 import static sk.uniza.fri.cp.Bus.k041Library.*;
 
 /**
- * Sprostredkuva komunikaciu medzi CPU a doskou (fyzickou / simulovanou)
+ * Zbernica zabezpečujúca komunikáciu medzi CPU a doskou (fyzickou / simulovanou).
+ * Uchováva aktuálne hodnoty na adresnej, dátovej a riadiacej zbernici.
  * Singleton
  *
- * @author Moris
+ * @author Tomáš Hianik
  * @version 1.0
  * @created 07-feb-2017 18:40:27
  */
 public class Bus{
-    //public static final int SYNCH_WAIT_TIME_MS = 500;     //cas cakania na nastavenie dat pri synchronnej komunikacii
 
-	protected static Bus instance;
-	protected SimpleBooleanProperty USBConnected;
+	private static Bus instance; //inštancia singletonu
+	private SimpleBooleanProperty USBConnected; //indikátor pripojenia vývojovej dosky cez USB
 
 	private IntegerProperty addressBus;
 	private IntegerProperty dataBus;
 	private IntegerProperty controlBus;
 
-	private EventStream<Change<Number>> addressBusEventStream;
-	private EventStream<Change<Number>> dataBusEventStream;
-	private EventStream<Change<Number>> controlBusEventStream;
-
 	private Random rand;
 
-	//TODO Bus privatny konstruktor pri zruseni simulovanej zbernice
-	Bus(){
+	private Bus(){
 		this.addressBus = new SimpleIntegerProperty(0);
 		this.dataBus = new SimpleIntegerProperty(0);
 		this.controlBus = new SimpleIntegerProperty(0);
@@ -49,13 +36,14 @@ public class Bus{
 		USBConnected = new SimpleBooleanProperty(false);
 
         initControlBus();
-
-		addressBusEventStream = EventStreams.changesOf(addressBus);
-		dataBusEventStream = EventStreams.changesOf(dataBus);
-		controlBusEventStream = EventStreams.changesOf(controlBus);
 	}
 
-	public static Bus getBus(){
+    /**
+     * Prístup k inštancií singletonu. (synchronizované)
+     * 
+     * @return Inśtancia zbernice.
+     */
+	synchronized public static Bus getBus(){
 		if(instance == null){
 			instance = new Bus();
 		}
@@ -63,6 +51,11 @@ public class Bus{
 		return instance;
 	}
 
+    /**
+     * Pokus o pripojenie a komunikáciu cez rozhranie USB s vývojovou doskou.
+     * 
+     * @return True ak sa podarilo pripojiť k rozhraniu, false inak.
+     */
 	public boolean connectUSB(){
 		int ret = k041Library.USBInitDevice();
 		if(ret != 0)
@@ -74,38 +67,37 @@ public class Bus{
 		return USBConnected.getValue();
 	}
 
+    /**
+     * Odpojenie od USB rozhrania.
+     */
 	public void disconnectUSB(){
 		USBConnected.setValue(false);
 	}
 
+    /**
+     * Informácia, či je zbernica pripojená k USB.
+     * 
+     * @return True ak je pripojená cez USB, false inak.
+     */
 	public boolean isUsbConnected(){
 		return USBConnected.getValue();
 	}
 
-    public ReadOnlyIntegerProperty addressBusProperty(){
-        return ReadOnlyIntegerProperty.readOnlyIntegerProperty(addressBus);
+    public IntegerProperty addressBusProperty(){
+        return addressBus;
     }
 
-    public ReadOnlyIntegerProperty dataBusProperty(){
-        return ReadOnlyIntegerProperty.readOnlyIntegerProperty(dataBus);
+    public IntegerProperty dataBusProperty(){
+        return dataBus;
     }
 
-    public ReadOnlyIntegerProperty controlBusProperty(){
-        return ReadOnlyIntegerProperty.readOnlyIntegerProperty(controlBus);
+    public IntegerProperty controlBusProperty(){
+        return controlBus;
     }
 
-    public EventStream<Change<Number>> getAddressBusEventStream(){
-        return addressBusEventStream;
-    }
-
-    public EventStream<Change<Number>> getDataBusEventStream(){
-        return dataBusEventStream;
-    }
-
-    public EventStream<Change<Number>> getControlBusEventStream(){
-        return controlBusEventStream;
-    }
-
+    /**
+     * Resetovanie stavu riadiacej zbernice, nastavenie náhodnej adresy a dát.
+     */
 	synchronized public void reset(){
 		setRandomAddress();
 		setRandomData();
@@ -118,10 +110,20 @@ public class Bus{
 		}
 	}
 
+    /**
+     * Vrátenie hodnoty na adresnej zbernici.
+     * 
+     * @return hodnota na adresnej zbernici.
+     */
 	synchronized public short getAddressBus() {
         return addressBus.getValue().shortValue();
 	}
 
+    /**
+     * Vrátenie hodnoty na dátovej zbernici.
+     * 
+     * @return Hodnota na dátovej zbernici.
+     */
     synchronized public byte getDataBus() {
         if(USBConnected.getValue()) {
             byte data = (byte) USBReadData();
@@ -132,10 +134,20 @@ public class Bus{
             return dataBus.getValue().byteValue();
     }
 
-    public int getControlBus(){
+    /**
+     * Vrátenie hodnoty na riadiacej zbernici.
+     * 
+     * @return Hodnota na riadiacej zbernici.
+     */
+    synchronized public int getControlBus(){
 	    return controlBus.getValue();
     }
 
+    /**
+     * Nastavenie hodnoty na adresnú zbernicu.
+     * 
+     * @param addressBus Nová hodnota adresnej zbernice.
+     */
     synchronized public void setAddressBus(short addressBus) {
         if(USBConnected.getValue())
             USBSetAddress(Short.toUnsignedInt(addressBus));
@@ -143,6 +155,11 @@ public class Bus{
             this.addressBus.setValue(Short.toUnsignedInt(addressBus));
     }
 
+    /**
+     * Nastavenie hodnoty na dátovú zbernicu.
+     * 
+     * @param dataBus Nová hodnota dátovej zbernice.
+     */
 	synchronized public void setDataBus(byte dataBus) {
 		if(USBConnected.getValue())
 			USBSetData(Byte.toUnsignedInt(dataBus));
@@ -150,6 +167,9 @@ public class Bus{
 			this.dataBus.setValue(Byte.toUnsignedInt(dataBus));
 	}
 
+    /**
+     * Nastavenie náhodnej adresnej zbernice.
+     */
 	synchronized public void setRandomAddress(){
 		if(USBConnected.getValue())
 			USBSetAddress(rand.nextInt());
@@ -157,6 +177,9 @@ public class Bus{
 	    	this.addressBus.setValue(rand.nextInt(65535));
 	}
 
+    /**
+     * Nastaveni náhodnej dátovej zbernice.
+     */
 	synchronized public void setRandomData(){
 		if(USBConnected.getValue())
 			USBSetData(rand.nextInt());
@@ -164,6 +187,11 @@ public class Bus{
         	this.dataBus.setValue(rand.nextInt(256));
 	}
 
+    /**
+     * Nastavenie negovaného signálu MW - memory write.
+     * 
+     * @param MW_ Nová hodnota signálu MW.
+     */
     synchronized public void setMW_(boolean MW_) {
         if(USBConnected.getValue())
             if(!MW_)
@@ -174,6 +202,11 @@ public class Bus{
             mapToControlBus("MW_", MW_);
     }
 
+    /**
+     * Nastavenie negovaného signálu MR - memory read.
+     * 
+     * @param MR_ Nová hodnota signálu MR.
+     */
     synchronized public void setMR_(boolean MR_) {
         if(USBConnected.getValue())
             if(!MR_)
@@ -185,7 +218,12 @@ public class Bus{
             mapToControlBus("MR_", MR_);
         }
     }
-
+    
+    /**
+     * Nastavenie negovaného signálu IW - input write.
+     *
+     * @param IW_ Nová hodnota signálu IW.
+     */
     synchronized public void setIW_(boolean IW_) {
         if(USBConnected.getValue())
             if(!IW_)
@@ -196,6 +234,11 @@ public class Bus{
             mapToControlBus("IW_", IW_);
     }
 
+    /**
+     * Nastavenie negovaného signálu IR - input read.
+     *
+     * @param IR_ Nová hodnota signálu IR.
+     */
     synchronized public void setIR_(boolean IR_) {
         if(USBConnected.getValue())
             if(!IR_)
@@ -206,6 +249,11 @@ public class Bus{
             mapToControlBus("IR_", IR_);
     }
 
+    /**
+     * Nastavenie negovaného signálu IA - interruption acknowledge.
+     *
+     * @param IA_ Nová hodnota signálu IA.
+     */
     synchronized public void setIA_(boolean IA_) {
         if(USBConnected.getValue())
             if(!IA_)
@@ -216,34 +264,29 @@ public class Bus{
             mapToControlBus("IA_", IA_);
     }
 
+    /**
+     * Nastavenie signálu IT - interruption.
+     *
+     * @param IT Nová hodnota signálu IT.
+     */
     synchronized public void setIT(boolean IT) {
         mapToControlBus("IT", IT);
     }
 
+    /**
+     * Nastavenie signálu RY - ready.
+     *
+     * @param RY Nová hodnota signálu RY.
+     */
     synchronized public void setRY(boolean RY){
         mapToControlBus("RY", RY);
     }
 
-    synchronized public boolean isMW_() {
-		return mapFromControlBus("MW_");
-	}
-
-	synchronized public boolean isMR_() {
-		return mapFromControlBus("MR_");
-	}
-
-	synchronized public boolean isIW_() {
-		return mapFromControlBus("IW_");
-	}
-
-	synchronized public boolean isIR_() {
-		return mapFromControlBus("IR");
-	}
-
-	synchronized public boolean isIA_() {
-		return mapFromControlBus("IA_");
-	}
-
+    /**
+     * Zistenie hodoty signálu IT - interruption.
+     * 
+     * @return Hodnota signálu IT.
+     */
 	synchronized public boolean isIT() {
 		if(USBConnected.getValue()) {
 			// nacitanie aktualnej hodnoty INT
@@ -257,18 +300,9 @@ public class Bus{
 		    return mapFromControlBus("IT");
 	}
 
-	synchronized public boolean isRY() {
-		if(USBConnected.getValue()) {
-			// nacitanie aktualnej hodnoty RY
-			USBReadData();
-			int pom = USBReadData();
-			return (pom & 0x8000) != 0;
-		}
-		else
-			return mapFromControlBus("RY");
-	}
-
-
+    /**
+     * Inicializácia riadiacej zbernice do východzích hodnôt.
+     */
 	private void initControlBus(){
         mapToControlBus("MW_", true);
         mapToControlBus("MR_", true);
@@ -282,7 +316,13 @@ public class Bus{
         mapToControlBus("BA", false);
     }
 
-	private void mapToControlBus(String signal, boolean value){
+    /**
+     * Mapovanie hodnoty signálu podľa návzu signálu do riadiacej zbernice.
+     * 
+     * @param signal Názov signálu.
+     * @param value Nová hodnota signálu.
+     */
+	synchronized private void mapToControlBus(String signal, boolean value){
         int pos = mapSignal(signal);
 
 		if(value)
@@ -291,12 +331,24 @@ public class Bus{
 			controlBus.setValue( controlBus.getValue() & ~( 1<<pos ) );
 	}
 
-    private boolean mapFromControlBus(String signal){
+    /**
+     * Mapovanie hodnoty signálu podľa návzu signálu z riadiacej zbernice.
+     *
+     * @param signal Názov signálu.
+     * @return Aktuálna hodnota signálu na zbernici.
+     */
+    synchronized private boolean mapFromControlBus(String signal){
         int pos = mapSignal(signal);
 
         return (controlBus.getValue() & 1<<pos ) != 0;
     }
 
+    /**
+     * Prevodník medzi názvom signálu a jemu odpovedajúcim bitom na riadiacej zbernici.
+     *
+     * @param signal Názov signálu.
+     * @return Odpovedajúci bit na riadiacej zbernici.
+     */
     private int mapSignal(String signal){
         switch (signal){
             case "MW_": return 8;
@@ -312,5 +364,43 @@ public class Bus{
 
         return -1;
     }
+
+    //
+//    synchronized public boolean isMW_() {
+//		return mapFromControlBus("MW_");
+//	}
+//
+//	synchronized public boolean isMR_() {
+//		return mapFromControlBus("MR_");
+//	}
+//
+//	synchronized public boolean isIW_() {
+//		return mapFromControlBus("IW_");
+//	}
+//
+//	synchronized public boolean isIR_() {
+//		return mapFromControlBus("IR");
+//	}
+//
+//	synchronized public boolean isIA_() {
+//		return mapFromControlBus("IA_");
+//	}
+//    
+//    /**
+//     * Zistenie hodoty signálu RY - ready
+//     *
+//     * @return Hodnota signálu RY.
+//     */
+//    synchronized public boolean isRY() {
+//        if(USBConnected.getValue()) {
+//            // nacitanie aktualnej hodnoty RY
+//            USBReadData();
+//            int pom = USBReadData();
+//            return (pom & 0x8000) != 0;
+//        }
+//        else
+//            return mapFromControlBus("RY");
+//    }
+
 
 }//end Bus

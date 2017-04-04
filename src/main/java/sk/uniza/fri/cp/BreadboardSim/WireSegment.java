@@ -35,7 +35,7 @@ public class WireSegment extends Line {
         this.endXProperty().bind(this.endJoint.layoutXProperty());
         this.endYProperty().bind(this.endJoint.layoutYProperty());
 
-		this.setStrokeWidth(start.getBoard().getGrid().getSizeMin() * 2/5);
+		this.setStrokeWidth(start.getBoard().getGrid().getSizeMin() * 2.0/5.0);
 		this.setFill(Wire.getDefaultColor());
 		this.setStroke(Wire.getDefaultColor());
 		this.setOpacity(0.8);

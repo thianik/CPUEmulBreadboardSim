@@ -302,8 +302,8 @@ public class NumKeys extends Component {
 			Rectangle baseBck = new Rectangle(width - 2*shrinkX, height - 2*shrinkY, Color.LIGHTGRAY);
 			baseBck.setLayoutX(shrinkX);
 			baseBck.setLayoutY(shrinkY);
-			baseBck.setArcWidth(grid.getSizeX()/2);
-			baseBck.setArcHeight(grid.getSizeY()/2);
+			baseBck.setArcWidth(grid.getSizeX()/2.0);
+			baseBck.setArcHeight(grid.getSizeY()/2.0);
 
 			double boltRadius = grid.getSizeX() / 5.0;
 			double boltOffset = grid.getSizeX() / 2.5;
