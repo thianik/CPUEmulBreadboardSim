@@ -1,4 +1,4 @@
-package sk.uniza.fri.cp.BreadboardSim;
+package sk.uniza.fri.cp.BreadboardSim.Socket;
 
 import javafx.event.EventHandler;
 import javafx.scene.Group;
@@ -10,10 +10,19 @@ import javafx.scene.shape.Arc;
 import javafx.scene.shape.ArcType;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Rectangle;
+import sk.uniza.fri.cp.BreadboardSim.Board.BoardChangeEvent;
+import sk.uniza.fri.cp.BreadboardSim.Board.BoardEvent;
+import sk.uniza.fri.cp.BreadboardSim.Board.GridSystem;
 import sk.uniza.fri.cp.BreadboardSim.Components.Component;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Device;
+import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.InputOutputPin;
+import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.InputPin;
+import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.OutputPin;
+import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.Pin;
+import sk.uniza.fri.cp.BreadboardSim.Wire.Wire;
+import sk.uniza.fri.cp.BreadboardSim.Wire.WireEnd;
 
-import java.util.ArrayList;
+import java.util.LinkedList;
 
 /**
  * pri vytvarani kablika pozor na vyjdenie mimo plochy
@@ -31,7 +40,6 @@ public class Socket extends Group {
 
 	private boolean[] activeHighlights;
 
-	private int id;
 	private Component component;
 	private Potential potential;
 	private Pin pin;
@@ -77,7 +85,7 @@ public class Socket extends Group {
 	/**
 	 * zoznam socketov, ktore boli zvyraznene (aby ich bolo mozne odvyraznit)
 	 */
-	private ArrayList<Socket> highlighted;
+    private LinkedList<Socket> highlighted;
 
 	/**
 	 * zaciatok vytvarania kablika, zvyraznienie spojenych socketov
@@ -140,12 +148,16 @@ public class Socket extends Group {
 
 
 	/**
-	 * zvyraznenie pripojenych socketov pripojenych k somuto socketu
-	 */
+     * zvyraznenie pripojenych socketov pripojenych k somuto soketu
+     */
 	private EventHandler<MouseDragEvent> onMouseDragEntered = new EventHandler<MouseDragEvent>() {
         @Override
         public void handle(MouseDragEvent event) {
-            colorizer.setOpacity(0.9);
+            getPotential().getConnectedSockets(highlighted);
+
+            highlighted.forEach(socket -> socket.highlight(COMMON_POTENTIAL));
+
+            //colorizer.setOpacity(0.9);
             //System.out.println("Socket - drag entered , source: " + event.getSource() + " / gesture source: " + event.getGestureSource());
 
             event.consume();
@@ -157,7 +169,10 @@ public class Socket extends Group {
 	private EventHandler<MouseDragEvent> onMouseDragExited = new EventHandler<MouseDragEvent>() {
         @Override
         public void handle(MouseDragEvent event) {
-            colorizer.setOpacity(0);
+            highlighted.forEach(socket -> socket.unhighlight(COMMON_POTENTIAL));
+            highlighted.clear();
+
+            //colorizer.setOpacity(0);
 
             event.consume();
         }
@@ -169,6 +184,11 @@ public class Socket extends Group {
     private EventHandler<MouseDragEvent> onMouseDragReleased = new EventHandler<MouseDragEvent>() {
         @Override
         public void handle(MouseDragEvent event) {
+            if (highlighted.size() > 0) {
+                highlighted.forEach(socket -> socket.unhighlight(COMMON_POTENTIAL));
+                highlighted.clear();
+            }
+
             //ak sa vytvara kablik
             if(creatingWire != null){
                 Socket socket = (Socket) event.getSource();
@@ -194,12 +214,11 @@ public class Socket extends Group {
 	/**
 	 * 
 	 * @param component
-	 * @param id
 	 */
-	public Socket(Component component, int id){
+    public Socket(Component component) {
         this.activeHighlights = new boolean[4];
 		this.component = component;
-		this.id = id;
+        this.highlighted = new LinkedList<>();
 
 
 		GridSystem grid = this.component.getBoard().getGrid();
@@ -253,12 +272,11 @@ public class Socket extends Group {
 	/**
 	 * 
 	 * @param component
-	 * @param id
 	 * @param potentialValue
 	 */
-	public Socket(Component component, int id, Potential.Value potentialValue){
-		this(component, id);
-		this.potential.setValue(potentialValue);
+    public Socket(Component component, Potential.Value potentialValue) {
+        this(component);
+        this.potential.setValue(potentialValue);
 	}
 
 	public double getRadius(){
@@ -318,6 +336,7 @@ public class Socket extends Group {
         } else {
             //ak nie je nic na zvyrazenie
             this.colorizer.setOpacity(0);
+            this.colorizer.setFill(Color.WHITE);
         }
 
         if(this.connectedWireEnd != null)
@@ -337,6 +356,14 @@ public class Socket extends Group {
 	}
 
 	public boolean hasConnectedPin() { return this.pin != null; }
+
+    public boolean hasConnectedWire() {
+        return this.connectedWireEnd != null;
+    }
+
+    public boolean isOccupied() {
+        return this.hasConnectedPin() || this.hasConnectedWire();
+    }
 
 	/**
 	 * Pripojenie pinu k soketu. Pri pripojení sa aktualizuje typ soketu na základe pripojeného pinu.
@@ -367,8 +394,8 @@ public class Socket extends Group {
 			}
 		} else this.setType(SocketType.NC);
 
-		//ak simulacia bezi, pridaj zmenu na zokete
-		if(this.component.getBoard().isSimulationRunning()){
+        //ak simulacia bezi, pridaj zmenu na sokete
+        if(this.component.getBoard().isSimulationRunning()){
 			this.component.getBoard().addEvent(new BoardEvent(this));
 		}
 

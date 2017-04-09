@@ -1,18 +1,25 @@
 package sk.uniza.fri.cp.BreadboardSim.Devices.Chips;
 
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Group;
-import javafx.scene.control.Label;
+import javafx.scene.control.TextArea;
+import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.Pane;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.*;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
-import sk.uniza.fri.cp.BreadboardSim.*;
+import javafx.scene.text.TextFlow;
+import sk.uniza.fri.cp.BreadboardSim.Board.Board;
+import sk.uniza.fri.cp.BreadboardSim.Board.GridSystem;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Device;
+import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.Pin;
+import sk.uniza.fri.cp.BreadboardSim.Socket.Potential;
+import sk.uniza.fri.cp.BreadboardSim.Socket.Socket;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
 
@@ -25,7 +32,10 @@ public abstract class Chip extends Device {
 
 	private Pin[] pins;
 
-	public Chip(){}
+    public Chip(int pinsCount) {
+        this.pins = new Pin[pinsCount];
+        fillPins();
+    }
 
 	public Chip(Board board, int pinsCount){
 		super(board);
@@ -109,6 +119,8 @@ public abstract class Chip extends Device {
 	}
 
 	public abstract String getName();
+
+    public abstract String getStringDescription();
 
 	private Group generateGraphic(){
 		Group graphic = new Group();
@@ -235,8 +247,8 @@ public abstract class Chip extends Device {
 			if(i < pinsCount/2){
 				//spodne nozicky
 				leg.setLayoutX(10 * i - legWidth/2);
-				leg.setLayoutY(10 * legHeight*0.7);
-			} else {
+                leg.setLayoutY(11 * legHeight * 0.7);
+            } else {
 				//horne nozicky
 				leg.setRotate(180);
 				leg.setLayoutX(10 * ( pinsCount - i - 1 ) - legWidth/2);
@@ -247,13 +259,101 @@ public abstract class Chip extends Device {
 
 		Text label = new Text(chipName);
 		label.setFill(Color.WHITE);
-		label.setFont(Font.font(10*1.5));
-		label.setLayoutY(10*2);
-		label.setLayoutX(10);
+        label.setFont(Font.font(9 * 1.5));
+        label.setLayoutY(10*2);
+        label.setLayoutX(5);
 
 		graphic.getChildren().addAll(body, legs, label);
 		graphic.setLayoutX(10/2);
 
 		return new Pane(graphic);
 	}
+
+    @Override
+    public AnchorPane getDescription() {
+        VBox wrapper = new VBox();
+        wrapper.setFillWidth(true);
+        wrapper.setAlignment(Pos.CENTER);
+        wrapper.setPadding(new Insets(3, 3, 0, 3));
+
+        Text name = new Text(getName());
+        name.setFont(Font.font(25));
+
+        Group image = this.generateDescriptionImage();
+
+        Text descriptionText = new Text(getStringDescription());
+        TextFlow textFlow = new TextFlow(descriptionText);
+
+        wrapper.getChildren().addAll(name, image, textFlow);
+
+        return new AnchorPane(wrapper);
+    }
+
+    protected Group generateDescriptionImage() {
+        Group imageGroup = new Group();
+
+        List<Pin> pins = getPins();
+
+        double padding = 10;
+        double pinHeight = 13;
+        double pinWidth = 10;
+        double pinMargin = 5;
+        double textMargin = 5;
+        double fontSize = 10;
+        double height = 2 * padding + (pinHeight + 2 * pinMargin) * pins.size() / 2 - 2 * pinMargin;
+        double width = 70;
+
+        Rectangle body = new Rectangle(width, height, Color.WHITE);
+        body.setStroke(Color.BLACK);
+        body.setStrokeWidth(2);
+        imageGroup.getChildren().add(body);
+
+        Arc mark = new Arc(width / 2, 0, 5, 8, 180, 180);
+        mark.setType(ArcType.ROUND);
+        mark.setFill(Color.WHITE);
+        mark.setStroke(Color.BLACK);
+        imageGroup.getChildren().add(mark);
+
+        double longestTextOnLeft = 0;
+
+        //piny
+        for (int i = 0; i < pins.size(); i++) {
+            Group pinGroup = new Group();
+            Rectangle pinBody = new Rectangle(pinWidth, pinHeight, Color.WHITE);
+            pinBody.setStroke(Color.BLACK);
+
+            Text pinName = new Text(pins.get(i).getName());
+            pinName.setFont(Font.font(fontSize));
+            pinName.setLayoutY(pinHeight - 3);
+
+            Text pinNumber = new Text(Integer.toString(i + 1));
+            pinNumber.setFont(Font.font(fontSize));
+            pinNumber.setLayoutY(pinHeight - 3);
+
+            pinGroup.getChildren().addAll(pinBody, pinName, pinNumber);
+
+            if (i < pins.size() / 2) {
+                //piny vlavo
+                pinBody.setLayoutX(-pinBody.getWidth());
+                pinName.setLayoutX(-(pinName.getBoundsInParent().getWidth() + pinBody.getWidth() + textMargin));
+                pinNumber.setLayoutX(textMargin);
+                pinGroup.setLayoutY(padding + i * (pinHeight + 2 * pinMargin));
+                //sirka najdlhsieho textu pre posun doprava
+                double textWidth = pinName.getBoundsInParent().getWidth();
+                if (textWidth > longestTextOnLeft) longestTextOnLeft = textWidth;
+            } else {
+                //piny vpravo
+                pinName.setLayoutX(pinBody.getWidth() + textMargin);
+                pinNumber.setLayoutX(-(pinNumber.getBoundsInParent().getWidth() + textMargin));
+                pinGroup.setLayoutX(body.getWidth());
+                pinGroup.setLayoutY(padding + (pins.size() - i - 1) * (pinHeight + 2 * pinMargin));
+            }
+
+            imageGroup.getChildren().add(pinGroup);
+        }
+
+        imageGroup.setLayoutX(longestTextOnLeft + pinWidth + textMargin + 10);
+
+        return imageGroup;
+    }
 }

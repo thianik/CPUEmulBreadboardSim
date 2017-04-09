@@ -1,15 +1,14 @@
 package sk.uniza.fri.cp.BreadboardSim;
 
 
-import javafx.event.EventHandler;
 import javafx.scene.control.Label;
-import javafx.scene.control.ScrollPane;
-import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
+import sk.uniza.fri.cp.BreadboardSim.Board.Board;
 
 /**
  * interface???
@@ -46,16 +45,19 @@ public abstract class Item extends Movable {
 	 * @return Panel s grafikou
 	 */
 	public Pane getImage(){
-		return new Pane(new Rectangle(30,30, Color.GREEN));
-	}
+        Text itemName = new Text(this.getClass().getSimpleName());
+        itemName.setLayoutX(5);
+        itemName.setLayoutY(itemName.getBoundsInParent().getHeight());
+        return new Pane(new Rectangle(itemName.getBoundsInParent().getWidth() + 10, 30, Color.GREEN), itemName);
+    }
 
 	/**
 	 * Panel s popisom objektu. Vkladá sa do panela ScrollPanel.
 	 * @return Panel s popisom
 	 */
-	public Pane getDescription(){
-		Label text = new Label("Description ... " + this.getClass().getSimpleName());
+    public AnchorPane getDescription() {
+        Label text = new Label("Description ... " + this.getClass().getSimpleName());
 		text.setFont(Font.font(10));
-		return new Pane(text);
-	}
+        return new AnchorPane(text);
+    }
 }

@@ -4,9 +4,10 @@ package sk.uniza.fri.cp.BreadboardSim;
 import javafx.event.EventHandler;
 import javafx.geometry.Point2D;
 import javafx.scene.Cursor;
-import javafx.scene.input.MouseDragEvent;
 import javafx.scene.input.MouseEvent;
-import sk.uniza.fri.cp.BreadboardSim.Devices.Device;
+import sk.uniza.fri.cp.BreadboardSim.Board.Board;
+import sk.uniza.fri.cp.BreadboardSim.Board.GridSystem;
+import sk.uniza.fri.cp.BreadboardSim.Wire.Joint;
 
 /**
  * @author Moris
@@ -110,13 +111,10 @@ public abstract class Movable extends HighlightGroup {
 	 * @param deltaY Y-ova zmena pozicie na mriezke oproti aktualnej
 	 */
 	public void moveBy(double deltaX, double deltaY){
-//		this.gridPosX += deltaX / board.getGrid().getSizeX();
-//		this.gridPosY += deltaY / board.getGrid().getSizeY();
-//		Point2D point = board.getGrid().gridToLocal(this.gridPosX, this.gridPosY);
-		//this.relocate(point.getX(), point.getY());
-		this.setLayoutX(getLayoutX() + deltaX);
+        this.gridPosX += deltaX / board.getGrid().getSizeX();
+        this.gridPosY += deltaY / board.getGrid().getSizeY();
+        this.setLayoutX(getLayoutX() + deltaX);
 		this.setLayoutY(getLayoutY() + deltaY);
-
 	}
 
 	/**

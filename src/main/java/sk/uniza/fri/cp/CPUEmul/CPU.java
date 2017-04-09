@@ -224,7 +224,7 @@ public class CPU extends Thread {
 	}
 
 	/**
-     * Skok na ďalšíu inštrukciu v programe.
+     * Skok na ďalšiu inštrukciu v programe.
      */
     public void step(){
         f_pause = true; //pri krokovani zastavit pred vykonanim dalsej inst.
@@ -260,6 +260,9 @@ public class CPU extends Thread {
 
         for (int i = 0; i < RAM.length; i++) RAM[i] = 0;
         for (int i = 0; i < stack.length; i++) stack[i] = 0;
+
+        if (semKey.availablePermits() > 0)
+            semKey.drainPermits();
     }
 
     /**

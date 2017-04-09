@@ -1,12 +1,8 @@
-package sk.uniza.fri.cp.BreadboardSim;
+package sk.uniza.fri.cp.BreadboardSim.Wire;
 
 
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
-import javafx.scene.input.MouseEvent;
 import javafx.scene.paint.Paint;
 import javafx.scene.shape.Line;
-import javafx.scene.transform.Transform;
 
 /**
  * @author Moris
@@ -36,9 +32,9 @@ public class WireSegment extends Line {
         this.endYProperty().bind(this.endJoint.layoutYProperty());
 
 		this.setStrokeWidth(start.getBoard().getGrid().getSizeMin() * 2.0/5.0);
-		this.setFill(Wire.getDefaultColor());
-		this.setStroke(Wire.getDefaultColor());
-		this.setOpacity(0.8);
+        this.setFill(wire.getColor());
+        this.setStroke(wire.getColor());
+        this.setOpacity(0.8);
 	}
 
 	public Wire getWire(){return this.wire;}
@@ -76,7 +72,8 @@ public class WireSegment extends Line {
 	 * @param color
 	 */
 	public void setColor(Paint color){
-
-	}
+        this.setFill(color);
+        this.setStroke(color);
+    }
 
 }

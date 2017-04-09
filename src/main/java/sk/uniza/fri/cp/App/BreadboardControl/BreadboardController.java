@@ -5,9 +5,18 @@ import javafx.fxml.Initializable;
 import javafx.geometry.Point2D;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
+import org.controlsfx.control.ToggleSwitch;
 import sk.uniza.fri.cp.BreadboardSim.*;
-import sk.uniza.fri.cp.BreadboardSim.Devices.Chips.Gates.Gen7400;
-import sk.uniza.fri.cp.BreadboardSim.Devices.Chips.Gates.Gen7402;
+import sk.uniza.fri.cp.BreadboardSim.Board.Board;
+import sk.uniza.fri.cp.BreadboardSim.Components.Breadboard;
+import sk.uniza.fri.cp.BreadboardSim.Components.HexSegment;
+import sk.uniza.fri.cp.BreadboardSim.Components.NumKeys;
+import sk.uniza.fri.cp.BreadboardSim.Devices.Chips.Gates.*;
+import sk.uniza.fri.cp.BreadboardSim.Devices.Chips.SN74125;
+import sk.uniza.fri.cp.BreadboardSim.Devices.Chips.SN74138;
+import sk.uniza.fri.cp.BreadboardSim.Devices.Chips.SN74148;
+import sk.uniza.fri.cp.BreadboardSim.Devices.Chips.SN74151;
+import sk.uniza.fri.cp.BreadboardSim.Wire.Wire;
 
 import java.net.URL;
 import java.util.ResourceBundle;
@@ -31,6 +40,9 @@ public class BreadboardController implements Initializable {
     private ScrollPane descriptionPane;
 
     @FXML private Label lbCoordinates;
+
+    @FXML
+    private ToggleSwitch tsPower;
 
     private Board board;
 
@@ -61,6 +73,20 @@ public class BreadboardController implements Initializable {
             lbCoordinates.setText(((int) gridPoint.getX()) + "x" + ((int) gridPoint.getY()));
         });
 
+        //ak sa zmeni stav simulacie, zmen aj tlacitko spustania simulacie
+        board.simRunningProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue != this.tsPower.isSelected()) {
+                this.tsPower.setSelected(newValue);
+            }
+        });
+
+        this.tsPower.selectedProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue)
+                board.powerOn();
+            else
+                board.powerOff();
+        });
+
         this.boardPane.getChildren().add(board);
     }
 
@@ -71,6 +97,20 @@ public class BreadboardController implements Initializable {
     private void registerItems(){
         this.newItemPicker.registerItem(new Gen7400());
         this.newItemPicker.registerItem(new Gen7402());
+        this.newItemPicker.registerItem(new Gen7404());
+        this.newItemPicker.registerItem(new Gen7408());
+        this.newItemPicker.registerItem(new Gen7410());
+        this.newItemPicker.registerItem(new Gen7430());
+        this.newItemPicker.registerItem(new Gen7432());
+        this.newItemPicker.registerItem(new Gen7486());
+        this.newItemPicker.registerItem(new SN74125());
+        this.newItemPicker.registerItem(new SN74138());
+        this.newItemPicker.registerItem(new SN74148());
+        this.newItemPicker.registerItem(new SN74151());
+
+        this.newItemPicker.registerItem(new Breadboard());
+        this.newItemPicker.registerItem(new HexSegment());
+        this.newItemPicker.registerItem(new NumKeys());
     }
 
     @FXML
@@ -82,4 +122,18 @@ public class BreadboardController implements Initializable {
             board.powerOn();
     }
 
+    @FXML
+    private void handleSaveAction() {
+        board.save();
+    }
+
+    @FXML
+    private void handleLoadAction() {
+        board.load();
+    }
+
+    @FXML
+    private void handleClearBoardAction() {
+        board.clearBoard();
+    }
 }

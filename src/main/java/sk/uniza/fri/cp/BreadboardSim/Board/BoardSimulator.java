@@ -1,14 +1,14 @@
-package sk.uniza.fri.cp.BreadboardSim;
+package sk.uniza.fri.cp.BreadboardSim.Board;
 
 
 import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 import javafx.concurrent.WorkerStateEvent;
 import javafx.event.EventHandler;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Device;
+import sk.uniza.fri.cp.BreadboardSim.Socket.PowerSocket;
 
 import java.util.LinkedList;
 import java.util.List;

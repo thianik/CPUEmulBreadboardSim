@@ -1,25 +1,27 @@
 package sk.uniza.fri.cp.BreadboardSim.Components;
 
-import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.scene.Group;
-import javafx.scene.Node;
-import javafx.scene.control.Label;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Line;
 import javafx.scene.shape.Rectangle;
-import javafx.scene.text.Font;
 import javafx.scene.text.Text;
-import javafx.scene.text.TextAlignment;
-import sk.uniza.fri.cp.BreadboardSim.*;
+import sk.uniza.fri.cp.BreadboardSim.Board.Board;
+import sk.uniza.fri.cp.BreadboardSim.Board.GridSystem;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Device;
+import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.InputOutputPin;
+import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.InputPin;
+import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.OutputPin;
+import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.Pin;
+import sk.uniza.fri.cp.BreadboardSim.Socket.Potential;
+import sk.uniza.fri.cp.BreadboardSim.Socket.Socket;
+import sk.uniza.fri.cp.BreadboardSim.Socket.SocketType;
+import sk.uniza.fri.cp.BreadboardSim.Socket.SocketsFactory;
 import sk.uniza.fri.cp.Bus.Bus;
 
-import javax.swing.event.ChangeEvent;
-import java.util.Arrays;
 import java.util.List;
 //import javax.swing.event.ChangeListener;
 
@@ -38,7 +40,6 @@ public class BusInterface extends Component {
     private static final Color CONTROL_LED_ON = Color.YELLOW;
     private static final Color CONTROL_LED_OFF = Color.OLIVE;
 
-	private static int id = 1;
 	private Bus bus;
 
 	private Rectangle background;
@@ -51,8 +52,8 @@ public class BusInterface extends Component {
 	private BusCommunicator[] controlBusCommunicators;
 
 	public BusInterface(Board board, Bus bus){
-		super(board, id++);
-		this.bus = bus;
+        super(board);
+        this.bus = bus;
 
 		//grafika
 		GridSystem grid = getBoard().getGrid();
@@ -62,7 +63,7 @@ public class BusInterface extends Component {
 		background = new Rectangle(this.gridWidth, this.gridHeight, Color.rgb(51,100,68));
 
 		//GND
-        Group leftGndSockets = SocketsFactory.getHorizontalPower(this, 1, 2, Potential.Value.LOW, getPowerSockets());
+        Group leftGndSockets = SocketsFactory.getHorizontalPower(this, 2, Potential.Value.LOW, getPowerSockets());
         Text leftGndText = Board.getLabelText("GND", grid.getSizeMin());
         leftGndText.setLayoutX(-grid.getSizeX()/2.0);
         leftGndText.setLayoutY(-grid.getSizeY());
@@ -70,7 +71,7 @@ public class BusInterface extends Component {
         leftGndSockets.setLayoutX(grid.getSizeX() * 8);
         leftGndSockets.setLayoutY(grid.getSizeY() * 4);
 
-        Group rightGndSockets = SocketsFactory.getHorizontalPower(this, 1, 2, Potential.Value.LOW, getPowerSockets());
+        Group rightGndSockets = SocketsFactory.getHorizontalPower(this, 2, Potential.Value.LOW, getPowerSockets());
         Text rightGndText = Board.getLabelText("GND", grid.getSizeMin());
         rightGndText.setLayoutX(-grid.getSizeX()/2.0);
         rightGndText.setLayoutY(-grid.getSizeY());
@@ -78,7 +79,7 @@ public class BusInterface extends Component {
         rightGndSockets.setLayoutX(grid.getSizeX() * 57);
         rightGndSockets.setLayoutY(grid.getSizeY() * 4);
 
-        //super.socketsForDevices.addAll(getPowerSockets());
+
 
         this.bus.addressBusProperty().addListener(new ChangeListener<Number>() {
             @Override
@@ -183,6 +184,10 @@ public class BusInterface extends Component {
 		this.getChildren().addAll(background,    leftGndSockets, rightGndSockets);
 		generateInterface();
 
+        //registracia vsetkych soketov
+        this.addAllSockets(getPowerSockets());
+        //zvysna sa pridavaju pocas vytvarania v getnerateInterface
+
 		//prvotna inicializacia
 		this.bus.setRandomAddress();
 		this.bus.setRandomData();
@@ -215,8 +220,8 @@ public class BusInterface extends Component {
 			double centerX = grid.getSizeX() * (16-i);
 
 			//soket
-			Socket socket = new Socket(this, i);
-			socket.setLayoutX(centerX);
+            Socket socket = new Socket(this);
+            socket.setLayoutX(centerX);
 			addressSockets[i] = socket;
 
 			//komunikator so zbernicou
@@ -240,9 +245,9 @@ public class BusInterface extends Component {
 
 
 		//DATOVA ZBERNICA
-		dataSockets = new Socket[16];
-		dataBusCommunicators = new BusCommunicator[16];
-		Group dataInterface = new Group();
+        dataSockets = new Socket[8];
+        dataBusCommunicators = new BusCommunicator[8];
+        Group dataInterface = new Group();
 		dataInterface.setLayoutX(grid.getSizeX() * 36);
 		dataInterface.setLayoutY(grid.getSizeY() * 4);
 
@@ -251,8 +256,8 @@ public class BusInterface extends Component {
 			double centerX = grid.getSizeX() * (8-i);
 
 			//soket
-			Socket socket = new Socket(this, i);
-			socket.setLayoutX(centerX);
+            Socket socket = new Socket(this);
+            socket.setLayoutX(centerX);
 			dataSockets[i] = socket;
 
 			//komunikator so zbernicou
@@ -286,8 +291,8 @@ public class BusInterface extends Component {
 			double centerX = grid.getSizeX() * (9-i);
 
 			//soket
-			Socket socket = new Socket(this, i);
-			socket.setLayoutX(centerX);
+            Socket socket = new Socket(this);
+            socket.setLayoutX(centerX);
 			controlSockets[i] = socket;
 
 			//komunikator so zbernicou
@@ -338,7 +343,11 @@ public class BusInterface extends Component {
 		}
 
 		this.getChildren().addAll(addressInterface, dataInterface, controlInterface);
-	}
+        //registracia soketov
+        this.addAllSockets(addressSockets);
+        this.addAllSockets(dataSockets);
+        this.addAllSockets(controlSockets);
+    }
 
 
 	private abstract static class BusCommunicator extends Device{

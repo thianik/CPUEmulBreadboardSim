@@ -1,5 +1,6 @@
-package sk.uniza.fri.cp.BreadboardSim;
+package sk.uniza.fri.cp.BreadboardSim.Socket;
 
+import sk.uniza.fri.cp.BreadboardSim.Board.BoardChangeEvent;
 import sk.uniza.fri.cp.BreadboardSim.Components.Component;
 
 /**
@@ -9,8 +10,8 @@ public class PowerSocket extends Socket {
 
     private Potential.Value value;
 
-    public PowerSocket(Component component, int id, Potential.Value connectedValue){
-        super(component, id);
+    public PowerSocket(Component component, Potential.Value connectedValue) {
+        super(component);
         this.setType(SocketType.OUT);
         this.value = connectedValue;
     }

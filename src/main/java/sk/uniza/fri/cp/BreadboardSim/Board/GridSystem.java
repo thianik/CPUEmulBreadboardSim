@@ -1,4 +1,4 @@
-package sk.uniza.fri.cp.BreadboardSim;
+package sk.uniza.fri.cp.BreadboardSim.Board;
 
 
 import javafx.geometry.Point2D;

@@ -7,11 +7,11 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.Shape;
 import javafx.scene.text.Text;
-import sk.uniza.fri.cp.BreadboardSim.Board;
+import sk.uniza.fri.cp.BreadboardSim.Board.Board;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Led;
-import sk.uniza.fri.cp.BreadboardSim.GridSystem;
-import sk.uniza.fri.cp.BreadboardSim.Potential;
-import sk.uniza.fri.cp.BreadboardSim.Socket;
+import sk.uniza.fri.cp.BreadboardSim.Board.GridSystem;
+import sk.uniza.fri.cp.BreadboardSim.Socket.Potential;
+import sk.uniza.fri.cp.BreadboardSim.Socket.Socket;
 
 
 /**
@@ -24,30 +24,33 @@ public class HexSegment extends Component{
 	private static final Color SEGMENT_ON_COLOR = Color.RED;
 	private static final Color SEGMENT_OFF_COLOR = Color.LIGHTGRAY;
 
-	private static int id = 1;
+    private static int segmentID = 1;
 
 	private HexSegment instance;
 	private OneSegment[] segments;
 	private Socket[] inputSockets;
 	private Socket commonGndSocket;
 	private Group commonGndSocketGroup;
+
 	private Rectangle background;
 
 	private enum SegmentType {
 		HORIZONTAL, VERTICAL, DOT;
 	}
 
+    public HexSegment() {
+    }
+
 	public HexSegment(Board board){
-		super(board, id++);
-		this.instance = this;
+        super(board);
+        this.instance = this;
 
 		GridSystem grid = board.getGrid();
 
         this.gridWidth = grid.getSizeX() * 8;
         this.gridHeight = grid.getSizeY() * 16;
 
-		//this.background = new Rectangle(this.gridWidth, this.gridHeight, Color.rgb(51,100,68));
-		//this.background.setOpacity(0);
+        this.background = new Rectangle(this.gridWidth, this.gridHeight, Color.rgb(51, 100, 68));
 
 		this.inputSockets = new Socket[8];
 		Group inputSocketsGroup = generateInputSockets();
@@ -55,8 +58,8 @@ public class HexSegment extends Component{
         inputSocketsGroup.setLayoutY(grid.getSizeY());
 
         //vyvod na uzemnenie segmentov
-        commonGndSocket = new Socket(this, 8);
-        Text gndSocketText = Board.getLabelText("A" + this.getComponentId(), grid.getSizeMin());
+        commonGndSocket = new Socket(this);
+        Text gndSocketText = Board.getLabelText("A" + segmentID++, grid.getSizeMin());
         gndSocketText.setLayoutX(grid.getSizeX());
         gndSocketText.setLayoutY(0.25 * gndSocketText.getBoundsInParent().getHeight());
 
@@ -74,8 +77,17 @@ public class HexSegment extends Component{
 			this.segments[i].connect(this.inputSockets[i]);
 		}
 
-		this.getChildren().addAll( inputSocketsGroup, segmentsGroup, commonGndSocketGroup);
-	}
+        this.getChildren().addAll(background, inputSocketsGroup, segmentsGroup, commonGndSocketGroup);
+
+        //registracia vsetkych soketov
+        this.addAllSockets(inputSockets);
+        this.addSocket(commonGndSocket);
+    }
+
+    public void hideBackground(boolean hide) {
+        if (hide) this.background.setOpacity(0);
+        else this.background.setOpacity(1);
+    }
 
 	public Group getCommonGndSocketGroup(){
 	    return commonGndSocketGroup;
@@ -87,8 +99,8 @@ public class HexSegment extends Component{
 		Group sockets = new Group();
 
 		for (int i = 0; i < 8; i++) {
-			Socket socket = new Socket(this, i);
-			socket.setLayoutY(grid.getSizeY() * i);
+            Socket socket = new Socket(this);
+            socket.setLayoutY(grid.getSizeY() * i);
 
 			Text text = Board.getLabelText(String.valueOf((char) (i+97)), grid.getSizeMin());
 			text.setLayoutX(grid.getSizeX());
@@ -96,8 +108,8 @@ public class HexSegment extends Component{
 			sockets.getChildren().add(text);
 
 			inputSockets[i] = socket;
-			//super.socketsForDevices.add(socket);
-		}
+            //super.sockets.add(socket);
+        }
 
 		sockets.getChildren().addAll(inputSockets);
 		return sockets;
@@ -166,8 +178,8 @@ public class HexSegment extends Component{
 			this.thicknessCoef = 0.5;
 
 			//vytvorenie fiktivneho vnutorneho soketu pre pripojenie gnd ledky a napojenie na potencial zo spolocneho gnd soketku
-			this.innerGndSocket = new Socket(instance, 0);
-			new Potential(this.innerGndSocket, commonGndSocket);
+            this.innerGndSocket = new Socket(instance);
+            new Potential(this.innerGndSocket, commonGndSocket);
 
 			GridSystem grid = getBoard().getGrid();
 

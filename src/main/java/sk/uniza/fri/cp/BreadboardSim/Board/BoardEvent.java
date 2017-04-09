@@ -1,7 +1,9 @@
-package sk.uniza.fri.cp.BreadboardSim;
+package sk.uniza.fri.cp.BreadboardSim.Board;
 
 
 import sk.uniza.fri.cp.BreadboardSim.Devices.Device;
+import sk.uniza.fri.cp.BreadboardSim.Socket.Potential;
+import sk.uniza.fri.cp.BreadboardSim.Socket.Socket;
 
 import java.util.List;
 

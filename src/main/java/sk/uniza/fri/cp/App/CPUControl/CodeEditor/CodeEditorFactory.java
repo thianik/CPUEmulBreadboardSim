@@ -17,8 +17,11 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Faktorka na vytvorenie editora kodu
- * Created by Moris on 19.2.2017.
+ * Faktorka na vytvorenie editora kódu.
+ * Definuje kľúčové slová, ktoré sa zvýrazňujú ako aj nastavenia paragrafov.
+ *
+ * @author Tomáš Hianik
+ * @created 19.2.2017.
  */
 public class CodeEditorFactory {
     /**
@@ -53,7 +56,17 @@ public class CodeEditorFactory {
                     + "|(?<COMMENT>" + COMMENT_PATTERN + ")"
     );
 
+    private CodeEditorFactory() {
+    }
 
+    /**
+     * Vytvorí a vráti editor kódu podporujúci zvýrazňovanie kľúčových slov,
+     * číslovanie riadkov a zaznamenávanie breakpointov.
+     *
+     * @param parentPane                Panel, do ktorého sa editor vloží.
+     * @param observableBreakpointLines Zoznam s breakpointami
+     * @return Nová inštancia editora kódu
+     */
     public static CodeArea getCodeEditor(Pane parentPane, ObservableSet<Integer> observableBreakpointLines){
         CodeArea codeEditor = new CodeArea();
         parentPane.getChildren().add(new VirtualizedScrollPane<>(codeEditor));
@@ -79,7 +92,7 @@ public class CodeEditorFactory {
     }
 
     /**
-     * Farebne zvyraznovanie v editore kodu
+     * Farebne zvýraznoňanie v editore kódu
      */
     private static StyleSpans<Collection<String>> computeHighlighting(String text) {
         Matcher matcher = PATTERN.matcher(text);

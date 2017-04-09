@@ -4,13 +4,9 @@ package sk.uniza.fri.cp.BreadboardSim;
 import javafx.event.EventHandler;
 import javafx.scene.Group;
 import javafx.scene.control.Label;
-import javafx.scene.input.KeyCode;
-import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.*;
-import javafx.scene.paint.Color;
-
-import java.util.List;
+import sk.uniza.fri.cp.BreadboardSim.Board.Board;
 
 /**
  * @author Moris
@@ -19,8 +15,6 @@ import java.util.List;
  */
 public abstract class HighlightGroup extends Group implements Selectable {
 
-	private List<Warning> warnings;
-	private Warning sendedWarning;
 
 	private boolean isSelectable;
 
@@ -65,13 +59,6 @@ public abstract class HighlightGroup extends Group implements Selectable {
 
 	}
 
-	/**
-	 * 
-	 * @param warning
-	 */
-	public void setMyWarning(Warning warning){
-
-	}
 
 	public Pane getDescription(){
 		return new Pane(new Label("No description \n" + this.getClass().getSimpleName()));

@@ -1,13 +1,12 @@
-package sk.uniza.fri.cp.BreadboardSim;
+package sk.uniza.fri.cp.BreadboardSim.Wire;
 
 
 import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
-import javafx.event.EventHandler;
-import javafx.geometry.Point2D;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.transform.Transform;
-import javafx.scene.transform.TransformChangedEvent;
+import sk.uniza.fri.cp.BreadboardSim.Board.Board;
+import sk.uniza.fri.cp.BreadboardSim.Board.BoardEvent;
+import sk.uniza.fri.cp.BreadboardSim.Socket.Socket;
 
 /**
  * pozna socket aby sa vedel podla neho premiestnovat - nabindovat pozicie
@@ -22,10 +21,8 @@ public class WireEnd extends Joint {
 	private double lastPosX = -1;
 	private double lastPosY = -1;
 
-	private ChangeListener<Transform> socketPositionChangeListener = new ChangeListener<Transform>() {
-		@Override
-		public void changed(ObservableValue<? extends Transform> observable, Transform oldValue, Transform newValue) {
-			if(lastPosX == -1){
+    private ChangeListener<Transform> socketPositionChangeListener = (observable, oldValue, newValue) -> {
+        if(lastPosX == -1){
 				lastPosX = getLayoutX();
 				lastPosY = getLayoutY();
 			}
@@ -33,10 +30,9 @@ public class WireEnd extends Joint {
 			setLayoutX(socket.getBoardX());
 			setLayoutY(socket.getBoardY());
 
-			getWire().moveBy(getLayoutX() - lastPosX, getLayoutY() - lastPosY );
-			lastPosX = getLayoutX();
+        getWire().moveJointsWithEnd(this, getLayoutX() - lastPosX, getLayoutY() - lastPosY);
+        lastPosX = getLayoutX();
 			lastPosY = getLayoutY();
-		}
 	};
 
 	public WireEnd(Board board, Wire wire){
@@ -51,22 +47,21 @@ public class WireEnd extends Joint {
 			event.consume();
 		});
 
-		this.addEventFilter(MouseEvent.MOUSE_RELEASED, event -> {
-			getWire().setMouseTransparent(false);
-			getWire().setOpacity(1);
+        this.addEventFilter(MouseEvent.DRAG_DETECTED, event -> {
+            startFullDrag();
 
-			event.consume();
-		});
+            if (this.getSocket() != null)
+                this.disconnectSocket();
 
-		this.addEventFilter(MouseEvent.DRAG_DETECTED, event -> {
-			startFullDrag();
+            //event.consume();
+        });
 
-			if(this.getSocket() != null)
-				this.disconnectSocket();
+        this.addEventFilter(MouseEvent.MOUSE_RELEASED, event -> {
+            getWire().setMouseTransparent(false);
+            getWire().setOpacity(1);
 
-			event.consume();
-		});
-
+            event.consume();
+        });
 	}
 
 	@Override

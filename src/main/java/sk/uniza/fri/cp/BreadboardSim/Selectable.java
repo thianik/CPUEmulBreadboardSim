@@ -1,11 +1,8 @@
 package sk.uniza.fri.cp.BreadboardSim;
 
 
-import javafx.event.EventHandler;
-import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Pane;
-
-import java.util.LinkedList;
+import sk.uniza.fri.cp.BreadboardSim.Board.Board;
 
 /**
  * @author Moris

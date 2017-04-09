@@ -1,40 +1,41 @@
-package sk.uniza.fri.cp.BreadboardSim.Components;
+package sk.uniza.fri.cp.BreadboardSim;
 
 
-import javafx.scene.input.MouseEvent;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
-import sk.uniza.fri.cp.BreadboardSim.Board;
-import sk.uniza.fri.cp.BreadboardSim.GridSystem;
+import sk.uniza.fri.cp.BreadboardSim.Board.Board;
+import sk.uniza.fri.cp.BreadboardSim.Board.GridSystem;
+import sk.uniza.fri.cp.BreadboardSim.Components.*;
 import sk.uniza.fri.cp.Bus.Bus;
+
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * @author Moris
  * @version 1.0
  * @created 17-mar-2017 16:16:35
  */
-public class SchoolBreadboard extends Component {
+public class SchoolBreadboard extends Item {
 
 	private static final Color BACKGROUND_COLOR = Color.rgb(51,100,68);
 
 	private static SchoolBreadboard instance;
 
-	private Rectangle background;
-
-	private BusInterface busInterface;
-	private Breadboard breadboard;
-	private HexSegmentsPanel hexSegmentsPanel;
-	private NumKeys numKeys;
+    private Component busInterface;
+    private Component breadboard;
+    private Component hexSegmentsPanel;
+    private Component numKeys;
 
 	private SchoolBreadboard(Board board){
-		super(board, 1);
+        super(board);
 
 		GridSystem grid =  board.getGrid();
 
-        this.gridWidth = grid.getSizeX() * 70;
-        this.gridHeight = grid.getSizeY() * 46;
-		background = new Rectangle(this.gridWidth, this.gridHeight, BACKGROUND_COLOR);
-		background.setArcWidth(grid.getSizeX());
+        int gridWidth = grid.getSizeX() * 70;
+        int gridHeight = grid.getSizeY() * 46;
+        Rectangle background = new Rectangle(gridWidth, gridHeight, BACKGROUND_COLOR);
+        background.setArcWidth(grid.getSizeX());
 		background.setArcHeight(grid.getSizeY());
 
 		this.busInterface = new BusInterface(board, Bus.getBus());
@@ -60,13 +61,6 @@ public class SchoolBreadboard extends Component {
 		this.numKeys.setLayoutX(grid.getSizeX() * 2 + breadboard.getGridWidth() - numKeys.getGridWidth());
 		this.numKeys.setLayoutY(busInterface.getGridHeight() + breadboard.getGridHeight());
 
-		addAllPowerSockets(busInterface.getPowerSockets());
-		addAllPowerSockets(breadboard.getPowerSockets());
-		addAllPowerSockets(hexSegmentsPanel.getPowerSockets());
-		addAllPowerSockets(numKeys.getPowerSockets());
-
-		this.socketsForDevices.addAll(breadboard.getSocketsForDevices());
-
 		this.getChildren().addAll(background, busInterface, breadboard, numKeys, hexSegmentsPanel);
 	}
 
@@ -76,6 +70,15 @@ public class SchoolBreadboard extends Component {
 
 		return instance;
 	}
+
+    public List<? extends Component> getComponents() {
+        List<Component> list = new LinkedList<>();
+        list.add(this.busInterface);
+        list.add(this.breadboard);
+        list.addAll(((HexSegmentsPanel) this.hexSegmentsPanel).getComponents());
+        list.add(this.numKeys);
+        return list;
+    }
 
 	@Override
 	public void moveTo(int gridPosX, int gridPosY) {

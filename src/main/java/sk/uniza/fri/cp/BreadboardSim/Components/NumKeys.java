@@ -13,7 +13,13 @@ import javafx.scene.shape.Rectangle;
 
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
-import sk.uniza.fri.cp.BreadboardSim.*;
+import sk.uniza.fri.cp.BreadboardSim.Board.Board;
+import sk.uniza.fri.cp.BreadboardSim.Board.BoardChangeEvent;
+import sk.uniza.fri.cp.BreadboardSim.Board.GridSystem;
+import sk.uniza.fri.cp.BreadboardSim.Socket.Potential;
+import sk.uniza.fri.cp.BreadboardSim.Socket.Socket;
+import sk.uniza.fri.cp.BreadboardSim.Socket.SocketType;
+import sk.uniza.fri.cp.BreadboardSim.Socket.SocketsFactory;
 
 /**
  * Komponent s klavesnicou
@@ -23,22 +29,23 @@ import sk.uniza.fri.cp.BreadboardSim.*;
  */
 public class NumKeys extends Component {
 
-	private static int id = 1;
-
 	private Rectangle background;
 	private Group buttonsGroup;
 
 	private Socket[] columnSockets;
 	private Socket[] rowSockets;
 
-	//konetxtove menu
-	private ContextMenu contextMenu;
+    //kontextove menu
+    private ContextMenu contextMenu;
 	private MenuItem miChangeButtonBehaviour;
 	private boolean twoClick;
 	boolean leftMouseButtonDown;
 
-	public NumKeys(Board board){
-		super(board, id++);
+    public NumKeys() {
+    }
+
+    public NumKeys(Board board) {
+        super(board);
 
 		columnSockets = new Socket[4];
 		rowSockets = new Socket[4];
@@ -60,8 +67,8 @@ public class NumKeys extends Component {
         rowGroup.setLayoutY(grid.getSizeY() * 2);
 
         //GND
-		Group gndGroup = SocketsFactory.getHorizontalPower(this, 1, 4, Potential.Value.LOW, getPowerSockets());
-		Text rowText = Board.getLabelText("GND", grid.getSizeMin());
+        Group gndGroup = SocketsFactory.getHorizontalPower(this, 4, Potential.Value.LOW, getPowerSockets());
+        Text rowText = Board.getLabelText("GND", grid.getSizeMin());
 		rowText.setLayoutX(grid.getSizeX() * 4);
 		rowText.setLayoutY(rowText.getBoundsInParent().getHeight()/2.0);
 		gndGroup.getChildren().add(rowText);
@@ -70,7 +77,7 @@ public class NumKeys extends Component {
         gndGroup.setLayoutY(grid.getSizeY());
 
         //+5V
-        Group vccGroup = SocketsFactory.getHorizontalPower(this, 1, 2, Potential.Value.HIGH, getPowerSockets());
+        Group vccGroup = SocketsFactory.getHorizontalPower(this, 2, Potential.Value.HIGH, getPowerSockets());
         Text vccText = Board.getLabelText("+5V", grid.getSizeMin());
         vccText.setLayoutX(grid.getSizeX()/2.0 - vccText.getBoundsInLocal().getWidth()/2.0);
         vccText.setLayoutY( grid.getSizeY() * 1.5);
@@ -95,6 +102,12 @@ public class NumKeys extends Component {
 		buttonsGroup.setLayoutY(grid.getSizeY() * 4);
 
 		this.getChildren().addAll(background, buttonsGroup, columnGroup, rowGroup, gndGroup, vccGroup);
+
+        //registracia vsetkych soketov komponentu
+        this.addAllSockets(getPowerSockets());
+        this.addAllSockets(columnSockets);
+        this.addAllSockets(rowSockets);
+
 
 		//kontextove menu pre zmenu spravania tlacitok
 		this.miChangeButtonBehaviour = new MenuItem("Dva kliky");
@@ -127,8 +140,8 @@ public class NumKeys extends Component {
 		Group columnGroup = new Group();
 
 		for (int i = 0; i < 4; i++) {
-			Socket socket = new Socket(this, i);
-			socket.setType(SocketType.WEAK_OUT);
+            Socket socket = new Socket(this);
+            socket.setType(SocketType.WEAK_OUT);
 			socket.setPotential(Potential.Value.HIGH);
 
 			socket.setLayoutX(grid.getSizeX() * i);
@@ -162,7 +175,7 @@ public class NumKeys extends Component {
         Group rowGroup = new Group();
 
         for (int i = 0; i < 4; i++) {
-            Socket socket = new Socket(this, i);
+            Socket socket = new Socket(this);
             //socket.setType(SocketType.IN);
             socket.setLayoutX(grid.getSizeX() * (3-i) );
 

@@ -89,15 +89,25 @@
                         <Button fx:id="btnStop" layoutX="535.0" layoutY="18.0" mnemonicParsing="false" onAction="#handleButtonStopAction" text="Stop [F10]" />
                     </buttons>
                   </ButtonBar>
+                   <ButtonBar prefHeight="40.0" prefWidth="200.0" HBox.hgrow="ALWAYS">
+                       <buttons>
+                           <Button fx:id="btnSimulator" mnemonicParsing="false" onAction="#handleButtonSimulatorAction"
+                                   text="Simulátor"/>
+                       </buttons>
+                       <padding>
+                           <Insets left="20.0" right="20.0"/>
+                       </padding>
+                   </ButtonBar>
                   <Region HBox.hgrow="ALWAYS" />
-                  <ToggleSwitch fx:id="tsConnectBusUsb" alignment="CENTER" contentDisplay="CENTER" maxHeight="-Infinity" text="Komunikovať cez USB" HBox.hgrow="NEVER">
+                   <ToggleSwitch fx:id="tsConnectBusUsb" alignment="CENTER" contentDisplay="CENTER"
+                                 maxHeight="-Infinity" text="Komunikovať cez USB " HBox.hgrow="NEVER">
                      <HBox.margin>
                         <Insets />
                      </HBox.margin>
                   </ToggleSwitch>
                </children>
                <padding>
-                  <Insets right="10.0" />
+                   <Insets left="10.0" right="10.0"/>
                </padding>
             </HBox>
          </children>

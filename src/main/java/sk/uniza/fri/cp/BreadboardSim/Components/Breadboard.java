@@ -7,9 +7,13 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Line;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
-import sk.uniza.fri.cp.BreadboardSim.Board;
-import sk.uniza.fri.cp.BreadboardSim.GridSystem;
-import sk.uniza.fri.cp.BreadboardSim.SocketsFactory;
+import sk.uniza.fri.cp.BreadboardSim.Board.Board;
+import sk.uniza.fri.cp.BreadboardSim.Board.GridSystem;
+import sk.uniza.fri.cp.BreadboardSim.Socket.Socket;
+import sk.uniza.fri.cp.BreadboardSim.Socket.SocketsFactory;
+
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * @author Moris
@@ -18,14 +22,15 @@ import sk.uniza.fri.cp.BreadboardSim.SocketsFactory;
  */
 public class Breadboard extends Component {
 
-	private static int id = 1;
-
 	//grafika
 	private Rectangle background;
 	private static final Color BACKGROUND_COLOR = Color.WHITESMOKE;
 
+    public Breadboard() {
+    }
+
 	public Breadboard(Board board){
-		super(board, id++);
+        super(board);
 
 		//grafika
 		GridSystem grid = getBoard().getGrid();
@@ -34,20 +39,20 @@ public class Breadboard extends Component {
 
 		background = new Rectangle(this.gridWidth, this.gridHeight, BACKGROUND_COLOR);
 
-		Group topPowerLines = generatePowerLines(1);
-		topPowerLines.setLayoutX(grid.getSizeX() * 4);
+        Group topPowerLines = generatePowerLines();
+        topPowerLines.setLayoutX(grid.getSizeX() * 4);
 		topPowerLines.setLayoutY(grid.getSizeY() * 2);
 
-		Group topSockets = generate5VerticalSocketsGroups(101);
-		topSockets.setLayoutX(grid.getSizeX() * 2);
+        Group topSockets = generate5VerticalSocketsGroups();
+        topSockets.setLayoutX(grid.getSizeX() * 2);
 		topSockets.setLayoutY(grid.getSizeX() * 6);
 
-		Group bottomSockets = generate5VerticalSocketsGroups(416);
-		bottomSockets.setLayoutX(grid.getSizeX() * 2);
+        Group bottomSockets = generate5VerticalSocketsGroups();
+        bottomSockets.setLayoutX(grid.getSizeX() * 2);
 		bottomSockets.setLayoutY(grid.getSizeX() * 13);
 
-		Group bottomPowerLines = generatePowerLines(731);
-		bottomPowerLines.setLayoutX(grid.getSizeX() * 4);
+        Group bottomPowerLines = generatePowerLines();
+        bottomPowerLines.setLayoutX(grid.getSizeX() * 4);
 		bottomPowerLines.setLayoutY(grid.getSizeY() * 20);
 
 		//popisky
@@ -70,14 +75,17 @@ public class Breadboard extends Component {
 		this.getChildren().addAll(background, topPowerLines, topSockets, bottomSockets, bottomPowerLines, charLabelsLeft, charLabelsRight, numberLabelsTop, numberLabelsBottom);
 	}
 
-	private Group generatePowerLines(int startId){
-		GridSystem grid = getBoard().getGrid();
+    private Group generatePowerLines() {
+        GridSystem grid = getBoard().getGrid();
 
-		//sokety
-		Group vccSockets = SocketsFactory.getHorizontal(this, startId, 50, 5, 1, super.socketsForDevices);
+        List<Socket> socketList = new LinkedList<>();
+        //sokety
+        Group vccSockets = SocketsFactory.getHorizontal(this, 50, 5, 1, socketList);
 
-		Group gndSockets = SocketsFactory.getHorizontal(this, startId + 50, 50, 5, 1, super.socketsForDevices);
-		gndSockets.setLayoutY(grid.getSizeY());
+        Group gndSockets = SocketsFactory.getHorizontal(this, 50, 5, 1, socketList);
+        gndSockets.setLayoutY(grid.getSizeY());
+
+        this.addAllSockets(socketList);
 
 		//ciarove oznacenie
 		Line redLine = new Line(-grid.getSizeX(), -grid.getSizeY(), grid.getSizeX() * 59, -grid.getSizeY());
@@ -91,18 +99,21 @@ public class Breadboard extends Component {
 		return new Group(vccSockets, gndSockets, redLine, blueLine);
 	}
 
-	private Group generate5VerticalSocketsGroups(int startId){
-		GridSystem grid = getBoard().getGrid();
+    private Group generate5VerticalSocketsGroups() {
+        GridSystem grid = getBoard().getGrid();
 
-		Group sockets = new Group();
+        List<Socket> socketList = new LinkedList<>();
+        Group sockets = new Group();
 
 		for (int i = 0; i < 63; i++) {
-			Group vertiacalLine = SocketsFactory.getVertical(this, startId + i * 5, 5, super.socketsForDevices);
-			vertiacalLine.setLayoutX(i * grid.getSizeX());
+            Group vertiacalLine = SocketsFactory.getVertical(this, 5, socketList);
+            vertiacalLine.setLayoutX(i * grid.getSizeX());
 			sockets.getChildren().add(vertiacalLine);
 		}
-		
-		return sockets;
+
+        this.addAllSockets(socketList);
+
+        return sockets;
 	}
 
 	private Group generateAtoJLabels(){

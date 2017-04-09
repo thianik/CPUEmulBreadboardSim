@@ -1,4 +1,4 @@
-package sk.uniza.fri.cp.BreadboardSim;
+package sk.uniza.fri.cp.BreadboardSim.Socket;
 
 
 import sk.uniza.fri.cp.BreadboardSim.Devices.Device;
@@ -61,9 +61,15 @@ public class Potential {
 		return null;
 	}
 
-	public ArrayList<Socket> getConnectedSockets(){
-		return null;
-	}
+    public void getConnectedSockets(List<Socket> listToFill) {
+        if (this.parent1 == null && this.parent2 == null) {
+            if (this.socket1 != null) listToFill.add(this.socket1);
+            if (this.socket2 != null) listToFill.add(this.socket2);
+        } else {
+            if (this.parent1 != null) this.parent1.getConnectedSockets(listToFill);
+            if (this.parent2 != null) this.parent2.getConnectedSockets(listToFill);
+        }
+    }
 
 	public void getDevicesWithInputs(List<Device> listToFill) {
 		if(listToFill == null) return;

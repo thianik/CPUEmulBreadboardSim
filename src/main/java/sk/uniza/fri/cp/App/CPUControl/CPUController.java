@@ -13,6 +13,7 @@ import javafx.concurrent.WorkerStateEvent;
 import javafx.css.PseudoClass;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 
 import java.io.*;
@@ -24,6 +25,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.function.Consumer;
 
 //CodeArea zvyraznovanie slov
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
@@ -33,6 +36,8 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.stage.FileChooser;
+import javafx.stage.Stage;
+import javafx.stage.WindowEvent;
 import javafx.util.Duration;
 import org.controlsfx.control.Notifications;
 import org.controlsfx.control.ToggleSwitch;
@@ -43,6 +48,7 @@ import javafx.scene.control.*;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
 
+import sk.uniza.fri.cp.App.BreadboardControl.BreadboardController;
 import sk.uniza.fri.cp.App.CPUControl.CodeEditor.CodeEditorFactory;
 import sk.uniza.fri.cp.App.CPUControl.CodeEditor.RichTextFXHelpers;
 import sk.uniza.fri.cp.App.CPUControl.io.ConsoleOutputStream;
@@ -129,6 +135,10 @@ public class CPUController implements Initializable {
 	@FXML private Button btnStop;
     private static final String BTN_TXT_START = "Spusti [F5]";
     private static final String BTN_TXT_CONTINUE = "Pokračovať [F5]";
+
+    @FXML
+    private Button btnSimulator;
+    private Stage breadboardStage;
 
     @FXML private ToggleSwitch tsConnectBusUsb;
 
@@ -304,6 +314,8 @@ public class CPUController implements Initializable {
         btnReset.setDisable(true);
         btnStop.setDisable(true);
 
+        btnSimulator.setDisable(true);
+
         //tlacidlo smerovania zbernice cez USB / BreadboardSim
         tsConnectBusUsb.selectedProperty().addListener(new ChangeListener<Boolean>() {
             @Override
@@ -389,6 +401,16 @@ public class CPUController implements Initializable {
         if(!fileSaved && !continueIfUnsavedFile()) return false;
         Platform.exit();
         return true;
+    }
+
+    /**
+     * Nastavnie okna, ktoré sa má zobraziť po kliknutí na tlačidlo otvorenia simulátora.
+     *
+     * @param stageToShow Javisko so simulátorom vývojovej dosky.
+     */
+    public void setBreadboardStage(Stage stageToShow) {
+        this.breadboardStage = stageToShow;
+        this.btnSimulator.setDisable(false);
     }
 
     /**
@@ -872,6 +894,16 @@ public class CPUController implements Initializable {
         }
     }
 
+    //TLACIDLO PRE OTVORENIE SIMULATORA
+    @FXML
+    private void handleButtonSimulatorAction() {
+        if (breadboardStage.isShowing()) {
+            breadboardStage.hide();
+        } else {
+            breadboardStage.show();
+        }
+    }
+
     //KONZOLA
 
     /**
@@ -1312,6 +1344,9 @@ public class CPUController implements Initializable {
         private eRepresentation repAddress;
         private eRepresentation repData;
 
+        /**
+         * Bezparametrický konštruktor pre vytvorenie bunky s nulovou adresou a nulovou hodnotou v decimálnej sústave.
+         */
         MemoryTableCell(){
             this.address = new SimpleStringProperty("0");
             this.data = new SimpleStringProperty("0");
@@ -1319,6 +1354,12 @@ public class CPUController implements Initializable {
             this.repData = eRepresentation.Dec;
         }
 
+        /**
+         * Konštruktor pre vytvorenie bunky s decimálnou reprezentáciou.
+         *
+         * @param address Adresa
+         * @param data    Dáta na adrese
+         */
         MemoryTableCell(int address, int data){
             this.address = new SimpleStringProperty(Integer.toString(address));
             this.data = new SimpleStringProperty(Integer.toString(data));
@@ -1329,6 +1370,14 @@ public class CPUController implements Initializable {
             newData = oldData = (byte) data;
         }
 
+        /**
+         * Konštruktor pre naplenenie hodnôt bunky aj s určenou reprezentáciou.
+         *
+         * @param address Adresa
+         * @param data Dáta na adrese
+         * @param defRepresentationAddress Reprezentácia zobrazenia adresy
+         * @param defRepresentationData Reprezentácia zobrazenia dát
+         */
         MemoryTableCell(int address, int data, eRepresentation defRepresentationAddress, eRepresentation defRepresentationData){
             this.address = new SimpleStringProperty(Integer.toString(address));
             this.data = new SimpleStringProperty(Integer.toString(data));
@@ -1347,10 +1396,20 @@ public class CPUController implements Initializable {
             return data;
         }
 
+        /**
+         * Vracia adresu uloženú v bunke ako integer.
+         *
+         * @return Adresa uložená v bunke.
+         */
         public int getAddressInt(){
             return Short.toUnsignedInt(newAddress);
         }
 
+        /**
+         * Nastavenie adresy v bunke.
+         *
+         * @param address Nová adresa v bunke.
+         */
         public void setAddress(short address){
             this.address.setValue(
                     getDisplayRepresentation(address, repAddress)
@@ -1358,6 +1417,11 @@ public class CPUController implements Initializable {
             newAddress = address;
         }
 
+        /**
+         * Nastavenie dát v bunke.
+         *
+         * @param data Nové dáta v bunke.
+         */
         public void setData(byte data){
             this.data.setValue(
                     getDisplayRepresentation(data, repData)
@@ -1367,24 +1431,49 @@ public class CPUController implements Initializable {
             newData = data;
         }
 
+        /**
+         * Vráti aktuálne nastavenie reprezentácie adresy.
+         *
+         * @return Reprezantácia adresy v bunke.
+         */
         public eRepresentation getAddressRepresentation(){
             return repAddress;
         }
 
+        /**
+         * Zmena reprezentácie adresy.
+         *
+         * @param newRep Nová reprezentácia adresy použítá pri zobrazení.
+         */
         public void changeAddressRepresentation(eRepresentation newRep){
-           address.setValue( getDisplayRepresentation(newAddress, newRep) );
-           repAddress = newRep;
+            address.setValue( getDisplayRepresentation(newAddress, newRep) );
+            repAddress = newRep;
         }
 
+        /**
+         * Vráti aktuálne nastavenie reprezentácie dát.
+         *
+         * @return Reprezentácia dát v bunke.
+         */
         public eRepresentation getDataRepresentation(){
             return repData;
         }
 
+        /**
+         * Zmena reprezentácie dát.
+         *
+         * @param newRep Nová reprezentácia dát použítá pri zobrazení.
+         */
         public void changeDataRepresentation(eRepresentation newRep){
-           data.setValue( getDisplayRepresentation(newData, newRep) );
-           repData = newRep;
+            data.setValue( getDisplayRepresentation(newData, newRep) );
+            repData = newRep;
         }
 
+        /**
+         * Informácia, či sa po zmene dát nové dáta líšia od starých.
+         *
+         * @return Ture ak sa nové dáta líšia od starých, flase inak.
+         */
         public boolean isChanged(){
             return oldData != newData;
         }
@@ -1397,14 +1486,31 @@ public class CPUController implements Initializable {
     public static class StackTableCell extends MemoryTableCell{
         private static SimpleIntegerProperty stackHead = new SimpleIntegerProperty(0);
 
+        /**
+         * Bezparametriký konštruktor, krotý volá bezparametrický konštruktor predka.
+         */
         public StackTableCell(){
             super();
         }
 
+        /**
+         * Konštruktor nastavujúci adresu a dáta. Reprezentácia ostáva decimálna.
+         *
+         * @param address Adresa
+         * @param data Dáta na adrese
+         */
         public StackTableCell(int address, int data){
             super(address, data);
         }
 
+        /**
+         * Konštruktor s nastavením obsahu aj reprezentáciou.
+         *
+         * @param address Adrese
+         * @param data Dáta na adrese
+         * @param defRepresentationAddress Reprezentácia adresy.
+         * @param defRepresentationData Reprezentácia dát.
+         */
         public StackTableCell(int address, int data, eRepresentation defRepresentationAddress, eRepresentation defRepresentationData){
             super(address, data, defRepresentationAddress, defRepresentationData);
         }
@@ -1413,10 +1519,20 @@ public class CPUController implements Initializable {
             return stackHead;
         }
 
+        /**
+         * Nastavnie adresy, na ktorej sa nachádza vrchol zásobníka.
+         *
+         * @param head Adresa vrcholu zásobníka.
+         */
         public static void setStackHead(int head){
             stackHead.setValue(head);
         }
 
+        /**
+         * Vrátenie adresy, na ktorej sa nachádza vrchol zásobíka.
+         *
+         * @return Adresa, na ktorej sa nachádza vrchol zásobníka.
+         */
         public static int getStackHead(){
             return stackHead.getValue();
         }

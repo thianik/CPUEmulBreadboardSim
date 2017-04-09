@@ -1,15 +1,19 @@
 package sk.uniza.fri.cp.BreadboardSim.Components;
 
 
-import javafx.application.Platform;
 import javafx.geometry.Bounds;
+import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.Shape;
 import javafx.scene.shape.StrokeLineCap;
-import javafx.scene.shape.StrokeType;
 import sk.uniza.fri.cp.BreadboardSim.*;
+import sk.uniza.fri.cp.BreadboardSim.Board.Board;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Device;
+import sk.uniza.fri.cp.BreadboardSim.Socket.PowerSocket;
+import sk.uniza.fri.cp.BreadboardSim.Socket.Socket;
+import sk.uniza.fri.cp.BreadboardSim.Wire.Wire;
 
 import java.util.*;
 import java.util.List;
@@ -21,24 +25,27 @@ import java.util.List;
  */
 public abstract class Component extends Item {
 
-	protected ArrayList<Socket> socketsForDevices;
-
     protected int gridWidth;
     protected int gridHeight;
 
-    private int id;
 	private LinkedList<ConnectedDevice> connectedDevices;
 
 	private Shape selectionShape; //prekrytie pri selecte
     private LinkedList<Wire> connectedWires;
+    private ArrayList<Socket> sockets; //pole vsetkych soketov na komponente
     private LinkedList<PowerSocket> powerSockets;
 
-	public Component(Board board, int id){
-		super(board);
-		this.id = id;
+    /**
+     * Konštruktor pre itempicker
+     */
+    public Component() {
+    }
+
+    public Component(Board board) {
+        super(board);
 		this.powerSockets = new LinkedList<>();
-		this.socketsForDevices = new ArrayList<>();
-		this.connectedDevices = new LinkedList<>();
+        this.sockets = new ArrayList<>();
+        this.connectedDevices = new LinkedList<>();
 		this.connectedWires = new LinkedList<>();
 	}
 
@@ -55,16 +62,38 @@ public abstract class Component extends Item {
 	}
 
 	public void addAllPowerSockets(List<PowerSocket> ps){
-		this.powerSockets.addAll(ps);
-	}
+        this.addAllSockets(ps);
+        this.powerSockets.addAll(ps);
+    }
 
-	public ArrayList<Socket> getSocketsForDevices(){
-		return socketsForDevices;
-	}
+    /**
+     * Registrácia soketu viditeľného na komponente. Soketu je pri registrácií priradené unkiátne id v rámci komponentu.
+     *
+     * @param socket Soket viditeľný a prístupný na komponente.
+     */
+    protected void addSocket(Socket socket) {
+        //id soketu na zaklade velkosti pola soketov -> id je jeho index
+        socket.setId(Integer.toString(this.sockets.size()));
+        this.sockets.add(socket);
+    }
 
-	public int getComponentId(){
-		return this.id;
-	}
+    protected void addAllSockets(Socket... sockets) {
+        for (Socket socket : sockets)
+            addSocket(socket);
+    }
+
+    protected void addAllSockets(List<? extends Socket> sockets) {
+        for (Socket socket : sockets)
+            addSocket(socket);
+    }
+
+    public ArrayList<Socket> getSockets() {
+        return sockets;
+    }
+
+    public Socket getSocket(int id) {
+        return this.sockets.get(id);
+    }
 
 	public boolean addDevice(Device device){
 		return connectedDevices.add(new ConnectedDevice(device));
@@ -147,6 +176,11 @@ public abstract class Component extends Item {
 	}
 
     @Override
+    public int hashCode() {
+        return super.hashCode();
+    }
+
+    @Override
     public void delete() {
         super.delete();
 
@@ -181,8 +215,18 @@ public abstract class Component extends Item {
         }
 
         void delete(){
-            //this.device.disconnectAllPins();
             this.device.delete();
         }
+    }
+
+
+    @Override
+    public Pane getImage() {
+        return super.getImage();
+    }
+
+    @Override
+    public AnchorPane getDescription() {
+        return super.getDescription();
     }
 }

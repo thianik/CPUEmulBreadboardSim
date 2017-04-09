@@ -1,13 +1,13 @@
 package sk.uniza.fri.cp.BreadboardSim.Devices;
 
-import javafx.application.Platform;
-import javafx.concurrent.Service;
-import javafx.concurrent.Task;
 import javafx.scene.Group;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Shape;
-import sk.uniza.fri.cp.BreadboardSim.*;
+import sk.uniza.fri.cp.BreadboardSim.Board.Board;
+import sk.uniza.fri.cp.BreadboardSim.Board.GridSystem;
+import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.InputPin;
+import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.Pin;
 
 import java.util.LinkedList;
 import java.util.List;

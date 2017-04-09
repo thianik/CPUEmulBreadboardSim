@@ -3,7 +3,12 @@ package sk.uniza.fri.cp.BreadboardSim.Devices;
 import javafx.event.EventHandler;
 import javafx.scene.input.MouseEvent;
 import sk.uniza.fri.cp.BreadboardSim.*;
+import sk.uniza.fri.cp.BreadboardSim.Board.Board;
+import sk.uniza.fri.cp.BreadboardSim.Board.BoardChangeEvent;
 import sk.uniza.fri.cp.BreadboardSim.Components.Component;
+import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.Pin;
+import sk.uniza.fri.cp.BreadboardSim.Socket.Potential;
+import sk.uniza.fri.cp.BreadboardSim.Socket.Socket;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -18,6 +23,7 @@ public abstract class Device extends Item {
 
 	private Component component;
     private ArrayList<Socket> socketsToConnectTo;
+    //private boolean isConnected;
 
     private int lastGridPosX;
     private int lastGridPosY;
@@ -26,6 +32,7 @@ public abstract class Device extends Item {
         @Override
         public void handle(MouseEvent event) {
             if(isConnected()) disconnectAllPins();
+            searchForSockets();
             highlightConnectibleSockets();
         }
     };
@@ -35,6 +42,8 @@ public abstract class Device extends Item {
         public void handle(MouseEvent event) {
             //ak sa zmenila pozicia zariadenia na ploche
             if(getGridPosX() != lastGridPosX || getGridPosY() != lastGridPosY){
+                if (isConnected()) disconnectAllPins();
+
                 //hladaj nove sokety na ktore by sa mohlo pripojit
                 unhighlightConnectibleSockets();
                 searchForSockets();
@@ -50,8 +59,9 @@ public abstract class Device extends Item {
         @Override
         public void handle(MouseEvent event) {
             //po umiestneni zariadenia na ploche sa pripoj k moznym soketom
-            connectToFoundSockets();
             unhighlightConnectibleSockets();
+            if (isConnected()) disconnectAllPins();
+            tryToConnectToFoundSockets();
         }
     };
 
@@ -180,6 +190,7 @@ public abstract class Device extends Item {
                     //ak bol uz najdeny soket pre tento pin, preskoc hladanie
                     if(sockets[i] != null) continue;
 
+                    //TODO berie sokety aj cez prekryvajuci komponent
                     Socket socket = getBoard().checkForCollisionWithSocket(component, pins.get(i));
                     //ak ano pridaj ho do zoznamu soketov na pripojenie
                     if(socket != null){
@@ -195,13 +206,20 @@ public abstract class Device extends Item {
         return found;
     }
 
-    public void connectToFoundSockets(){
-        if(this.socketsToConnectTo.size() > 0){
-            List<Pin> pins = getPins();
+    /**
+     * Pokúsi sa pripojiť zariadenie k nájdeným soketom. Pripojenie sa podarí, iba ak je možné zapojiť všetky piny
+     * zariadenia naraz.
+     *
+     * @return True ak sa podarilo pripojiť všetky piny zariadenia k soketom, false inak.
+     */
+    public boolean tryToConnectToFoundSockets() {
+        List<Pin> pins = getPins();
 
+        //ak sa mozu pripojit vsetky piny zariadenia
+        if (this.socketsToConnectTo.size() == pins.size()) {
             for (int i = 0; i < this.socketsToConnectTo.size(); i++) {
                 Socket socket = this.socketsToConnectTo.get(i);
-                if(socket != null && !socket.hasConnectedPin()){
+                if (socket != null && !socket.isOccupied()) {
                     socket.connect(pins.get(i));
 
                     //ak nie si priradeny ku komponentu, prirad sa ku komponentu prveho pripojeneho soketu
@@ -209,9 +227,15 @@ public abstract class Device extends Item {
                         this.component = socket.getComponent();
                         this.component.addDevice(this);
                     }
+                } else {
+                    //odpoj pripojene piny
+                    this.disconnectAllPins();
+                    return false;
                 }
             }
-        }
+        } else return false;
+
+        return true;
     }
 
     public void disconnectAllPins(){
@@ -241,14 +265,18 @@ public abstract class Device extends Item {
      * Zvyrazni sokety ku ktorym sa moze pripojit
      */
     public void highlightConnectibleSockets(){
-        socketsToConnectTo.forEach((socket) -> {if( socket!=null ) socket.highlight(socket.getPin()==null?Socket.OK:Socket.WARNING); });
+        socketsToConnectTo.forEach((socket) -> {
+            if (socket != null) socket.highlight(!socket.isOccupied() ? Socket.OK : Socket.WARNING);
+        });
     }
 
     /**
      * Zrusi zvyraznenie soketok ku ktorym sa moze pripojit
      */
     public void unhighlightConnectibleSockets(){
-        socketsToConnectTo.forEach((socket) -> {if( socket!=null ) socket.unhighlight(socket.getPin()==null?Socket.OK:Socket.WARNING); });
+        socketsToConnectTo.forEach((socket) -> {
+            if (socket != null) socket.unhighlight(!socket.isOccupied() ? Socket.OK : Socket.WARNING);
+        });
     }
 
     /**
@@ -259,6 +287,13 @@ public abstract class Device extends Item {
         //update grafiky sa musi robit na FXThread-e
         //if(!Platform.isFxApplicationThread())
         //    Platform.runLater(this::updateGraphic);
+    }
+
+    @Override
+    public void delete() {
+        super.delete();
+
+        this.disconnectAllPins();
     }
 }
 

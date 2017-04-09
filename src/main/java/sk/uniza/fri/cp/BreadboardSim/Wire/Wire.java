@@ -1,4 +1,4 @@
-package sk.uniza.fri.cp.BreadboardSim;
+package sk.uniza.fri.cp.BreadboardSim.Wire;
 
 
 import javafx.event.Event;
@@ -7,8 +7,13 @@ import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
+import sk.uniza.fri.cp.BreadboardSim.Board.Board;
+import sk.uniza.fri.cp.BreadboardSim.Board.BoardEvent;
+import sk.uniza.fri.cp.BreadboardSim.HighlightGroup;
+import sk.uniza.fri.cp.BreadboardSim.SchoolBreadboard;
+import sk.uniza.fri.cp.BreadboardSim.Socket.Potential;
+import sk.uniza.fri.cp.BreadboardSim.Socket.Socket;
 
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -21,8 +26,8 @@ public class Wire extends HighlightGroup {
 
 	private static Color defaultColor = Color.BLACK;
 
-	private Paint color;
-	private Potential potential;
+    private Color color;
+    private Potential potential;
 
 	private WireEnd[] ends;	//konce kablika
 	private List<Joint> joints;
@@ -43,6 +48,7 @@ public class Wire extends HighlightGroup {
 		this.segments = new LinkedList<>();
 		this.segmentsGroup = new Group();
 		this.jointsGroup = new Group();
+        this.color = defaultColor;
 
 		//konce kablika
 		this.ends = new WireEnd[2];
@@ -84,6 +90,53 @@ public class Wire extends HighlightGroup {
 		this.addEventHandler(MouseEvent.MOUSE_RELEASED, event -> createdJoint = null);
 	}
 
+    public Wire(Board board) {
+        this.joints = new LinkedList<>();
+        this.segments = new LinkedList<>();
+        this.segmentsGroup = new Group();
+        this.jointsGroup = new Group();
+        this.color = defaultColor;
+
+        //konce kablika
+        this.ends = new WireEnd[2];
+
+        //zaciatok kablika vo vzduchu
+        this.ends[0] = new WireEnd(board, this);
+        this.ends[0].moveTo(1, 1);
+
+        //koniec kablika vo vzduchu
+        this.ends[1] = new WireEnd(board, this);
+        this.ends[1].moveTo(2, 2);
+
+        //prvotny segment
+        WireSegment segment = new WireSegment(this, this.ends[0], this.ends[1]);
+
+        this.segments.add(segment);
+
+        this.segmentsGroup.getChildren().addAll(segment);
+        this.jointsGroup.getChildren().addAll(this.ends[0], this.ends[1]);
+        this.getChildren().addAll(segmentsGroup, jointsGroup);
+
+        //pri zacati tahania vytvori novy joint
+        this.addEventHandler(MouseEvent.DRAG_DETECTED, event -> {
+            if (event.getTarget() instanceof WireSegment) {
+                WireSegment segmentToSplit = ((WireSegment) event.getTarget());
+                createdJoint = splitSegment(segmentToSplit);
+            }
+        });
+
+        this.addEventHandler(MouseEvent.MOUSE_DRAGGED, event -> {
+            if (createdJoint != null) {
+                Event.fireEvent(createdJoint, new MouseEvent(MouseEvent.MOUSE_DRAGGED, event.getSceneX(), event.getSceneY(),
+                        event.getScreenX(), event.getScreenY(), MouseButton.PRIMARY, 1, true,
+                        true, true, true, true, true,
+                        true, true, true, true, null));
+            }
+        });
+
+        this.addEventHandler(MouseEvent.MOUSE_RELEASED, event -> createdJoint = null);
+    }
+
 	/**
 	 * 
 	 * @param defColor
@@ -95,6 +148,23 @@ public class Wire extends HighlightGroup {
 	public static Color getDefaultColor(){
 		return defaultColor;
 	}
+
+    public void changeColor(Color newColor) {
+        this.color = newColor;
+        this.segments.forEach(wireSegment -> wireSegment.setColor(this.color));
+    }
+
+    public Color getColor() {
+        return this.color;
+    }
+
+    public WireEnd[] getEnds() {
+        return ends;
+    }
+
+    public List<Joint> getJoints() {
+        return joints;
+    }
 
 	/**
 	 * Vráti voľný koniec káblika pri jeho prvotnom vytváraní.
@@ -158,7 +228,11 @@ public class Wire extends HighlightGroup {
 
 		this.segments.add(firstSegment);
 		this.segments.add(secondSegment);
-		this.joints.add(newJoint);
+
+        //zaradenie noveo jointu do zoznamu na poziciu medzi povodne dva
+        int fjIndex = this.joints.indexOf(firstJoint);
+        this.joints.add(fjIndex + 1, newJoint);
+
 		this.segmentsGroup.getChildren().addAll(firstSegment, secondSegment);
 		this.jointsGroup.getChildren().add(newJoint);
 
@@ -168,22 +242,40 @@ public class Wire extends HighlightGroup {
 		return newJoint;
 	}
 
-	//ak su oba konce pripojene, oba vygeneruju moveBy
-	//preto rychly fix v podobe allowToMove -> prvy pohne, druhy nie
-	private boolean allowToMove = true;
+    public Joint splitLastSegment() {
+        return this.splitSegment(((LinkedList<WireSegment>) this.segments).getLast());
+    }
 
-	public void moveBy(double deltaX, double deltaY){
-		//ak su pripojene oba konce
-		if(this.ends[0].getSocket() != null && this.ends[1].getSocket() != null)
-			//ak su oba konce pripojene k rovnakemu komponentu
-			if(this.ends[0].getSocket().getComponent().equals(this.ends[1].getSocket().getComponent())) {
-				//ak je povolene posuvanie (prvy z WireEnd-ov)
-				if (allowToMove)
-					//posun vsetky jointy o deltu
-					this.joints.forEach(joint -> joint.moveBy(deltaX, deltaY));
-				allowToMove = !allowToMove;
-			}
-	}
+    //posuvanie jointov spojenia
+    private double firstDeltaX, firstDeltaY;
+    private WireEnd lastMovingEnd;
+
+    /**
+     * Posunitie jointov o deltu podľa zmeny polohy jedného z konca spojenia. Ak sa pohnú oba konce spojenia
+     * o rovnakú vzdialenosť, posunú sa aj jointy.
+     * To umožňuje posúvanie celých spojení aj pri prepojení dvoch odlišných komponentov, ak sa pohybujú spolu.
+     *
+     * @param wireEnd Koniec káblika, ktorý vyvolal zmenu.
+     * @param deltaX  Zmena pozície X
+     * @param deltaY  Zmena pozície Y
+     */
+    void moveJointsWithEnd(WireEnd wireEnd, double deltaX, double deltaY) {
+        //ak je posunutie vyvolane druhym koncom, ako tym co sa posuval naposledy
+        if (this.lastMovingEnd != wireEnd) {
+            //ak sa oba konce posunuli o rovnaky deltu
+            if (firstDeltaX == deltaX && firstDeltaY == deltaY) {
+                //posun aj vsetky jointy a vynuluj posun
+                this.joints.forEach(joint -> joint.moveBy(deltaX, deltaY));
+                this.firstDeltaX = 0;
+                this.firstDeltaY = 0;
+                return;
+            }
+        }
+        //nastav posledny posun
+        this.firstDeltaX = deltaX;
+        this.firstDeltaY = deltaY;
+        this.lastMovingEnd = wireEnd;
+    }
 
 	public Board getBoard(){
 		return this.ends[0].getBoard();

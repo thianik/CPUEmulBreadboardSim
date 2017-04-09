@@ -1,4 +1,4 @@
-package sk.uniza.fri.cp.BreadboardSim;
+package sk.uniza.fri.cp.BreadboardSim.Socket;
 
 
 /**

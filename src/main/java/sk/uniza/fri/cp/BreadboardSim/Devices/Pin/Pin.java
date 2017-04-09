@@ -1,9 +1,10 @@
-package sk.uniza.fri.cp.BreadboardSim;
+package sk.uniza.fri.cp.BreadboardSim.Devices.Pin;
 
-import javafx.scene.layout.Region;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Device;
+import sk.uniza.fri.cp.BreadboardSim.Socket.Potential;
+import sk.uniza.fri.cp.BreadboardSim.Socket.Socket;
 
 /**
  * @author Moris
@@ -112,4 +113,8 @@ public abstract class Pin extends Circle {
 		if(this.socket != null) this.socket.disconnect();
 		this.setFill(Color.RED);
 	}
+
+    public String getName() {
+        return this.name;
+    }
 }

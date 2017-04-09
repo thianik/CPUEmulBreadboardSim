@@ -1,14 +1,13 @@
-package sk.uniza.fri.cp.BreadboardSim;
+package sk.uniza.fri.cp.BreadboardSim.Board;
 
 
-import javafx.beans.property.ObjectProperty;
-import javafx.geometry.Point2D;
 import javafx.scene.Group;
-import javafx.scene.Parent;
-import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.Pane;
 import sk.uniza.fri.cp.BreadboardSim.Components.Component;
+import sk.uniza.fri.cp.BreadboardSim.SchoolBreadboard;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Device;
+import sk.uniza.fri.cp.BreadboardSim.Wire.Joint;
+import sk.uniza.fri.cp.BreadboardSim.Wire.Wire;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,6 +28,8 @@ public class BoardLayersManager {
 	private ArrayList<Component> components;
 	private ArrayList<Device> devices;
 	private ArrayList<Wire> wires;
+
+    private int lastCompnentId = 0;
 
 	public BoardLayersManager(Pane backgound){
 		//inicializacia atributov
@@ -65,9 +66,10 @@ public class BoardLayersManager {
 
 		if(object instanceof Component){
 			Component component = (Component) object;
-			this.componentsLayer.getChildren().add(component);
-			this.components.add(component);
-			return true;
+            component.setId("c" + lastCompnentId++);
+            this.componentsLayer.getChildren().add(component);
+            this.components.add(component);
+            return true;
 		}
 
 		if(object instanceof Device){
@@ -76,6 +78,23 @@ public class BoardLayersManager {
 			this.devices.add(device);
 			return true;
 		}
+
+        if (object instanceof SchoolBreadboard) {
+            SchoolBreadboard schoolBreadboard = (SchoolBreadboard) object;
+            this.componentsLayer.getChildren().add(schoolBreadboard);
+            //ak sa jedna o schoolbreadboard, pridaj vsetky komponenty do zoznamu ktore obsahuje zvlast
+            for (Component schBComponent : schoolBreadboard.getComponents()) {
+                if (schBComponent.getId() == null)
+                    //ak este nebolo ID nastavene prirad mu nove
+                    schBComponent.setId("c" + lastCompnentId++);
+                else if (Integer.parseInt(schoolBreadboard.getId()) > lastCompnentId)
+                    //ak uz bolo ID nastavene (napr. pri nacitavani), zisti ci nie je vacsie ako posledne triedy
+                    lastCompnentId = Integer.parseInt(schoolBreadboard.getId());
+
+                this.components.add(schBComponent);
+            }
+            return true;
+        }
 
 		return false;
 	}
@@ -121,6 +140,40 @@ public class BoardLayersManager {
 	}
 
 	public List<Component> getComponents(){
-		return components;
-	}
+        return new ArrayList<>(this.components);
+    }
+
+    public List<Device> getDevices() {
+        return new ArrayList<>(this.devices);
+    }
+
+    public List<Wire> getWires() {
+        return new ArrayList<>(this.wires);
+    }
+
+    /**
+     * Odstránenie objektov na ploche okrem SchoolBreadboard
+     */
+    public void clear() {
+
+        //cistenie kablikov
+        //this.wiresLayer.getChildren().clear();
+        //this.wires.clear();
+        new ArrayList<>(this.wires).forEach(Wire::delete);
+
+        //cistenie zariadeni
+        //this.devicesLayer.getChildren().clear();
+        //this.devices.clear();
+        new ArrayList<>(this.devices).forEach(Device::delete);
+
+        //cistenie komponentov
+        SchoolBreadboard schoolBreadboard = SchoolBreadboard.getSchoolBreadboard(null);
+        //this.componentsLayer.getChildren().retainAll(schoolBreadboard);
+        //this.components.retainAll(schoolBreadboard.getComponents());
+        ArrayList<Component> componentsToDelete = new ArrayList<>(this.components);
+        componentsToDelete.removeAll(schoolBreadboard.getComponents());
+        componentsToDelete.forEach(Component::delete);
+
+
+    }
 }

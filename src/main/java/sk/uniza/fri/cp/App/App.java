@@ -83,7 +83,8 @@ public class App extends Application {
                     }
                 }
         );
+
         breadboardStage.setScene(breadboardScene);
-        breadboardStage.show();
+        ((CPUController) CpuLayoutLoader.getController()).setBreadboardStage(breadboardStage);
     }
 }

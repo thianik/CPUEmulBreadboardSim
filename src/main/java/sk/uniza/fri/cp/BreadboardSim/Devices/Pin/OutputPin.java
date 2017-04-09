@@ -1,4 +1,4 @@
-package sk.uniza.fri.cp.BreadboardSim;
+package sk.uniza.fri.cp.BreadboardSim.Devices.Pin;
 
 
 import sk.uniza.fri.cp.BreadboardSim.Devices.Device;
@@ -26,6 +26,11 @@ public class OutputPin extends Pin {
 		super(device);
 		this.driver = pinDriver;
 	}
+
+    public OutputPin(Device device, PinDriver pinDriver, String name) {
+        super(device, name);
+        this.driver = pinDriver;
+    }
 
 	public PinDriver getPinDriver(){
 		return driver;
