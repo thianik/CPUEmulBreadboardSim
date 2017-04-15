@@ -98,7 +98,7 @@ public class Board extends ScrollPane {
 		sb.moveTo(2,2);
         //this.addItem(new Gen7400(this));
         //this.addItem(new Gen7400(this));
-        this.addItem(new Breadboard(this));
+        //this.addItem(new Breadboard(this));
 
 
 		this.addEventHandler(MouseDragEvent.MOUSE_DRAG_ENTERED, new EventHandler<MouseDragEvent>() {
@@ -259,14 +259,16 @@ public class Board extends ScrollPane {
     }
 
 	public void powerOn(){
-		List<PowerSocket> powerSockets = new LinkedList<>();
+        if (!simulator.runningProperty().getValue()) {
+            List<PowerSocket> powerSockets = new LinkedList<>();
 
-    	layersManager.getComponents().forEach(component -> {
-    		powerSockets.addAll(component.getPowerSockets());
-		});
+            layersManager.getComponents().forEach(component -> {
+                powerSockets.addAll(component.getPowerSockets());
+            });
 
-		simulator.start(powerSockets);
-	}
+            simulator.start(powerSockets);
+        }
+    }
 
 	public void powerOff(){
 		simulator.stop();
@@ -319,7 +321,8 @@ public class Board extends ScrollPane {
 	 */
 	public void addEvent(BoardEvent event){
 		simulator.addEvent(event);
-	}
+        //if(!isSimulationRunning()) System.out.println("pridavanie eventu aj ked simulacia nebezi");
+    }
 
 
     //PERZISTENCIA DAT

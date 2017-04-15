@@ -14,6 +14,10 @@ public class InputOutputPin extends OutputPin {
 		super(device, PinDriver.TRI_STATE);
 	}
 
+    public InputOutputPin(Device device, String name) {
+        super(device, PinDriver.TRI_STATE, name);
+    }
+
 	public InputOutputPin(Device device, PinDriver pinDriver){
 		super(device, pinDriver);
 	}

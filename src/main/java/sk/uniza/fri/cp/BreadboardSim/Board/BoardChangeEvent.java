@@ -1,6 +1,5 @@
 package sk.uniza.fri.cp.BreadboardSim.Board;
 
-
 import sk.uniza.fri.cp.BreadboardSim.Devices.Device;
 import sk.uniza.fri.cp.BreadboardSim.Socket.Potential;
 import sk.uniza.fri.cp.BreadboardSim.Socket.Socket;
@@ -37,8 +36,8 @@ public class BoardChangeEvent extends BoardEvent {
 				//ak nenastal skrat, ak by nastal a boli by pripojene zariadenia ktore ho vyvolali, zacal by sa cyklit
                 if(socket.setPotential(newValue))
                     //a ak sa hodnota zmenila
-    				if(oldValue != newValue)
-    				    //vrat zariadenia s ovplyvnenymi vstupmi
+                    if (oldValue != socket.getPotential().getValue())
+                        //vrat zariadenia s ovplyvnenymi vstupmi
 	    				potential.getDevicesWithInputs(devices);
 			}
 		}

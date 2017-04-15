@@ -31,7 +31,7 @@ public class SN74151 extends Chip {
     private static final int _D4 = 15;
     private static final int _VCC = 16;
 
-    private int[] dInputs = {_D0, _D1, _D2, _D3, _D4, _D5, _D6, _D7};
+    private static final int[] dInputs = {_D0, _D1, _D2, _D3, _D4, _D5, _D6, _D7};
 
     public SN74151() {
         super(PINS_COUNT);

@@ -3,6 +3,8 @@ package sk.uniza.fri.cp.Bus;
 import javafx.beans.property.*;
 
 import java.util.Random;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 import static sk.uniza.fri.cp.Bus.k041Library.*;
 
@@ -19,6 +21,7 @@ public class Bus{
 
 	private static Bus instance; //inštancia singletonu
 	private SimpleBooleanProperty USBConnected; //indikátor pripojenia vývojovej dosky cez USB
+    private Semaphore dataSemaphore; //semafor pre cakanie na nastavenie dat simulatorom
 
 	private IntegerProperty addressBus;
 	private IntegerProperty dataBus;
@@ -30,6 +33,7 @@ public class Bus{
 		this.addressBus = new SimpleIntegerProperty(0);
 		this.dataBus = new SimpleIntegerProperty(0);
 		this.controlBus = new SimpleIntegerProperty(0);
+        this.dataSemaphore = new Semaphore(0);
 
 		rand = new Random();
 
@@ -188,6 +192,44 @@ public class Bus{
 	}
 
     /**
+     * Pasívne čakanie na ustálenie simulácie alebo nastavenie dát dátovej zbernice vývojovou doskou,
+     * maximálne však 1 sekundu v prípade, ak je pripojený k simulátoru.
+     * Ak je pripojenie riešené pomocou USB k reálnej doske, čaká sa 50ms. //TODO SYNCHRONIZACNY CAS uprava
+     *
+     * @return True ak prišiel v časovom úseku oznam o nastavení dát, false inak.
+     * @throws InterruptedException Prerušenie počas čakania na nastavenie dát.
+     */
+    public boolean waitForSteadyState() throws InterruptedException {
+        System.out.println("CPU WAITING");
+        if (!this.isUsbConnected()) {
+            //ak nie je pripojenie cez USB -> je pripojenie na simulátor
+            //cakaj na data
+            return dataSemaphore.tryAcquire(1, TimeUnit.SECONDS);
+        } else {
+            //ak je pripojenie cez USB, cakaj aka synchronne
+            Thread.sleep(50);
+            return true;
+        }
+    }
+
+    /**
+     * Oznámevnie zbernici, že dáta boli ustálené a je možné ich čítať.
+     */
+    public void dataInSteadyState() {
+        System.out.println("STEADY STATE ANNOUNCE");
+        dataSemaphore.release();
+    }
+
+    /**
+     * Oznámevnie zbernici, že prebiehajú zmeny, ktoré môžu ovplyvniť dáta na dátovej zbernici a nie je teda bezpečné
+     * z nej čítať.
+     */
+    public void dataIsChanging() {
+        System.out.println("DRAIN PERMITS");
+        dataSemaphore.drainPermits();
+    }
+
+    /**
      * Nastavenie negovaného signálu MW - memory write.
      * 
      * @param MW_ Nová hodnota signálu MW.
@@ -214,7 +256,7 @@ public class Bus{
             else
                 USBSetCommands(0x1f,0);  // zrusenie prikazu
         else {
-            this.dataBus.setValue(0);
+            //this.dataBus.setValue(0); //kvazi odpojenie od zbernice
             mapToControlBus("MR_", MR_);
         }
     }
@@ -245,8 +287,10 @@ public class Bus{
                 USBSetCommands(0x17,2);  // prikaz IOR\ = 0
             else
                 USBSetCommands(0x1f,0);  // zrusenie prikazu
-        else
+        else {
+            //this.dataBus.setValue(0); //kvazi odpojenie od zbernice
             mapToControlBus("IR_", IR_);
+        }
     }
 
     /**

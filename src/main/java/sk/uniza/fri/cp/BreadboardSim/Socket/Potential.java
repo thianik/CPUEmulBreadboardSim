@@ -1,6 +1,7 @@
 package sk.uniza.fri.cp.BreadboardSim.Socket;
 
 
+import sk.uniza.fri.cp.BreadboardSim.Components.BusInterface;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Device;
 
 import java.util.ArrayList;
@@ -150,7 +151,7 @@ public class Potential {
 	 * @param newVal Nova pozadovana hodnota potencialu
 	 * @return True - hodnota sa spravne aktualizovala / False - nastal skrat
 	 */
-	public synchronized boolean setValue(Value newVal){
+    public boolean setValue(Value newVal) {
         //zistenie skratu na predkoch
 	    this.shortCircuit =
                 (this.parent1 != null && this.parent1.shortCircuit)
@@ -175,27 +176,31 @@ public class Potential {
 				//ani jeden z rodicov nie je napojeny -> neprebera ziadnu hodnotu
 				this.value = Value.NC;
 			}
-			else if (this.type == SocketType.OCO){
-				//ak je potencial typu otvoreny kolektor,
+            /*else if (this.type == SocketType.OCO){
+                //ak je potencial typu otvoreny kolektor,
 				if(this.parent1.getValue() == Value.LOW || this.parent2.getValue() == Value.LOW){
 					this.value = Value.LOW;
 				} else {
 					this.value = Value.HIGH;
 				}
-			}
-			else if (this.type == SocketType.IO){
-			    //ak je potencial typu Input-Output -> aspon jeden z predkov je IO, mozno obaja
-                if(this.parent1.type == SocketType.IO && this.parent2.type == SocketType.IO){
+			}*/
+            else if (this.type == SocketType.IO || this.type == SocketType.TRI_OUT) {
+                //ak je potencial typu Input-Output -> aspon jeden z predkov je IO, mozno obaja //TODO pridane TRI_OUT, upravit komentare ak sa neodstrani
+                if ((this.parent1.type == SocketType.IO || this.parent1.type == SocketType.TRI_OUT) &&
+                        (this.parent2.type == SocketType.IO || this.parent2.type == SocketType.TRI_OUT)) {
                     //ak su obaja predkovia typu IO, moze dojst ku skratu ak obaja vysielaju rozne hodnoty
                     this.checkShortCircuit();
                 } else {
                     //ak je iba jeden typu IO, druhy je IN alebo NC a tie nevplyvaju na hodnotu potencialu
-                    this.value = newVal;
+                    if (this.parent1.type == SocketType.IO || this.parent1.type == SocketType.TRI_OUT)
+                        this.value = this.parent1.value;
+                    else
+                        this.value = this.parent2.value;
                 }
 			}
 			else if (this.type == SocketType.WEAK_OUT ){
 			    //ak je potencial typu WEAK_OUT -> aspon jeden je tiez weak out
-                if(this.parent1.type == SocketType.WEAK_OUT && this.parent2.type == SocketType.WEAK_OUT){ //TODO co ak je jeden z predkov typu OCO?
+                if (this.parent1.type == SocketType.WEAK_OUT && this.parent2.type == SocketType.WEAK_OUT) {
                     //ak su oba predkovia typu WEAK_OUT, jeden to moze stiahnut na LOW, inak je HIGH
                     //GND ma mensi odpor
                     if(this.parent1.value == Value.LOW || this.parent2.value == Value.LOW){
@@ -215,7 +220,21 @@ public class Potential {
             }
 			else if(this.type == SocketType.OUT){
 				//ak je potencial typu OUT -> aspon jeden z predkov je tiez OUT
-				if( (this.parent1.type == SocketType.OUT && this.parent2.type == SocketType.OUT)
+                //ulozenie typu toho druheho potencialu
+                SocketType theOther = this.parent1.type == SocketType.OUT ? this.parent2.type : this.parent1.type;
+
+                if (theOther == SocketType.OUT || theOther == SocketType.IO || theOther == SocketType.TRI_OUT) {
+                    //ak su obaja predkovia vystupy, moze dojst ku skratu
+                    this.checkShortCircuit();
+                } else if (this.parent1.type == SocketType.OUT) {
+                    //ak je iba prvy typu OUT, berie si jeho hodnotu
+                    this.value = this.parent1.value;
+                } else {
+                    //ak je iba druhy typu OUT, berie si jeho hodnotu
+                    this.value = this.parent2.value;
+                }
+
+				/*if( (this.parent1.type == SocketType.OUT && this.parent2.type == SocketType.OUT)
                         || this.parent1.type == SocketType.IO
                         || this.parent2.type == SocketType.IO){
 					//ak su oba predkovia typu OUT -> moze dojst ku skratu pri roznych hodnotach napatia
@@ -228,8 +247,8 @@ public class Potential {
 				else {
 					//ak je iba druhy typu OUT, berie si jeho hodnotu
 					this.value = this.parent2.value;
-				}
-			}
+				}*/
+            }
 		} else if(this.parent1 != null){
 			this.value = this.parent1.getValue();
 		} else if(this.parent2 != null){
@@ -314,15 +333,17 @@ public class Potential {
 				this.type = SocketType.OUT;
 			} else if(type1 == SocketType.WEAK_OUT || type2 == SocketType.WEAK_OUT) { //ak je predok vystup s rezistorom
                 this.type = SocketType.WEAK_OUT;
-            } else if(type1 == SocketType.OCO || type2 == SocketType.OCO){ //ak je predok vystup s otvorenym kolektorom
-				this.type = SocketType.OCO;
-			} else if(type1 == SocketType.IO|| type2 == SocketType.IO){ //ak je predok vstup/vystup
-				this.type = SocketType.IO;
-			} else if(type1 == SocketType.IN || type2 == SocketType.IN){ //ak je predok iba vstup
-				this.type = SocketType.IN;
-			} else {
-				this.type = SocketType.NC;
-			}
+            } /*else if(type1 == SocketType.OCO || type2 == SocketType.OCO){ //ak je predok vystup s otvorenym kolektorom
+                this.type = SocketType.OCO;
+			}*/ else if (type1 == SocketType.TRI_OUT || type2 == SocketType.TRI_OUT) { //ak je predok vystup s tromi hodnotami
+                this.type = SocketType.TRI_OUT;
+            } else if(type1 == SocketType.IO|| type2 == SocketType.IO){ //ak je predok vstup/vystup
+                this.type = SocketType.IO;
+            } else if(type1 == SocketType.IN || type2 == SocketType.IN){ //ak je predok iba vstup
+                this.type = SocketType.IN;
+            } else {
+                this.type = SocketType.NC;
+            }
 
 		} else { //ak nema ani jedneho predka, je nepripojeny
 			this.type = SocketType.NC;
@@ -358,17 +379,31 @@ public class Potential {
      * atribut shortCircuit. Predpokladá sa, že obaja predkovia sú výstupy!
      */
 	private void checkShortCircuit(){
-	    //ak obaja predkovia maju rozne hodnoty potencialov (kontroluje sa pri vystupoch)
-	    if(this.parent1.value != this.parent2.value){
-            //bum, doslo ku skratu
-            this.shortCircuit = true;
-            //nastav nahodnu hodnotu potencialu
-            if(Math.random() < 0.5)	this.value = Value.LOW;
-            else this.value = Value.HIGH;
-        } else {
-            //nedoslo ku skratu, na obochy vystupoch su rovnake hodnoty
+        //ak su obaja predkovia zapojeny
+        if (this.parent1.value != Value.NC && this.parent2.value != Value.NC) {
+
+            //ak obaja predkovia vysielaju rozne hodnoty potencialov (kontroluje sa pri vystupoch)
+            if (this.parent1.value != this.parent2.value) {
+                //bum, doslo ku skratu
+                this.shortCircuit = true;
+                //nastav nahodnu hodnotu potencialu
+                if (Math.random() < 0.5) this.value = Value.LOW;
+                else this.value = Value.HIGH;
+                return;
+            } else {
+                //nedoslo ku skratu, na obochy vystupoch su rovnake hodnoty
+                this.value = this.parent1.value;
+            }
+        } else if (this.parent1.value != Value.NC) {
+            //ak je zapojeny iba prvy predok
             this.value = this.parent1.value;
+        } else if (this.parent2.value != Value.NC) {
+            //ak je zapojeny iba druhy predok
+            this.value = this.parent2.value;
         }
+
+
+        this.shortCircuit = false;
     }
 
 

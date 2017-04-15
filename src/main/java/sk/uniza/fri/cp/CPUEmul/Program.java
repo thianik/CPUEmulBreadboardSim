@@ -37,6 +37,8 @@ public class Program {
 
 	private SetChangeListener breakpointsListener; //listener na zmenu v zozname breakpointov
 
+    private boolean hasIOInstruction; //obsahuje program instrukcie komunikujuce cez zbernicu s doskou?
+
     /**
      * Konštruktor pre spojenie inštrukcií, konštánt a návestí z ktorých je zložený program pre CPU.
      *
@@ -52,7 +54,33 @@ public class Program {
         this.interruptionLabels = interruptionLabels;
 
         this.breaks = new TreeSet<>();
-	}
+
+        for (Instruction inst : instructions) {
+            switch (inst.getType()) {
+                case LMI:
+                case LMR:
+                case SMI:
+                case SMR:
+                case INN:
+                case OUT:
+                case EIT:
+                    hasIOInstruction = true;
+                    break;
+                default:
+                    break;
+            }
+            if (hasIOInstruction) break;
+        }
+    }
+
+    /**
+     * Obsahuje program inštrukcie pre komunikáciu cez zbernicu s doskou?
+     *
+     * @return True ak obsahuje aspon jednu, false inak
+     */
+    public boolean hasIOInstruction() {
+        return hasIOInstruction;
+    }
 
 	/**
 	 * Metóda zavádza listenera na zmenu v breakpointoch, ktoré prevádza na indexy inštrukcii v členskom liste triedy.

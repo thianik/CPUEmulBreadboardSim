@@ -12,6 +12,7 @@ import sk.uniza.fri.cp.CPUEmul.Exceptions.NonExistingInterruptLabelException;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.charset.Charset;
 import java.security.InvalidParameterException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
@@ -732,6 +733,7 @@ public class CPU extends Thread {
                             updateMessage("Stlacte klavesu");
                             state.setValue(CPUStates.Waiting);
                             semKey.acquire();
+                            state.setValue(CPUStates.Running);
                         }
 
                         synchronized (this) {
@@ -763,16 +765,15 @@ public class CPU extends Thread {
     /**
      * Obsluha hw prerušenia ak nastalo.
      *
-     * @throws InterruptedException Po nastavení príznaku IA sa synchrónne číta číslo prerušenia z dátovej zbernice (sleep)
      * @throws NonExistingInterruptLabelException Výnimka, ak neexistuje načítané číslo prerušenia.
      */
-    private void handleInterrupt() throws InterruptedException, NonExistingInterruptLabelException {
+    private void handleInterrupt() throws NonExistingInterruptLabelException {
         //vypnutie preruseni
         flagIE = false;
 
         //synchronizovane citanie
         bus.setIA_(false);
-        Thread.sleep(SYNCH_WAIT_TIME_MS);
+        this.waitForSteadySimulation(null);
         byte data = bus.getDataBus();
         bus.setIA_(true);
 
@@ -880,7 +881,7 @@ public class CPU extends Thread {
      */
     private void microstepAwait(String msg) throws InterruptedException {
         //ak je zapnute mikrokrokovanie a zaroven sa aj krokuje
-        if(f_microstep && f_pause) {
+        if (isExecuting && f_microstep && f_pause) {
             //String syncMethod ="Synchronne - ";
             //updateMessage(syncMethod + msg);
             updateMessage(msg);
@@ -919,6 +920,7 @@ public class CPU extends Thread {
         } else {*/
             //synchronne vykonavanie
             //nastavenie priznaku citania
+        System.out.println("CPU NASTAVENIE PRIZNAKU CITANIA");
             if(inst == enumInstructionsSet.INN)
                 bus.setIR_(false);
             else
@@ -926,16 +928,19 @@ public class CPU extends Thread {
 
             //cakanie na nastavenie dat na datovej zbernici
             updateMessage("Cakanie na nastavenie dat");
-            Thread.sleep(SYNCH_WAIT_TIME_MS);
+        System.out.println("CPU CAKANIE NA STEADY STATE PRE CITANIE DAT");
+        this.waitForSteadySimulation(inst);
         //}
 
         //nacitaj data
         microstepAwait("Nacitanie dat");
+        System.out.println("CPU CITANIE DAT");
         byte Rd = bus.getDataBus();
         setRegisterVal(destRegName, Rd);
 
         //zrus priznak citania
         microstepAwait("Zrusenie priznaku " + (inst == enumInstructionsSet.INN?"IOR":"MR"));
+        System.out.println("CPU ODNASTAVENIE PRIZNAKU CITANIA");
         if(inst == enumInstructionsSet.INN)
             bus.setIR_(true);
         else
@@ -961,6 +966,7 @@ public class CPU extends Thread {
 
         //nastavenie dat
         microstepAwait("Nastavenie dat");
+        System.out.println("CPU NASTAVENIE DAT PRI ZAPISE");
         bus.setDataBus(data);
 
         //nastavenie priznaku
@@ -979,24 +985,31 @@ public class CPU extends Thread {
         } else {*/
             //synchronne
             //nastavenie priznaku
+        System.out.println("CPU NASTAVENIE PRIZNAKU ZAPISU");
             if (inst == enumInstructionsSet.OUT)
                 bus.setIW_(false);
             else
                 bus.setMW_(false);
 
             updateMessage("Cakanie na nastavenie dat");
-            Thread.sleep(SYNCH_WAIT_TIME_MS);
+        System.out.println("CPU CAKANIE NA STEADY STATE PO NASTAVENI PRIZNAKU ZAPISU");
+        this.waitForSteadySimulation(inst);
         //}
 
         //zrusenie priznaku
-        microstepAwait("Zrusenie priznaku");
+        microstepAwait("Zrusenie priznaku ZAPISU");
+        System.out.println("CPU ZRUSENIE PRIZNAKU");
         if(inst == enumInstructionsSet.OUT)
             bus.setIW_(true);
         else
             bus.setMW_(true);
 
+        System.out.println("CPU CAKANIE NA STEADY STATE PO ZRUSENI PRIZNAKU");
+        this.waitForSteadySimulation(inst);
+
         //zrusenie dat
         microstepAwait("Zrusenie dat");
+        System.out.println("CPU ZRUSENIE DAT");
         bus.setRandomData();
 
         //zrusenie adresy
@@ -1013,6 +1026,30 @@ public class CPU extends Thread {
         cdlHalt = new CountDownLatch(1);
         cdlHalt.await();
         cdlHalt = null;
+    }
+
+    /**
+     * Pasívne čakanie na nastavenie dát na dátovej zbernici pre ich čítanie.
+     *
+     * @param inst Inštrukcia, ktorá požaduje čítanie.
+     */
+    private void waitForSteadySimulation(enumInstructionsSet inst) {
+        try {
+            if (!bus.waitForSteadyState()) {
+                //data nie su nastavene (simulator nebezi alebo nie je sekunda na nastavenie dat dostacujuca)
+                try {
+                    console.write((" " + ((inst != null) ? inst.toString() : "IT")
+                            + ": Data nie su nastavene! Spustite prosim simulaciu a uistite sa, ze nedochadza k zacykleniu. ")
+                            .getBytes(Charset.forName("UTF-8")));
+                    console.write(10);
+                    console.write(13);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     /**

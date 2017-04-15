@@ -11,11 +11,8 @@ import sk.uniza.fri.cp.BreadboardSim.Board.Board;
 import sk.uniza.fri.cp.BreadboardSim.Components.Breadboard;
 import sk.uniza.fri.cp.BreadboardSim.Components.HexSegment;
 import sk.uniza.fri.cp.BreadboardSim.Components.NumKeys;
+import sk.uniza.fri.cp.BreadboardSim.Devices.Chips.*;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Chips.Gates.*;
-import sk.uniza.fri.cp.BreadboardSim.Devices.Chips.SN74125;
-import sk.uniza.fri.cp.BreadboardSim.Devices.Chips.SN74138;
-import sk.uniza.fri.cp.BreadboardSim.Devices.Chips.SN74148;
-import sk.uniza.fri.cp.BreadboardSim.Devices.Chips.SN74151;
 import sk.uniza.fri.cp.BreadboardSim.Wire.Wire;
 
 import java.net.URL;
@@ -94,6 +91,10 @@ public class BreadboardController implements Initializable {
         this.board.deleteSelect();
     }
 
+    public void powerOn() {
+        this.board.powerOn();
+    }
+
     private void registerItems(){
         this.newItemPicker.registerItem(new Gen7400());
         this.newItemPicker.registerItem(new Gen7402());
@@ -107,6 +108,8 @@ public class BreadboardController implements Initializable {
         this.newItemPicker.registerItem(new SN74138());
         this.newItemPicker.registerItem(new SN74148());
         this.newItemPicker.registerItem(new SN74151());
+        this.newItemPicker.registerItem(new SN74573());
+        this.newItemPicker.registerItem(new U6264B());
 
         this.newItemPicker.registerItem(new Breadboard());
         this.newItemPicker.registerItem(new HexSegment());
@@ -116,7 +119,7 @@ public class BreadboardController implements Initializable {
     @FXML
     private void handlePowerAction(){
         System.out.println("power");
-        if(board.simRunningProperty().getValue())
+        if (board.isSimulationRunning())
             board.powerOff();
         else
             board.powerOn();

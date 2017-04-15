@@ -384,14 +384,15 @@ public class Socket extends Group {
 		} else if (pin instanceof OutputPin){
 			switch (((OutputPin) pin).getPinDriver()){
 			    //ak je output typu TRI_STATE alebo OPEN_COLLECTOR, ma rovnaku prioritu, TRI_STATE moze byt ale aj v HiZ
+                //case OPEN_COLLECTOR:
                 case TRI_STATE:
-				case OPEN_COLLECTOR:
-					this.setType(SocketType.OCO);
-					break;
+                    this.setType(SocketType.TRI_OUT);
+                    break;
 				case PUSH_PULL:
 					this.setType(SocketType.OUT);
 					break;
-			}
+                default:
+            }
 		} else this.setType(SocketType.NC);
 
         //ak simulacia bezi, pridaj zmenu na sokete

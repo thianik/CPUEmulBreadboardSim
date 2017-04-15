@@ -8,7 +8,7 @@ import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.Shape;
 import javafx.scene.text.Text;
 import sk.uniza.fri.cp.BreadboardSim.Board.Board;
-import sk.uniza.fri.cp.BreadboardSim.Devices.Led;
+import sk.uniza.fri.cp.BreadboardSim.Devices.LED;
 import sk.uniza.fri.cp.BreadboardSim.Board.GridSystem;
 import sk.uniza.fri.cp.BreadboardSim.Socket.Potential;
 import sk.uniza.fri.cp.BreadboardSim.Socket.Socket;
@@ -165,7 +165,7 @@ public class HexSegment extends Component{
         private static final int GRID_LENGTH = 2;
 
 	    private final SegmentType type;
-		private Led led;
+        private LED LED;
 
 		private double thicknessCoef;
 		private Shape segmentShape;
@@ -191,17 +191,17 @@ public class HexSegment extends Component{
 				case DOT: segmentShape = new Rectangle(grid.getSizeX() * this.thicknessCoef, grid.getSizeY() * this.thicknessCoef, SEGMENT_OFF_COLOR);
 			}
 
-			this.led = new Led(getBoard(), segmentShape, SEGMENT_ON_COLOR);
-            this.led.makeImmovable();
-            this.led.setInverseAnodeLogic(true);
+            this.LED = new LED(getBoard(), segmentShape, SEGMENT_ON_COLOR);
+            this.LED.makeImmovable();
+            this.LED.setInverseAnodeLogic(true);
 
-			this.getChildren().addAll(led);
-		}
+            this.getChildren().addAll(LED);
+        }
 
 		void connect(Socket input){
-			input.connect(this.led.getCathode());
-			this.innerGndSocket.connect(this.led.getAnode());
-		}
+            input.connect(this.LED.getCathode());
+            this.innerGndSocket.connect(this.LED.getAnode());
+        }
 
 		void invert(){
 			GridSystem grid = getBoard().getGrid();

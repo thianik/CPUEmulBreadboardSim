@@ -5,6 +5,7 @@ import javafx.scene.input.MouseEvent;
 import sk.uniza.fri.cp.BreadboardSim.*;
 import sk.uniza.fri.cp.BreadboardSim.Board.Board;
 import sk.uniza.fri.cp.BreadboardSim.Board.BoardChangeEvent;
+import sk.uniza.fri.cp.BreadboardSim.Board.BoardEvent;
 import sk.uniza.fri.cp.BreadboardSim.Components.Component;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.Pin;
 import sk.uniza.fri.cp.BreadboardSim.Socket.Potential;
@@ -127,28 +128,43 @@ public abstract class Device extends Item {
             inputPin.setState(Pin.PinState.LOW);
         } else inputPin.setState(Pin.PinState.NOT_CONNECTED);
 
+
         return false;
     }
 
 	public boolean isLow(Pin inputPin){
-		return !isHigh(inputPin);
-	}
+        if (inputPin == null) return false;
+        if (!inputPin.isConnected()) return false;
+
+        Potential.Value value = inputPin.getSocket().getPotential().getValue();
+
+        if (value == Potential.Value.LOW) {
+            inputPin.setState(Pin.PinState.LOW);
+            return true;
+        } else if (value == Potential.Value.HIGH) {
+            inputPin.setState(Pin.PinState.HIGH);
+        } else inputPin.setState(Pin.PinState.NOT_CONNECTED);
+
+        return false;
+    }
 
     /**
-     * Nastavenie hodnoty na vystupnom pine a zaznamenanie eventu pre simulaciu s aktualizaciou.
+     * Nastavenie hodnoty na vystupnom pine a zaznamenanie eventu pre simulaciu s aktualizaciou, ak sa hodnota zmenila.
+     *
      * Volat iba pri simulacii
      *
      * @param pin
      * @param state
      */
 	public void setPin(Pin pin, Pin.PinState state){
-	    pin.setState(state);
+        pin.setState(state);
 
-	    //if(getBoard().isSimulationRunning()) //TODO ?? je potrebne?
-	    switch (state){
-            case HIGH: getBoard().addEvent(new BoardChangeEvent(pin.getSocket(), Potential.Value.HIGH));
+        switch (state) {
+            case HIGH:
+                getBoard().addEvent(new BoardChangeEvent(pin.getSocket(), Potential.Value.HIGH));
                 break;
-            case LOW: getBoard().addEvent(new BoardChangeEvent(pin.getSocket(), Potential.Value.LOW));
+            case LOW:
+                getBoard().addEvent(new BoardChangeEvent(pin.getSocket(), Potential.Value.LOW));
                 break;
             case HIGH_IMPEDANCE:
             case NOT_CONNECTED:
@@ -295,6 +311,8 @@ public abstract class Device extends Item {
 
         this.disconnectAllPins();
     }
+
+
 }
 
 //    public boolean isHigh(int inputPinIndex){

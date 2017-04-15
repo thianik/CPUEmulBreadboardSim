@@ -33,7 +33,7 @@ public class SN74138 extends Chip {
     private static final int _Y0 = 15;
     private static final int _VCC = 16;
 
-    private int[] outputs = {_Y0, _Y1, _Y2, _Y3, _Y4, _Y5, _Y6, _Y7};
+    private static final int[] outputs = {_Y0, _Y1, _Y2, _Y3, _Y4, _Y5, _Y6, _Y7};
 
     public SN74138() {
         super(PINS_COUNT);

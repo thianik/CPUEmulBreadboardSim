@@ -85,6 +85,6 @@ public class App extends Application {
         );
 
         breadboardStage.setScene(breadboardScene);
-        ((CPUController) CpuLayoutLoader.getController()).setBreadboardStage(breadboardStage);
+        ((CPUController) CpuLayoutLoader.getController()).setBreadboardStage(breadboardStage, breadboardLayoutLoader.getController());
     }
 }

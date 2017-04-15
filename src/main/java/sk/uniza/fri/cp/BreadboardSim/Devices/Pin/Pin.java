@@ -24,15 +24,17 @@ public abstract class Pin extends Circle {
 	/** typy budicov vystupnych pinov
 	 * PUSH_PULL - klasicky vystup, pri napojeni vysupv +5V a GND nedefinovana hodnota
 	 * TRI_STATE - pridáva tretí stav vysokej impedancie, kedy sa "odpája" od obvodu a nemá naň vplyv -> InputOutputPin
-	 * OPEN_COLLECTOR - pin pri hodnote LOW stiahne celu vetvu do LOW, pri HIGH je kvazi "odpojeny"
 	 */
-	public enum PinDriver {	PUSH_PULL, TRI_STATE, OPEN_COLLECTOR }
+    // OPEN_COLLECTOR - pin pri hodnote LOW stiahne celu vetvu do LOW, pri HIGH je kvazi "odpojeny"
+    public enum PinDriver {
+        PUSH_PULL, TRI_STATE /*, OPEN_COLLECTOR*/
+    }
 
 	private Socket socket;
 	private Device device;
 	private PinState state = PinState.NOT_CONNECTED;
 
-	private String name = "";
+    private String name = "UNNAMED " + this.getClass().getSimpleName();
 
 	public Pin(Device device){
 		this.device = device;

@@ -9,6 +9,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
 import sk.uniza.fri.cp.BreadboardSim.Board.Board;
 import sk.uniza.fri.cp.BreadboardSim.Board.BoardEvent;
+import sk.uniza.fri.cp.BreadboardSim.Components.BusInterface;
 import sk.uniza.fri.cp.BreadboardSim.HighlightGroup;
 import sk.uniza.fri.cp.BreadboardSim.SchoolBreadboard;
 import sk.uniza.fri.cp.BreadboardSim.Socket.Potential;
@@ -293,7 +294,13 @@ public class Wire extends HighlightGroup {
 			Socket end = this.ends[1].getSocket();
 			if(start != null && end != null) {
 				//ak su oba konce pripojene, updateujeme jednu vetvu potencialov
-				this.potential = new Potential(start, end);
+
+                //hmm.. ak sa pripajame na datovu zbernicu, musisa akrualizovat ako prva aby nedoslo ku skratu
+                if (end.getComponent() instanceof BusInterface)
+                    this.potential = new Potential(end, start);
+                else
+                    this.potential = new Potential(start, end);
+
 				toUpdate = start;
 			} else {
 				//ak je iba jeden koniec pripojeny, updateujeme jeho vetvu potencialov (druha sa updatuje pri odpojeni WireEnd)

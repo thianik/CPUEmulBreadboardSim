@@ -1,5 +1,6 @@
 package sk.uniza.fri.cp.BreadboardSim.Devices;
 
+import javafx.application.Platform;
 import javafx.scene.Group;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
@@ -21,7 +22,7 @@ import java.util.List;
  * @version 1.0
  * @created 17-mar-2017 16:16:35
  */
-public class Led extends Device {
+public class LED extends Device {
 
     private Color offColor = Color.DARKRED;
     private Color onColor = Color.RED;
@@ -36,7 +37,7 @@ public class Led extends Device {
     private boolean inverseAnodeLogic;
     private boolean inverseCathodeLogic;
 
-    public Led(Board board) {
+    public LED(Board board) {
         super(board);
 
         //piny
@@ -54,7 +55,7 @@ public class Led extends Device {
     /**
      * @param glowingShape
      */
-    public Led(Board board, Shape glowingShape, Color onColor) {
+    public LED(Board board, Shape glowingShape, Color onColor) {
         super(board);
         this.glowingShape = glowingShape;
         this.onColor = onColor;
@@ -137,12 +138,22 @@ public class Led extends Device {
 
     @Override
     protected void updateGraphic(){
-        super.updateGraphic();
+        //super.updateGraphic();
 
-        if(this.on){
-            glowingShape.setFill(onColor);
+        if (Platform.isFxApplicationThread()) {
+            if (this.on) {
+                glowingShape.setFill(onColor);
+            } else {
+                glowingShape.setFill(offColor);
+            }
         } else {
-            glowingShape.setFill(offColor);
+            Platform.runLater(() -> {
+                if (this.on) {
+                    glowingShape.setFill(onColor);
+                } else {
+                    glowingShape.setFill(offColor);
+                }
+            });
         }
     }
 }

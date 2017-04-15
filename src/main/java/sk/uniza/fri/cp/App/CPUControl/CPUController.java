@@ -139,6 +139,7 @@ public class CPUController implements Initializable {
     @FXML
     private Button btnSimulator;
     private Stage breadboardStage;
+    private BreadboardController breadboardController;
 
     @FXML private ToggleSwitch tsConnectBusUsb;
 
@@ -408,8 +409,9 @@ public class CPUController implements Initializable {
      *
      * @param stageToShow Javisko so simulátorom vývojovej dosky.
      */
-    public void setBreadboardStage(Stage stageToShow) {
+    public void setBreadboardStage(Stage stageToShow, BreadboardController breadboardController) {
         this.breadboardStage = stageToShow;
+        this.breadboardController = breadboardController;
         this.btnSimulator.setDisable(false);
     }
 
@@ -1030,6 +1032,10 @@ public class CPUController implements Initializable {
     private void startExecution(){
         //ak cpu bezi
         if(this.cpu != null && this.cpu.isAlive()){
+            if (this.program.hasIOInstruction()) {
+                breadboardController.powerOn();
+            }
+
             this.cos_cpu.setUnused();
             this.cpu.reset();
             this.cpu.loadProgram(this.program);

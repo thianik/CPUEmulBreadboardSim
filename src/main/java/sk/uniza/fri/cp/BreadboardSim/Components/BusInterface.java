@@ -1,5 +1,6 @@
 package sk.uniza.fri.cp.BreadboardSim.Components;
 
+import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.scene.Group;
@@ -10,6 +11,7 @@ import javafx.scene.shape.Line;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Text;
 import sk.uniza.fri.cp.BreadboardSim.Board.Board;
+import sk.uniza.fri.cp.BreadboardSim.Board.BoardEvent;
 import sk.uniza.fri.cp.BreadboardSim.Board.GridSystem;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Device;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.InputOutputPin;
@@ -80,15 +82,41 @@ public class BusInterface extends Component {
         rightGndSockets.setLayoutY(grid.getSizeY() * 4);
 
 
+        this.getBoard().simRunningProperty().addListener(new ChangeListener<Boolean>() {
+            @Override
+            public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {
+                if (newValue.booleanValue()) {
+                    AddressBusCommunicator.setAddress(bus.getAddressBus());
+                    DataBusCommunicator.setData(bus.getDataBus());
+                    ControlBusCommunicator.setControls(bus.getControlBus());
+
+                    for (int i = 0; i < 16; i++)
+                        addressBusCommunicators[i].update();
+
+                    for (int i = 4; i < 9; i++)  //iba pre vystupne signaly
+                        controlBusCommunicators[i].update();
+
+                    for (int i = 0; i < 8; i++)
+                        dataBusCommunicators[i].update();
+                } else {
+                    for (int i = 0; i < 16; i++)
+                        addressBusCommunicators[i].reset();
+
+                    for (int i = 4; i < 9; i++)  //iba pre vystupne signaly
+                        controlBusCommunicators[i].reset();
+
+                    for (int i = 0; i < 8; i++)
+                        dataBusCommunicators[i].reset();
+                }
+            }
+        });
 
         this.bus.addressBusProperty().addListener(new ChangeListener<Number>() {
             @Override
             public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
+                AddressBusCommunicator.setAddress(newValue.intValue());
                 for (int i = 0; i < 16; i++) {
-                    if((1<<i & newValue.intValue()) != 0)
-                        addressBusCommunicators[i].setHigh();
-                    else
-                        addressBusCommunicators[i].setLow();
+                    addressBusCommunicators[i].update();
                 }
             }
         });
@@ -97,87 +125,57 @@ public class BusInterface extends Component {
             @Override
             public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
                 //nastavenie aktualnych dat na datovej zbernici pre vsetky instancie komunikatora (ledky)
-                DataBusCommunicator.data = newValue.intValue();
-                for (int i = 0; i < 8; i++) {
-                    //0x140 -> 1 0100 0000 => signal zapisu MW/IW je v nule
-                    if((bus.controlBusProperty().getValue() & 0x140) != 0x140) {
-                        //zapis
-                        ((DataBusCommunicator) dataBusCommunicators[i]).setToWrite(true);
-                    } else {
-                        ((DataBusCommunicator) dataBusCommunicators[i]).setToWrite(false);
-                    }
 
-                    ((DataBusCommunicator) dataBusCommunicators[i]).update();
+                if ((bus.getControlBus() & 0xB0) == 0xB0) {
+                    //ak nie je zapnute citanie -> ak je, tak sa riadime iba podla simulacie,
+                    //nie podla dat ulozenych na zbernici
+                    DataBusCommunicator.setData(newValue.intValue());
+
+                    for (int i = 0; i < 8; i++) {
+                        dataBusCommunicators[i].update();
+                    }
                 }
+
             }
         });
 
         this.bus.controlBusProperty().addListener(new ChangeListener<Number>() {
             @Override
             public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
-                for (int i = 4; i < 9; i++) { //iba pre vystupne signaly
-                    if((1<<i & newValue.intValue()) != 0)
-                        controlBusCommunicators[i].setHigh();
-                    else
-                        controlBusCommunicators[i].setLow();
+                ControlBusCommunicator.setControls(newValue.intValue());
+
+                //0x140 -> 1 0100 0000 => signal zapisu MW/IW je v nule
+                if ((newValue.intValue() & 0x140) != 0x140) {
+                    //zapis
+                    DataBusCommunicator.setToWrite(true);
+                    for (int i = 0; i < 8; i++)
+                        dataBusCommunicators[i].update();
+                } else {
+                    DataBusCommunicator.setToWrite(false);
+                    for (int i = 0; i < 8; i++) {
+                        dataBusCommunicators[i].update();
+                        //dataBusCommunicators[i].update();
+                    }
                 }
 
-                //MR/IR
-                if((newValue.intValue() & 0xA0) != 0xA0) {
+                //MR/IR/IA
+                if ((newValue.intValue() & 0xB0) != 0xB0) {
                     //citanie
-                    for (int i = 0; i < 8; i++)
+
+                    for (int i = 0; i < 8; i++) {
                         ((DataBusCommunicator) dataBusCommunicators[i]).setToRead(true);
+                        //dataBusCommunicators[i].update();
+                    }
                 } else {
                     for (int i = 0; i < 8; i++)
                         ((DataBusCommunicator) dataBusCommunicators[i]).setToRead(false);
                 }
+
+                for (int i = 4; i < 9; i++) { //iba pre vystupne signaly
+                    controlBusCommunicators[i].update();
+                }
             }
         });
-
-        //update zobrazenia lediek pri zmene na zbernici
-        /*this.bus.getAddressBusEventStream().subscribe((number) -> {
-            for (int i = 0; i < 16; i++) {
-                if((1<<i & number.getNewValue().intValue()) != 0)
-                    addressBusCommunicators[i].setHigh();
-                else
-					addressBusCommunicators[i].setLow();
-            }
-        });*/
-
-       /* this.bus.getDataBusEventStream().subscribe((number) -> {
-        	//nastavenie aktualnych dat na datovej zbernici pre vsetky instancie komunikatora (ledky)
-        	DataBusCommunicator.data = number.getNewValue().intValue();
-			for (int i = 0; i < 8; i++) {
-                //0x140 -> 1 0100 0000 => signal zapisu MW/IW je v nule
-                if((this.bus.controlBusProperty().getValue() & 0x140) != 0x140) {
-                    //zapis
-                    ((DataBusCommunicator) dataBusCommunicators[i]).setToWrite(true);
-                } else {
-                    ((DataBusCommunicator) dataBusCommunicators[i]).setToWrite(false);
-                }
-
-                ((DataBusCommunicator) dataBusCommunicators[i]).update();
-            }
-        });*/
-
-        /*this.bus.getControlBusEventStream().subscribe((number) ->{
-            for (int i = 4; i < 9; i++) { //iba pre vystupne signaly
-                if((1<<i & number.getNewValue().intValue()) != 0)
-                    controlBusCommunicators[i].setHigh();
-                else
-					controlBusCommunicators[i].setLow();
-            }
-
-            //MR/IR
-            if((number.getNewValue().intValue() & 0xA0) != 0xA0) {
-				//citanie
-                for (int i = 0; i < 8; i++)
-                    ((DataBusCommunicator) dataBusCommunicators[i]).setToRead(true);
-            } else {
-                for (int i = 0; i < 8; i++)
-                    ((DataBusCommunicator) dataBusCommunicators[i]).setToRead(false);
-            }
-        });*/
 
 
 
@@ -225,8 +223,8 @@ public class BusInterface extends Component {
 			addressSockets[i] = socket;
 
 			//komunikator so zbernicou
-			AddressBusCommunicator communicator = new AddressBusCommunicator(getBoard(), this, addressSockets[i], i);
-			communicator.setLayoutX(centerX);
+            AddressBusCommunicator communicator = new AddressBusCommunicator(getBoard(), addressSockets[i], i);
+            communicator.setLayoutX(centerX);
 			communicator.setLayoutY(-grid.getSizeY());
 			addressBusCommunicators[i] = communicator;
 
@@ -261,8 +259,8 @@ public class BusInterface extends Component {
 			dataSockets[i] = socket;
 
 			//komunikator so zbernicou
-			DataBusCommunicator communicator = new DataBusCommunicator(getBoard(), this, dataSockets[i], i);
-			communicator.setLayoutX(centerX);
+            DataBusCommunicator communicator = new DataBusCommunicator(getBoard(), dataSockets[i], i);
+            communicator.setLayoutX(centerX);
 			communicator.setLayoutY(-grid.getSizeY());
 			dataBusCommunicators[i] = communicator;
 
@@ -296,8 +294,8 @@ public class BusInterface extends Component {
 			controlSockets[i] = socket;
 
 			//komunikator so zbernicou
-			ControlBusCommunicator communicator = new ControlBusCommunicator(getBoard(), this, controlSockets[i], i);
-			communicator.setLayoutX(centerX);
+            ControlBusCommunicator communicator = new ControlBusCommunicator(getBoard(), controlSockets[i], i);
+            communicator.setLayoutX(centerX);
 			communicator.setLayoutY(-grid.getSizeY());
 			controlBusCommunicators[i] = communicator;
 
@@ -352,10 +350,6 @@ public class BusInterface extends Component {
 
 	private abstract static class BusCommunicator extends Device{
 
-		protected Pin pin;
-		protected int byteNr; //cislo bitu na zbernici od najnizsieho radu
-        protected Socket interfaceSocket;
-
 		private static final double RADIUS_COEF = 0.4;
 
 		private Circle indicator;
@@ -363,10 +357,12 @@ public class BusInterface extends Component {
 		private Paint offColor;
 		private volatile boolean indicatorOn;
 
-		public BusCommunicator(Board board, Component component, Socket interfaceSocket, int byteNr, Paint onColor, Paint offColor) {
-			super(board);
+        protected Pin pin; //pin pripojeny k rozhraniu na doske
+        private int byteNr; //cislo bitu na zbernici od najnizsieho radu
 
-			this.interfaceSocket = interfaceSocket;
+        public BusCommunicator(Board board, Socket interfaceSocket, int byteNr, Paint onColor, Paint offColor) {
+            super(board);
+
 			this.byteNr = byteNr;
 			this.onColor = onColor;
 			this.offColor = offColor;
@@ -375,24 +371,92 @@ public class BusInterface extends Component {
 			this.indicator = new Circle(grid.getSizeMin() * RADIUS_COEF, offColor);
 
 			initPin();
-			this.interfaceSocket.connect(this.pin);
-            this.interfaceSocket.lockPin();
+
+            //vytvorenie vnuterneho soketu, prepojenie potencialom s vonkajsim a pripojenie pinu
+            //TODO TO TU JE ZRADA DAJAKA... TEN POTENCIAL SA STALE MENI... ZMENA V TRIEDE DB -> pri !W && !R
+//			Socket hiddenSocket = new Socket(interfaceSocket.getComponent());
+//			Potential hiddenPotential = new Potential(hiddenSocket, interfaceSocket);
+//			hiddenSocket.connect(this.pin);
+            interfaceSocket.connect(this.pin);
+            interfaceSocket.lockPin();
 
 			this.getChildren().addAll(indicator);
 			this.makeImmovable();
 		}
 
-		public void setHigh(){
-			setPin(this.pin, Pin.PinState.HIGH);
-            this.indicatorOn = true;
-            updateGraphic();
-		}
+        /**
+         * Aktualizácia hodnoty komunikátora.
+         */
+        abstract public void update();
 
-		public void setLow(){
-            setPin(this.pin, Pin.PinState.LOW);
-            this.indicatorOn = false;
-            updateGraphic();
-		}
+        /**
+         * Inicializácia pinu volaná v konštruktore.
+         */
+        abstract protected void initPin();
+
+        protected final int getByteNr() {
+            return this.byteNr;
+        }
+
+        protected final Pin getPin() {
+            return this.pin;
+        }
+
+        @Override
+        public boolean isHigh(Pin inputPin) {
+            if (super.isHigh(inputPin)) {
+                this.turnIndicatorOn();
+                return true;
+            } else {
+                //this.turnIndicatorOff();
+                return false;
+            }
+        }
+
+        protected final void setHigh() {
+            //if(this.getBoard().isSimulationRunning())
+            this.setPin(this.pin, Pin.PinState.HIGH);
+            turnIndicatorOn();
+        }
+
+        @Override
+        public boolean isLow(Pin inputPin) {
+            if (super.isLow(inputPin)) {
+                this.turnIndicatorOff();
+                return true;
+            } else {
+                //this.turnIndicatorOn();
+                return false;
+            }
+        }
+
+        protected final void setLow() {
+            //if(this.getBoard().isSimulationRunning())
+            this.setPin(this.pin, Pin.PinState.LOW);
+            turnIndicatorOff();
+        }
+
+        protected final void setHighImpedance(boolean turnIndicatorOn) {
+            this.setPin(this.pin, Pin.PinState.HIGH_IMPEDANCE);
+            if (turnIndicatorOn)
+                turnIndicatorOn();
+            else
+                turnIndicatorOff();
+        }
+
+        protected final void turnIndicatorOn() {
+            if (!this.indicatorOn) {
+                this.indicatorOn = true;
+                updateGraphic();
+            }
+        }
+
+        protected final void turnIndicatorOff() {
+            if (this.indicatorOn) {
+                this.indicatorOn = false;
+                updateGraphic();
+            }
+        }
 
         @Override
         public List<Pin> getPins() {
@@ -400,27 +464,27 @@ public class BusInterface extends Component {
         }
 
         @Override
-		public void simulate() {
-            this.indicatorOn = isHigh(this.pin);
-			updateGraphic();
-		}
-
-        @Override
         protected void updateGraphic() {
-            super.updateGraphic();
 
-            if(this.indicatorOn)
-                this.indicator.setFill(onColor);
-            else
-                this.indicator.setFill(offColor);
+            if (Platform.isFxApplicationThread()) {
+                if (this.indicatorOn)
+                    this.indicator.setFill(onColor);
+                else
+                    this.indicator.setFill(offColor);
+            } else {
+                Platform.runLater(() -> {
+                    if (this.indicatorOn)
+                        this.indicator.setFill(onColor);
+                    else
+                        this.indicator.setFill(offColor);
+                });
+            }
         }
 
         @Override
         public void reset() {
-
+            this.pin.getSocket().setPotential(Potential.Value.NC);
         }
-
-        abstract void initPin();
 	}
 
 	private static class AddressBusCommunicator extends BusCommunicator{
@@ -428,124 +492,221 @@ public class BusInterface extends Component {
 		private static final Paint ON_COLOR = Color.RED;
 		private static final Paint OFF_COLOR = Color.DARKRED;
 
-		public AddressBusCommunicator(Board board, Component component, Socket interfaceSocket, int byteNr) {
-			super(board, component, interfaceSocket, byteNr, ON_COLOR, OFF_COLOR);
-		}
+        private volatile static int address;
 
-		@Override
-		void initPin() {
-			this.pin = new OutputPin(this);
-		}
-	}
+        /**
+         * Nastavenie akutálnej adresy na zbernici
+         *
+         * @param newAddress Adresa na zbernici
+         */
+        public static void setAddress(int newAddress) {
+            address = newAddress;
+        }
+
+        public AddressBusCommunicator(Board board, Socket interfaceSocket, int byteNr) {
+            super(board, interfaceSocket, byteNr, ON_COLOR, OFF_COLOR);
+        }
+
+        @Override
+        public void update() {
+            if ((address & 1 << this.getByteNr()) != 0) {
+                this.setHigh();
+            } else {
+                this.setLow();
+            }
+        }
+
+        @Override
+        public void simulate() {
+        } //output, neprebieha simulacia
+
+        @Override
+        protected void initPin() {
+            this.pin = new OutputPin(this, "Address Output Pin " + this.getByteNr());
+        }
+
+        @Override
+        public void reset() {
+            super.reset();
+            if ((address & 1 << this.getByteNr()) != 0) {
+                this.turnIndicatorOn();
+            } else {
+                this.turnIndicatorOff();
+            }
+        }
+    }
 
 	private static class DataBusCommunicator extends BusCommunicator{
 
 		private static final Paint ON_COLOR = Color.LIME;
 		private static final Paint OFF_COLOR = Color.SEAGREEN;
 
+        private volatile static int data; //aktualne data na zbernici
+        private volatile static boolean read; //nastavenie ako vstupu
+        private volatile static boolean write; //nastavenie ako vystupu
+        //private volatile static Potential[] connectedPotentials = new Potential[8]; dalo by sa pouzit pre zistovenie, ci su dva vystupy pripojene na rovnaky potencial pre zistenie skratu, mozno
 
-        private boolean read; //nastavenie ako vstupu
-        private boolean write; //nastavenie ako vystupu
-
-		public DataBusCommunicator(Board board, Component component, Socket interfaceSocket, int byteNr) {
-			super(board, component, interfaceSocket, byteNr, ON_COLOR, OFF_COLOR);
-			this.read = false;
-		}
-
-        public void setToRead(boolean read){
-            this.read = read;
-            if(read) {
-                this.pin.setState(Pin.PinState.HIGH_IMPEDANCE);
-                writeToBus();
-            }
+        public static void setData(int newData) {
+            data = newData;
         }
 
-        public void setToWrite(boolean write){
-            this.write = write;
-            update();
+        public void setToRead(boolean newRead) {
+            read = newRead;
+            if (read) this.setPin(this.getPin(), Pin.PinState.HIGH_IMPEDANCE);
         }
 
-        private static int data; //aktualne data na zbernici
+        public static void setToWrite(boolean newWrite) {
+            write = newWrite;
+        }
 
-		public void writeToBus(){
-			int dataToWrite;
-
-			if(this.pin.getState() == Pin.PinState.HIGH)
-				dataToWrite = data | (1<<this.byteNr);
-			else
-				dataToWrite = data & ~(1<<this.byteNr);
-
-			Bus.getBus().setDataBus((byte)dataToWrite);
-		}
+        public DataBusCommunicator(Board board, Socket interfaceSocket, int byteNr) {
+            super(board, interfaceSocket, byteNr, ON_COLOR, OFF_COLOR);
+            this.read = false;
+            this.write = false;
+        }
 
 		/**
 		 * Aktualizacia po zmene dat na zbernici
-		 */
+         * //TODO REFAKTORING
+         */
 		public void update(){
 
-            //TODO WTF... cele je to divne... zatial to funguje ale treba to premysliet
-            if(this.write //ak je pozardovany zapis zo zbernice do pamate -> vsetky vystupy sa nastavuju podla zbernice
-                    || this.interfaceSocket.getThisPotential().getChild() == null  //nije pripojeny kablik
-                    || ( this.interfaceSocket.getThisPotential().getChild() != null //alebo je ale nie je to vystup
-                            && this.interfaceSocket.getPotential().getType() != SocketType.OUT))
-            {
-                if((data & (1<<this.byteNr)) != 0) {
-                    setHigh();
+            if (write) {
+
+                //zapis zo zbernice do externej pamate na zaklade
+                if ((data & 1 << this.getByteNr()) != 0) {
+                    System.out.println("DATA " + this.getByteNr() + " SETTING HIGH ON" + Thread.currentThread().getName() + " BECAUSE OF BUS DATA " + data);
+                    this.setHigh();
                 } else {
-                    setLow();
+                    System.out.println("DATA " + this.getByteNr() + " SETTING LOW ON" + Thread.currentThread().getName() + " BECAUSE OF BUS DATA " + data);
+                    this.setLow();
+                }
+            } else if (read) {
+                //citanie z externeho zariadenia a zapis na zbernicu
+                if (this.isHigh(this.getPin())) {
+                    //ak je na pine jednotka
+                    Bus.getBus().setDataBus((byte) (data |= (1 << this.getByteNr())));
+                    System.out.println("DATA" + this.getByteNr() + ": READING HIGH ON " + Thread.currentThread().getName() + " WROTE ON BUS " + data);
+                } else if (this.isLow(this.getPin())) {
+                    //ak nie tak sa predpoklada ze je tam nula (aj ked je nepripojeny, lebo CPU je odpojene)
+                    Bus.getBus().setDataBus((byte) (data &= ~(1 << this.getByteNr())));
+                    System.out.println("DATA" + this.getByteNr() + ": READING LOW ON " + Thread.currentThread().getName() + " WROTE ON BUS " + data);
+                }
+            } else {
+                //ANI ZAPIS ANI CITANIE -> TO DIVNE SPRAVANIE Z POVODNEHO SIMULATORA
+
+                //zachovanie povodnej hodnoty
+                Potential.Value oldValue = this.getPin().getSocket().getThisPotential().getValue();
+
+                //odpojenie aby neovplyvnoval vyslednu hodnotu na potencialy pri zistovani kto ho riadi (potencial)
+                if (this.getBoard().isSimulationRunning())
+                    this.getPin().getSocket().setPotential(Potential.Value.NC);
+
+                //zistenie, ci je potencial, na ktory je pripojeny riadeny nim (zbernicou) alebo nie
+                if (this.getPin().getSocket().getPotential().getValue() != Potential.Value.NC) {
+                    //VYSLEDNY POTENCIAL RIADI NIEKTO INY (lebo nie je not connected -> je tam nejaky vystup)
+
+                    //ak hodnota potencialu nie je riadena zo zbernice, je riadena inym vystupom, ktory sa sem pripaja
+                    //a teda podla neho iba nastavim ledku kontrolou ci je HIGH alebo LOW
+                    if (!this.isHigh(this.getPin()))
+                        this.isLow(this.getPin());
+                } else {
+                    //VYSLEDNY POTENCIAL JE RIADENY ZO ZBERNICE
+
+                    //vratenie povodneho potencialu na sokete zbernice
+                    this.getPin().getSocket().setPotential(oldValue);
+
+                    //ak ja riadim hodnotu potencialu, tak ju riadim na zaklade dat zo zbernice
+                    if ((data & 1 << this.getByteNr()) != 0) {
+                        //mal by vysielat output HIGH
+                        this.turnIndicatorOn();
+
+                        //ak sa nova hodnota lisi od starej, vytvorim event pre simulaciu, inak sa zacyklim ako nikto
+                        if (oldValue != Potential.Value.HIGH) {
+                            this.setHigh();
+                        }
+                    } else {
+                        this.turnIndicatorOff();
+
+                        if (oldValue != Potential.Value.LOW) {
+                            this.setLow();
+                        }
+                    }
                 }
             }
+
 		}
 
 		@Override
 		public void simulate() {
-			super.simulate();
-
             update();
-
-			//ak prebieha citanie, zapis novu hodnotu na zbernicu
-			if(read){
-                writeToBus();
-            }
 		}
 
 		@Override
-		void initPin() {
-			this.pin = new InputOutputPin(this);
-		}
-	}
+        protected void initPin() {
+            this.pin = new InputOutputPin(this, "Data IO Pin " + this.getByteNr());
+        }
+
+        @Override
+        public void reset() {
+            super.reset();
+            if ((data & 1 << this.getByteNr()) != 0) {
+                this.turnIndicatorOn();
+            } else {
+                this.turnIndicatorOff();
+            }
+        }
+    }
 
 	private static class ControlBusCommunicator extends BusCommunicator{
 
 		private static final Paint ON_COLOR = Color.YELLOW;
 		private static final Paint OFF_COLOR = Color.OLIVE;
 
-		public ControlBusCommunicator(Board board, Component component, Socket interfaceSocket, int byteNr) {
-			super(board, component, interfaceSocket, byteNr, ON_COLOR, OFF_COLOR);
-		}
+        private volatile static int controls; //priznaky na zbernici
+
+        public static void setControls(int newControls) {
+            controls = newControls;
+        }
+
+        public ControlBusCommunicator(Board board, Socket interfaceSocket, int byteNr) {
+            super(board, interfaceSocket, byteNr, ON_COLOR, OFF_COLOR);
+        }
+
+        @Override
+        public void update() {
+            if ((controls & 1 << this.getByteNr()) != 0) {
+                //if(this.getByteNr() == 8) System.out.println("CONTROL 8 HIGH");
+                this.setHigh();
+            } else {
+                // if(this.getByteNr() == 8) System.out.println("CONTROL 8 LOW");
+                this.setLow();
+            }
+        }
 
 		@Override
 		public void simulate() {
-			super.simulate();
 
 			//simulujeme zapis na zbernicu ak sa jedna o vstupny signal
-			switch (this.byteNr){
-				case 2: Bus.getBus().setRY(this.pin.getState() == Pin.PinState.HIGH);
-					//pri vstupnom signaly je indikator zavisly na aktualnom vstupe
+            switch (this.getByteNr()) {
+                case 2:
+                    Bus.getBus().setRY(this.isHigh(this.getPin()));
+                    //pri vstupnom signaly je indikator zavisly na aktualnom vstupe
 					//updateIndicator(this.pin.getState() == Pin.PinState.HIGH);
 					break;
-				case 3: Bus.getBus().setIT(this.pin.getState() == Pin.PinState.HIGH);
-					//updateIndicator(this.pin.getState() == Pin.PinState.HIGH);
+                case 3:
+                    Bus.getBus().setIT(this.isHigh(this.getPin()));
+                    //updateIndicator(this.pin.getState() == Pin.PinState.HIGH);
 					break;
 			}
 		}
 
-		@Override
-		void initPin() {
-			if(this.byteNr == 2 || this.byteNr == 3)
-				this.pin = new InputPin(this);
-			else
-				this.pin = new OutputPin(this);
-		}
+        @Override
+        protected void initPin() {
+            if (this.getByteNr() == 2 || this.getByteNr() == 3)
+                this.pin = new InputPin(this, "Control Input Pin " + this.getByteNr());
+            else
+                this.pin = new OutputPin(this, "Control Output Pin " + this.getByteNr());
+        }
 	}
 }

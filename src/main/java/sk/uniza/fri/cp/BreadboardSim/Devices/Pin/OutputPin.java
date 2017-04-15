@@ -35,4 +35,5 @@ public class OutputPin extends Pin {
 	public PinDriver getPinDriver(){
 		return driver;
 	}
+
 }

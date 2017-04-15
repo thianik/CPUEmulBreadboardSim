@@ -3,12 +3,15 @@ package sk.uniza.fri.cp.BreadboardSim.Board;
 
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 import javafx.concurrent.WorkerStateEvent;
 import javafx.event.EventHandler;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Device;
 import sk.uniza.fri.cp.BreadboardSim.Socket.PowerSocket;
+import sk.uniza.fri.cp.Bus.Bus;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -33,7 +36,11 @@ public class BoardSimulator {
 				@Override
 				protected Object call() throws Exception {
 
+                    int processedEvents = 0;
+
 					running.setValue(true);
+                    boolean steadyState = false;
+                    Bus.getBus().dataIsChanging();
 
 					//pripojenie napajania
 					powerSockets.forEach(PowerSocket::powerUp);
@@ -44,9 +51,22 @@ public class BoardSimulator {
 					while(!isCancelled()){
 
 						try {
-							BoardEvent event = eventsQueue.take();
+                            if (eventsQueue.size() == 0) {
+                                steadyState = true;
+                                Bus.getBus().dataInSteadyState();
+                            }
+
+                            BoardEvent event = eventsQueue.take();
+
+
+                            if (steadyState) {
+                                Bus.getBus().dataIsChanging();
+                                steadyState = false;
+
+                            }
 
 							event.process(devicesToUpdate);
+                            processedEvents++;
 
 							devicesToUpdate.forEach((Device::simulate));
 
@@ -58,22 +78,27 @@ public class BoardSimulator {
 						}
 					}
 
+                    running.setValue(false);
+                    Bus.getBus().dataIsChanging();
+
 					powerSockets.forEach(PowerSocket::powerDown);
 
-					eventsQueue.forEach(event -> event.process(devicesToUpdate));
-					devicesToUpdate.forEach((Device::simulate));
-					devicesToUpdate.clear();
+                    while (eventsQueue.size() > 0) {
+                        eventsQueue.take().process(devicesToUpdate);
+                        devicesToUpdate.forEach((Device::simulate));
+                        devicesToUpdate.clear();
+                    }
 
-					running.setValue(false);
-					return null;
-				}
+                    System.out.println("Processed events: " + processedEvents);
+                    return null;
+                }
 			};
 		}
 	};
 
 	public BoardSimulator(){
-		eventsQueue = new LinkedBlockingQueue<>();
-		this.running = new SimpleBooleanProperty(false);
+        this.eventsQueue = new LinkedBlockingQueue<>();
+        this.running = new SimpleBooleanProperty(false);
 
 		simulatorService.onFailedProperty();
 		simulatorService.setOnFailed(new EventHandler<WorkerStateEvent>() {
@@ -110,8 +135,7 @@ public class BoardSimulator {
 		}
 	}
 
-	//TODO mnohonasobne vytvaranie readonly property?
 	public BooleanProperty runningProperty(){
-		return running;
-	}
+        return this.running;
+    }
 }
