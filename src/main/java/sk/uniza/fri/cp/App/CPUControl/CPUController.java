@@ -684,7 +684,10 @@ public class CPUController implements Initializable {
 
         FileChooser chooser = new FileChooser();
         chooser.setTitle("Otvoriť súbor...");
-        chooser.setInitialDirectory(new File(Paths.get("").toAbsolutePath().toString()));
+        chooser.setInitialDirectory(
+                currentFile != null
+                        ? currentFile.getParentFile()
+                        : new File(Paths.get("").toAbsolutePath().toString()));
         chooser.getExtensionFilters().addAll(
                 new FileChooser.ExtensionFilter("ASM","*.asm"),
                 new FileChooser.ExtensionFilter("TXT", "*.txt"));

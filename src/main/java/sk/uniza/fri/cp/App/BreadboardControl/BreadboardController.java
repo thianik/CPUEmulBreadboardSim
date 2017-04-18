@@ -148,7 +148,10 @@ public class BreadboardController implements Initializable {
 
         FileChooser chooser = new FileChooser();
         chooser.setTitle("Načítať obvod...");
-        chooser.setInitialDirectory(new File(Paths.get("").toAbsolutePath().toString()));
+        chooser.setInitialDirectory(
+                currentFile != null
+                        ? currentFile.getParentFile()
+                        : new File(Paths.get("").toAbsolutePath().toString()));
         chooser.getExtensionFilters().add(
                 new FileChooser.ExtensionFilter("SCHX", "*.schx"));
 
