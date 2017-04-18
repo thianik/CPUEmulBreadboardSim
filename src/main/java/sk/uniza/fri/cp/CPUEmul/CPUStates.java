@@ -7,5 +7,5 @@ package sk.uniza.fri.cp.CPUEmul;
  * @created 19.2.2017
  */
 public enum CPUStates {
-    Idle, Running, Paused, MicroStep, Waiting
+    Idle, Running, Paused, Waiting
 }

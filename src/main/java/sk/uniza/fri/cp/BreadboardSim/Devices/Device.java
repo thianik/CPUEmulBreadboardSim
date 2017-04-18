@@ -156,7 +156,25 @@ public abstract class Device extends Item {
      * @param pin
      * @param state
      */
-	public void setPin(Pin pin, Pin.PinState state){
+    public void setPin(Pin pin, Pin.PinState state){
+        if (pin.getState() != state) {
+            pin.setState(state);
+
+            switch (state) {
+                case HIGH:
+                    getBoard().addEvent(new BoardChangeEvent(pin.getSocket(), Potential.Value.HIGH));
+                    break;
+                case LOW:
+                    getBoard().addEvent(new BoardChangeEvent(pin.getSocket(), Potential.Value.LOW));
+                    break;
+                case HIGH_IMPEDANCE:
+                case NOT_CONNECTED:
+                    getBoard().addEvent(new BoardChangeEvent(pin.getSocket(), Potential.Value.NC));
+            }
+        }
+    }
+
+    public void setDataPin(Pin pin, Pin.PinState state) {
         pin.setState(state);
 
         switch (state) {

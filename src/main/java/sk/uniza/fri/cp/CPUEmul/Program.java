@@ -172,8 +172,10 @@ public class Program {
      * @return True ak je na danej adrese nastavený breakpoint, false inak.
      */
 	boolean isSetBreak(int instructionAddress){
-		return breaks.contains(instructionAddress);
-	}
+        synchronized (this) {
+            return breaks.contains(instructionAddress);
+        }
+    }
 
     /**
      * Vracia adresu inštrukcie na ktorú ukazuje prerušenie s daným číslom.

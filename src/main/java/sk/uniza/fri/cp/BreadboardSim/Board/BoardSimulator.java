@@ -3,19 +3,19 @@ package sk.uniza.fri.cp.BreadboardSim.Board;
 
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 import javafx.concurrent.WorkerStateEvent;
 import javafx.event.EventHandler;
+import org.reactfx.EventSource;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Device;
 import sk.uniza.fri.cp.BreadboardSim.Socket.PowerSocket;
 import sk.uniza.fri.cp.Bus.Bus;
 
-import java.util.LinkedList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author Moris
@@ -29,40 +29,41 @@ public class BoardSimulator {
 	private List<PowerSocket> powerSockets;
 	private BooleanProperty running;
 
+    private AtomicBoolean steadyState = new AtomicBoolean(false); //TODO steadystate ako property a podla toho riadit emittor
+
+    public static EventSource<Void> tick = new EventSource<>();
+
 	private Service simulatorService = new Service() {
 		@Override
 		protected Task createTask() {
 			return new Task() {
 				@Override
 				protected Object call() throws Exception {
+                    //simulationTime = 0L;
+                    running.setValue(true);
+                    steadyState.set(false);
+                    Bus.getBus().dataIsChanging();
 
                     int processedEvents = 0;
-
-					running.setValue(true);
-                    boolean steadyState = false;
-                    Bus.getBus().dataIsChanging();
 
 					//pripojenie napajania
 					powerSockets.forEach(PowerSocket::powerUp);
 
-					LinkedList<Device> devicesToUpdate = new LinkedList<>();
+                    HashSet<Device> devicesToUpdate = new HashSet<>();
 
 					//obsluha eventov
 					while(!isCancelled()){
-
 						try {
                             if (eventsQueue.size() == 0) {
-                                steadyState = true;
                                 Bus.getBus().dataInSteadyState();
+                                steadyState.set(true);
                             }
 
                             BoardEvent event = eventsQueue.take();
 
-
-                            if (steadyState) {
+                            if (steadyState.get()) {
                                 Bus.getBus().dataIsChanging();
-                                steadyState = false;
-
+                                steadyState.set(false);
                             }
 
 							event.process(devicesToUpdate);
@@ -89,10 +90,12 @@ public class BoardSimulator {
                         devicesToUpdate.clear();
                     }
 
+                    steadyState.set(true);
+
                     System.out.println("Processed events: " + processedEvents);
                     return null;
                 }
-			};
+            };
 		}
 	};
 
@@ -115,27 +118,30 @@ public class BoardSimulator {
 		this.powerSockets = powerSockets;
 
 		simulatorService.restart();
+    }
 
-
-	}
 
 	public void stop(){
 		simulatorService.cancel();
 	}
 
 	/**
-	 * 
-	 * @param event
+     *
+     * @param event
 	 */
 	public void addEvent(BoardEvent event){
 		try {
 			eventsQueue.put(event);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
+        } catch (InterruptedException e) {
+            //e.printStackTrace();
+        }
 	}
 
 	public BooleanProperty runningProperty(){
         return this.running;
+    }
+
+    public boolean inSteadyState() {
+        return steadyState.get();
     }
 }

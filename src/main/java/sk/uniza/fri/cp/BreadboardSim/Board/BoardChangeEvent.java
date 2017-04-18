@@ -5,6 +5,7 @@ import sk.uniza.fri.cp.BreadboardSim.Socket.Potential;
 import sk.uniza.fri.cp.BreadboardSim.Socket.Socket;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author Moris
@@ -25,8 +26,8 @@ public class BoardChangeEvent extends BoardEvent {
 	}
 
 	@Override
-	public void process(List<Device> devices){
-		Socket socket = getSocket();
+    public void process(Set<Device> devices) {
+        Socket socket = getSocket();
 		if(devices != null && socket != null){
 			Potential potential = socket.getPotential();
 

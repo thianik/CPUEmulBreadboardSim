@@ -71,7 +71,6 @@ public class U6264B extends Chip {
         if (this.isHigh(_W_) && this.isLow(_G_)) {
             //citanie z pamate
             int data = savedData[decodeAddress()];
-            System.out.println("CHIP: WRITING DATA " + data + " on " + Thread.currentThread().getName());
             for (int i = 0; i < dataPins.length; i++) {
                 if ((data & 1 << i) != 0) { //je tam jednotka
                     this.setPin(dataPins[i], Pin.PinState.HIGH);
@@ -86,7 +85,6 @@ public class U6264B extends Chip {
         if (this.isLow(_W_)) {
             //zapis do pamate
             byte data = decodeData();
-            System.out.println("CHIP: WRITING DATA TO CHIP " + data + " on " + Thread.currentThread().getName());
             this.savedData[decodeAddress()] = data;
 
             return;
@@ -131,7 +129,7 @@ public class U6264B extends Chip {
         registerPin(_DQ0, new InputOutputPin(this, "DQ0"));
         registerPin(_DQ1, new InputOutputPin(this, "DQ1"));
         registerPin(_DQ2, new InputOutputPin(this, "DQ2"));
-        registerPin(_GND, new OutputPin(this, "GND"));
+        registerPin(_GND, new OutputPin(this, "VSS"));
         registerPin(_DQ3, new InputOutputPin(this, "DQ3"));
         registerPin(_DQ4, new InputOutputPin(this, "DQ4"));
         registerPin(_DQ5, new InputOutputPin(this, "DQ5"));

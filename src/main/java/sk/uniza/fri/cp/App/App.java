@@ -75,6 +75,7 @@ public class App extends Application {
         Scene breadboardScene = new Scene(breadboardContent);
         breadboardScene.getStylesheets().add(getClass().getResource("/css/BreadboardSim_style.css").toExternalForm());
         Stage breadboardStage = new Stage();
+        breadboardStage.setTitle("Simulátor - Nový obvod");
 
         breadboardScene.addEventFilter(KeyEvent.KEY_RELEASED, event ->{
                     //ak bol stalceny delete

@@ -72,20 +72,15 @@ public class CodeEditorFactory {
         parentPane.getChildren().add(new VirtualizedScrollPane<>(codeEditor));
         IntFunction<Node> breakpointFactory = new BreakpointFactory(codeEditor, observableBreakpointLines); //breakpointy
         IntFunction<Node> lineNumberFactory = LineNumberFactory.get(codeEditor); //cisla riadkov
-        codeEditor.setParagraphGraphicFactory(line -> {
-            HBox hbox = new HBox(
-                    breakpointFactory.apply(line),
-                    lineNumberFactory.apply(line)
-            );
-
-            return hbox;
-        });	//zobrazenie riadkovania
+        codeEditor.setParagraphGraphicFactory((int line) -> new HBox(
+                breakpointFactory.apply(line),
+                lineNumberFactory.apply(line)
+        ));    //zobrazenie riadkovania
 
         codeEditor.richChanges()
                 .filter(ch -> !ch.getInserted().equals(ch.getRemoved()))
                 .subscribe(change -> {
                     codeEditor.setStyleSpans(0, computeHighlighting(codeEditor.getText()));
-                    //codeParsed = false; //zmena v kode -> program nie je aktualny
                 });
 
         return codeEditor;

@@ -56,6 +56,7 @@ public class Board extends ScrollPane {
 	private BoardSimulator simulator;
 	private GridSystem gridSystem;
 	private BoardLayersManager layersManager;
+    private boolean hasChanged = false;
 
 	private ObservableValue<Point2D> cursorPosition;
 
@@ -99,12 +100,13 @@ public class Board extends ScrollPane {
         //this.addItem(new Gen7400(this));
         //this.addItem(new Gen7400(this));
         //this.addItem(new Breadboard(this));
-
+        this.hasChanged = false;
 
 		this.addEventHandler(MouseDragEvent.MOUSE_DRAG_ENTERED, new EventHandler<MouseDragEvent>() {
 			@Override
 			public void handle(MouseDragEvent event) {
-				if(addingItem == null && event.getGestureSource() instanceof Item){
+                hasChanged = true;
+                if(addingItem == null && event.getGestureSource() instanceof Item){
 					Item item = ((Item) event.getGestureSource());
 					Board board = ((Board) event.getSource());
 
@@ -171,6 +173,19 @@ public class Board extends ScrollPane {
 		});
 
 	}
+
+    /**
+     * Vracia informaciu o zmene od nastavenia mark.
+     *
+     * @return
+     */
+    public boolean hasChanged() {
+        return hasChanged;
+    }
+
+    public void clearChange() {
+        this.hasChanged = false;
+    }
 
 	public GridSystem getGrid(){
 		return gridSystem;
@@ -246,11 +261,13 @@ public class Board extends ScrollPane {
 	 * @param item Nová položka na ploche.
 	 * @return
 	 */
-	public boolean addItem(Object item){
-		return layersManager.add(item);
-	}
+	public boolean addItem(Object item) {
+        hasChanged = true;
+        return layersManager.add(item);
+    }
 
-    public boolean removeItem(Object item){
+    public boolean removeItem(Object item) {
+        hasChanged = true;
         return layersManager.remove(item);
     }
 
@@ -276,9 +293,12 @@ public class Board extends ScrollPane {
 
 	public boolean isSimulationRunning(){ return simRunningProperty().getValue(); }
 
-	public ReadOnlyBooleanProperty simRunningProperty(){
-		return simulator.runningProperty();
-	}
+    public ReadOnlyBooleanProperty simRunningProperty(){
+        return simulator.runningProperty();
+    }
+
+    public BoardSimulator getSimulator() {
+        return this.simulator;}
 
 	/*
 	DETEKCIA KOLIZII -> PIN - SOKET
@@ -330,7 +350,7 @@ public class Board extends ScrollPane {
     private static final String COMPONENTS_PACKAGE = Component.class.getPackage().getName() + ".";
     private static final String DEVICES_PACKAGE = Device.class.getPackage().getName() + ".";
 
-    public void save() {
+    public boolean save(File schx) {
 
         Document jdomDoc = new Document();
         Element rootElement = new Element("Board");
@@ -556,22 +576,23 @@ public class Board extends ScrollPane {
 
 
         XMLOutputter xmlOutputter = new XMLOutputter();
-        xmlOutputter.setFormat(Format.getPrettyFormat());
+        //xmlOutputter.setFormat(Format.getPrettyFormat());
 
         try {
-            xmlOutputter.output(jdomDoc, new FileWriter("test.xml"));
+            xmlOutputter.output(jdomDoc, new FileWriter(schx));
+            return true;
         } catch (IOException e) {
             e.printStackTrace();
+            return false;
         }
 
     }
 
-    public void load() {
+    public boolean load(File schx) {
         SAXBuilder builder = new SAXBuilder();
-        File xml = new File("test.xml");
 
         try {
-            Document jdomDoc = (Document) builder.build(xml);
+            Document jdomDoc = (Document) builder.build(schx);
             Element rootElement = jdomDoc.getRootElement();
 
             int gridX;
@@ -714,22 +735,27 @@ public class Board extends ScrollPane {
                 }
             }
 
-
-        } catch (JDOMException e) {
+        } catch (Exception e ) {
             e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (InstantiationException e) {
-            e.printStackTrace();
-        } catch (InvocationTargetException e) {
-            e.printStackTrace();
-        } catch (NoSuchMethodException e) {
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
+            return false;
         }
+
+        return true;
+//         catch (JDOMException e) {
+//            e.printStackTrace();
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        } catch (InstantiationException e) {
+//            e.printStackTrace();
+//        } catch (InvocationTargetException e) {
+//            e.printStackTrace();
+//        } catch (NoSuchMethodException e) {
+//            e.printStackTrace();
+//        } catch (IllegalAccessException e) {
+//            e.printStackTrace();
+//        } catch (ClassNotFoundException e) {
+//            e.printStackTrace();
+//        }
 
     }
 

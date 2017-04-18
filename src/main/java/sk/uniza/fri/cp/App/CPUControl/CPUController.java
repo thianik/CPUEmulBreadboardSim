@@ -265,7 +265,11 @@ public class CPUController implements Initializable {
         codeEditor.richChanges()
                 .filter(ch -> !ch.getInserted().getText().equals(ch.getRemoved().getText()))
                 .subscribe(change -> {
-                    this.program = null; //zmena v kode -> program nie je aktualny
+                    if (this.program != null) {
+                        this.program.removeListenerOnBreakpointsChange(observableBreakpointLines);
+                        this.program = null; //zmena v kode -> program nie je aktualny
+                    }
+
                     //cpu = null;
                     btnStart.setText(BTN_TXT_START);
 
@@ -400,6 +404,7 @@ public class CPUController implements Initializable {
      */
     public boolean exit(){
         if(!fileSaved && !continueIfUnsavedFile()) return false;
+        if (!breadboardController.continueIfUnsavedFile()) return false;
         Platform.exit();
         return true;
     }
@@ -738,17 +743,17 @@ public class CPUController implements Initializable {
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
         alert.setTitle("Potvrdenie");
         alert.setHeaderText("Zmeny vo vašom kóde neboli uložené");
-        alert.setContentText("Naozaj chcete zahodiť zmeny vo vašom kóde?");
+        alert.setContentText("Prajete si uložiť zmeny?");
 
-        ButtonType btnTypeYes = new ButtonType("Neukladať");
-        ButtonType btnTypeCancel = new ButtonType("Zrušiť");
         ButtonType btnTypeSave = new ButtonType("Uložiť");
         ButtonType btnTypeSaveAs = new ButtonType("Uložiť ako");
+        ButtonType btnTypeNo = new ButtonType("Nie");
+        ButtonType btnTypeCancel = new ButtonType("Zrušiť");
+
 
         alert.getButtonTypes().clear();
-        alert.getButtonTypes().add(btnTypeYes);
         if(currentFile != null) alert.getButtonTypes().add(btnTypeSave);
-        alert.getButtonTypes().addAll(btnTypeSaveAs, btnTypeCancel);
+        alert.getButtonTypes().addAll(btnTypeSaveAs, btnTypeNo, btnTypeCancel);
 
         Optional<ButtonType> result = alert.showAndWait();
 
@@ -1057,10 +1062,7 @@ public class CPUController implements Initializable {
                     onCPURunning();
                     break;
                 case Paused:
-                    onCPUPaused(false);
-                    break;
-                case MicroStep:
-                    onCPUPaused(true);
+                    onCPUPaused();
                     break;
                 case Waiting:
                     onCPUWaiting();
@@ -1112,17 +1114,14 @@ public class CPUController implements Initializable {
     /**
      * Metóda volaná pri prechode CPU do stavu pozastavený.
      */
-    private void onCPUPaused(boolean isMicrostep){
+    private void onCPUPaused() {
         f_paused.setValue(true);
 
         updateExecutionLine( program.getLineOfInstruction(cpu.getRegPC()-1) );
 
         progressBar.progressProperty().unbind();
         progressBar.setProgress(0.5);
-        if(isMicrostep)
-            lbStatus.setText(cpu.getMessage());
-        else
-            lbStatus.setText("Program pozastavnený");
+        lbStatus.setText(cpu.getMessage());
 
         btnStart.setText(BTN_TXT_CONTINUE);
 

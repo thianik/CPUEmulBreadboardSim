@@ -200,7 +200,6 @@ public class Bus{
      * @throws InterruptedException Prerušenie počas čakania na nastavenie dát.
      */
     public boolean waitForSteadyState() throws InterruptedException {
-        System.out.println("CPU WAITING");
         if (!this.isUsbConnected()) {
             //ak nie je pripojenie cez USB -> je pripojenie na simulátor
             //cakaj na data
@@ -216,7 +215,6 @@ public class Bus{
      * Oznámevnie zbernici, že dáta boli ustálené a je možné ich čítať.
      */
     public void dataInSteadyState() {
-        System.out.println("STEADY STATE ANNOUNCE");
         dataSemaphore.release();
     }
 
@@ -225,7 +223,6 @@ public class Bus{
      * z nej čítať.
      */
     public void dataIsChanging() {
-        System.out.println("DRAIN PERMITS");
         dataSemaphore.drainPermits();
     }
 

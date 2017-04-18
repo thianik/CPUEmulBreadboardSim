@@ -1,6 +1,5 @@
 package sk.uniza.fri.cp.BreadboardSim.Devices;
 
-import javafx.application.Platform;
 import javafx.scene.Group;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
@@ -9,6 +8,7 @@ import sk.uniza.fri.cp.BreadboardSim.Board.Board;
 import sk.uniza.fri.cp.BreadboardSim.Board.GridSystem;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.InputPin;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.Pin;
+import sk.uniza.fri.cp.BreadboardSim.LightEmitter;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -37,6 +37,8 @@ public class LED extends Device {
     private boolean inverseAnodeLogic;
     private boolean inverseCathodeLogic;
 
+    private LightEmitter emitter;
+
     public LED(Board board) {
         super(board);
 
@@ -60,6 +62,7 @@ public class LED extends Device {
         this.glowingShape = glowingShape;
         this.onColor = onColor;
         this.offColor = (glowingShape.getFill() instanceof Color) ? (Color) glowingShape.getFill() : null;
+        this.emitter = new LightEmitter(board, this.glowingShape, this.onColor, this.offColor, 50);
         this.background = new Group();
 
         //piny
@@ -98,62 +101,32 @@ public class LED extends Device {
         this.inverseCathodeLogic = value;
     }
 
-    //TODO update rychlo blikajucich lediek
-    private long currentTime;
-    private long lastChangeTime;
-    private boolean taskRunning;
-
     @Override
     public void simulate() {
-        //kontrola zapojenia oboch pinov, ak jeden nie je zapojeny, vypni ledku
         if(!isConnected(anode) || !isConnected(cathode)){
-            //ak bola vypnuta, vrat sa
-            if(!this.on) return;
-
+            //kontrola zapojenia oboch pinov, ak jeden nie je zapojeny, vypni ledku
             this.on = false;
-            updateGraphic();
-            return;
+        } else {
+            //splnenie kriterii na zapnutie
+            boolean anodeState = this.inverseAnodeLogic != isHigh(anode);
+            boolean cathodeState = this.inverseCathodeLogic != isLow(cathode);
+
+            this.on = anodeState && cathodeState;
         }
 
-        //splnenie kriterii na zapnutie
-        boolean anodeState = this.inverseAnodeLogic != isHigh(anode);
-        boolean cathodeState = this.inverseCathodeLogic != isLow(cathode);
-
-        this.on = anodeState && cathodeState;
-
-//        currentTime = System.currentTimeMillis();
-//        if(!this.on && !taskRunning && currentTime - lastChangeTime < 500){
-//            return;
-//        }
-
-        updateGraphic();
-        //lastChangeTime = System.currentTimeMillis();
+        if (this.on) this.emitter.turnOn();
+        else this.emitter.turnOff();
     }
 
     @Override
     public void reset() {
         this.on = false;
-        updateGraphic();
+        this.emitter.turnOff();
     }
 
     @Override
-    protected void updateGraphic(){
-        //super.updateGraphic();
-
-        if (Platform.isFxApplicationThread()) {
-            if (this.on) {
-                glowingShape.setFill(onColor);
-            } else {
-                glowingShape.setFill(offColor);
-            }
-        } else {
-            Platform.runLater(() -> {
-                if (this.on) {
-                    glowingShape.setFill(onColor);
-                } else {
-                    glowingShape.setFill(offColor);
-                }
-            });
-        }
+    public void delete() {
+        super.delete();
+        this.emitter.delete();
     }
 }

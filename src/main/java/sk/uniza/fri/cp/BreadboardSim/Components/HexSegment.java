@@ -85,8 +85,12 @@ public class HexSegment extends Component{
     }
 
     public void hideBackground(boolean hide) {
-        if (hide) this.background.setOpacity(0);
-        else this.background.setOpacity(1);
+        if (hide)
+            this.background.setOpacity(0);
+        else
+            this.background.setOpacity(1);
+
+        this.background.setMouseTransparent(hide);
     }
 
 	public Group getCommonGndSocketGroup(){

@@ -7,6 +7,7 @@ import sk.uniza.fri.cp.BreadboardSim.Devices.Device;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author Moris
@@ -72,8 +73,8 @@ public class Potential {
         }
     }
 
-	public void getDevicesWithInputs(List<Device> listToFill) {
-		if(listToFill == null) return;
+    public void getDevicesWithInputs(Set<Device> listToFill) {
+        if(listToFill == null) return;
 
 		if (this.parent1 == null && this.parent2 == null) {
 			if (this.socket1 != null && (this.type == SocketType.IN || this.type == SocketType.IO)) {
@@ -152,6 +153,9 @@ public class Potential {
 	 * @return True - hodnota sa spravne aktualizovala / False - nastal skrat
 	 */
     public boolean setValue(Value newVal) {
+        if (this.parent1 == null && this.parent2 == null && this.value == newVal)
+            return true;//TODO OVERIT CI TO neznicilo nejaku funkcnost
+
         //zistenie skratu na predkoch
 	    this.shortCircuit =
                 (this.parent1 != null && this.parent1.shortCircuit)

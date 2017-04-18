@@ -1,5 +1,6 @@
 package sk.uniza.fri.cp.BreadboardSim.Components;
 
+import com.sun.org.apache.xpath.internal.operations.Bool;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
@@ -10,6 +11,10 @@ import javafx.scene.shape.Circle;
 import javafx.scene.shape.Line;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Text;
+import org.reactfx.EventSource;
+import org.reactfx.EventStream;
+import org.reactfx.EventStreams;
+import org.reactfx.util.FxTimer;
 import sk.uniza.fri.cp.BreadboardSim.Board.Board;
 import sk.uniza.fri.cp.BreadboardSim.Board.BoardEvent;
 import sk.uniza.fri.cp.BreadboardSim.Board.GridSystem;
@@ -18,13 +23,17 @@ import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.InputOutputPin;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.InputPin;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.OutputPin;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.Pin;
+import sk.uniza.fri.cp.BreadboardSim.LightEmitter;
 import sk.uniza.fri.cp.BreadboardSim.Socket.Potential;
 import sk.uniza.fri.cp.BreadboardSim.Socket.Socket;
 import sk.uniza.fri.cp.BreadboardSim.Socket.SocketType;
 import sk.uniza.fri.cp.BreadboardSim.Socket.SocketsFactory;
 import sk.uniza.fri.cp.Bus.Bus;
 
+import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 //import javax.swing.event.ChangeListener;
 
 /**
@@ -353,14 +362,15 @@ public class BusInterface extends Component {
 		private static final double RADIUS_COEF = 0.4;
 
 		private Circle indicator;
-		private Paint onColor;
-		private Paint offColor;
-		private volatile boolean indicatorOn;
+        private LightEmitter lightEmitter;
+        private Color onColor;
+        private Color offColor;
+        private volatile boolean indicatorOn;
 
         protected Pin pin; //pin pripojeny k rozhraniu na doske
         private int byteNr; //cislo bitu na zbernici od najnizsieho radu
 
-        public BusCommunicator(Board board, Socket interfaceSocket, int byteNr, Paint onColor, Paint offColor) {
+        public BusCommunicator(Board board, Socket interfaceSocket, int byteNr, Color onColor, Color offColor) {
             super(board);
 
 			this.byteNr = byteNr;
@@ -369,6 +379,8 @@ public class BusInterface extends Component {
 
 			GridSystem grid = board.getGrid();
 			this.indicator = new Circle(grid.getSizeMin() * RADIUS_COEF, offColor);
+
+            this.lightEmitter = new LightEmitter(board, this.indicator, this.onColor, this.offColor);
 
 			initPin();
 
@@ -415,7 +427,7 @@ public class BusInterface extends Component {
 
         protected final void setHigh() {
             //if(this.getBoard().isSimulationRunning())
-            this.setPin(this.pin, Pin.PinState.HIGH);
+            this.setDataPin(this.pin, Pin.PinState.HIGH);
             turnIndicatorOn();
         }
 
@@ -432,30 +444,25 @@ public class BusInterface extends Component {
 
         protected final void setLow() {
             //if(this.getBoard().isSimulationRunning())
-            this.setPin(this.pin, Pin.PinState.LOW);
+            this.setDataPin(this.pin, Pin.PinState.LOW);
             turnIndicatorOff();
         }
 
         protected final void setHighImpedance(boolean turnIndicatorOn) {
-            this.setPin(this.pin, Pin.PinState.HIGH_IMPEDANCE);
+            this.setDataPin(this.pin, Pin.PinState.HIGH_IMPEDANCE);
             if (turnIndicatorOn)
                 turnIndicatorOn();
             else
                 turnIndicatorOff();
         }
 
+
         protected final void turnIndicatorOn() {
-            if (!this.indicatorOn) {
-                this.indicatorOn = true;
-                updateGraphic();
-            }
+            this.lightEmitter.turnOn();
         }
 
         protected final void turnIndicatorOff() {
-            if (this.indicatorOn) {
-                this.indicatorOn = false;
-                updateGraphic();
-            }
+            this.lightEmitter.turnOff();
         }
 
         @Override
@@ -464,21 +471,9 @@ public class BusInterface extends Component {
         }
 
         @Override
-        protected void updateGraphic() {
-
-            if (Platform.isFxApplicationThread()) {
-                if (this.indicatorOn)
-                    this.indicator.setFill(onColor);
-                else
-                    this.indicator.setFill(offColor);
-            } else {
-                Platform.runLater(() -> {
-                    if (this.indicatorOn)
-                        this.indicator.setFill(onColor);
-                    else
-                        this.indicator.setFill(offColor);
-                });
-            }
+        public void delete() {
+            super.delete();
+            this.lightEmitter.delete();
         }
 
         @Override
@@ -489,8 +484,8 @@ public class BusInterface extends Component {
 
 	private static class AddressBusCommunicator extends BusCommunicator{
 
-		private static final Paint ON_COLOR = Color.RED;
-		private static final Paint OFF_COLOR = Color.DARKRED;
+        private static final Color ON_COLOR = Color.RED;
+        private static final Color OFF_COLOR = Color.DARKRED;
 
         private volatile static int address;
 
@@ -538,8 +533,8 @@ public class BusInterface extends Component {
 
 	private static class DataBusCommunicator extends BusCommunicator{
 
-		private static final Paint ON_COLOR = Color.LIME;
-		private static final Paint OFF_COLOR = Color.SEAGREEN;
+        private static final Color ON_COLOR = Color.LIME;
+        private static final Color OFF_COLOR = Color.SEAGREEN;
 
         private volatile static int data; //aktualne data na zbernici
         private volatile static boolean read; //nastavenie ako vstupu
@@ -552,7 +547,7 @@ public class BusInterface extends Component {
 
         public void setToRead(boolean newRead) {
             read = newRead;
-            if (read) this.setPin(this.getPin(), Pin.PinState.HIGH_IMPEDANCE);
+            if (read) this.setDataPin(this.getPin(), Pin.PinState.HIGH_IMPEDANCE);
         }
 
         public static void setToWrite(boolean newWrite) {
@@ -575,10 +570,8 @@ public class BusInterface extends Component {
 
                 //zapis zo zbernice do externej pamate na zaklade
                 if ((data & 1 << this.getByteNr()) != 0) {
-                    System.out.println("DATA " + this.getByteNr() + " SETTING HIGH ON" + Thread.currentThread().getName() + " BECAUSE OF BUS DATA " + data);
                     this.setHigh();
                 } else {
-                    System.out.println("DATA " + this.getByteNr() + " SETTING LOW ON" + Thread.currentThread().getName() + " BECAUSE OF BUS DATA " + data);
                     this.setLow();
                 }
             } else if (read) {
@@ -586,11 +579,9 @@ public class BusInterface extends Component {
                 if (this.isHigh(this.getPin())) {
                     //ak je na pine jednotka
                     Bus.getBus().setDataBus((byte) (data |= (1 << this.getByteNr())));
-                    System.out.println("DATA" + this.getByteNr() + ": READING HIGH ON " + Thread.currentThread().getName() + " WROTE ON BUS " + data);
                 } else if (this.isLow(this.getPin())) {
                     //ak nie tak sa predpoklada ze je tam nula (aj ked je nepripojeny, lebo CPU je odpojene)
                     Bus.getBus().setDataBus((byte) (data &= ~(1 << this.getByteNr())));
-                    System.out.println("DATA" + this.getByteNr() + ": READING LOW ON " + Thread.currentThread().getName() + " WROTE ON BUS " + data);
                 }
             } else {
                 //ANI ZAPIS ANI CITANIE -> TO DIVNE SPRAVANIE Z POVODNEHO SIMULATORA
@@ -660,8 +651,8 @@ public class BusInterface extends Component {
 
 	private static class ControlBusCommunicator extends BusCommunicator{
 
-		private static final Paint ON_COLOR = Color.YELLOW;
-		private static final Paint OFF_COLOR = Color.OLIVE;
+        private static final Color ON_COLOR = Color.YELLOW;
+        private static final Color OFF_COLOR = Color.OLIVE;
 
         private volatile static int controls; //priznaky na zbernici
 

@@ -27,11 +27,8 @@ import java.util.concurrent.Semaphore;
  */
 public class CPU extends Thread {
 
-    /** Konstanty */
-    private static final int SYNCH_WAIT_TIME_MS = 10;     //cas cakania na nastavenie dat pri synchronnej komunikacii
-
-	private OutputStream console; //vystupny stream pre vypis znakov na terminal
-	private Program program; //zavedeny program s instrukciami a konstantami programu
+    private final OutputStream console; //vystupny stream pre vypis znakov na terminal
+    private Program program; //zavedeny program s instrukciami a konstantami programu
 
 	/** Flagy */
     //vonkajsi pristup
@@ -44,14 +41,14 @@ public class CPU extends Thread {
     private boolean f_int_level_old;    //minula uroven
     private boolean f_eit;  //priznak, ci boli v predchadzajuciej instrukcii povolene prerusenia
 
-	private ObjectProperty<CPUStates> state;    //status CPU
+    private final ObjectProperty<CPUStates> state;    //status CPU
     volatile private String message; //správa cpu o vykonávaní (povodne Task, ktory mal updateMessage)
 
     private int UsbITCheckSkipped = 0; //preskocenie kazdych x cyklov pred citanim IT cez USB (USB je prilis pomale)
 
 	/** Synchronizacne nastroje */
 	private CountDownLatch cdlHalt; //pasivne cakanie pri pozastaveni vykonavania alebo cakani na spustenie
-    private Semaphore semKey;   //semafor na pristup ku stlacenej klavese
+    private final Semaphore semKey;   //semafor na pristup ku stlacenej klavese
 
 	/** Registre */
 	volatile private byte regA;
@@ -66,12 +63,12 @@ public class CPU extends Thread {
     volatile private boolean flagZ;
 
 	/** Pamat */
-	private byte[] RAM;
-	private byte[] stack; // Zasobnik (LIFO) ma velkost podla velkosti registra SP. Pri 16bit SP je to 65536 bajtov.
+    private final byte[] RAM;
+    private final byte[] stack; // Zasobnik (LIFO) ma velkost podla velkosti registra SP. Pri 16bit SP je to 65536 bajtov.
     private KeyEvent key;
 
     /** Zbernica */
-    private Bus bus;
+    private final Bus bus;
 
     /**
      * Konštruktor prijíma OutputStream, na ktorý sa vypisujú znaky pomocou inštrukcie SCALL a zbernicu pomocou
@@ -86,7 +83,6 @@ public class CPU extends Thread {
 		state = new SimpleObjectProperty<>(CPUStates.Paused);
 
 		//synchro
-		//this.cdlHalt = new CountDownLatch(1);
         this.semKey = new Semaphore(0);
 
 		//pamat
@@ -132,9 +128,11 @@ public class CPU extends Thread {
             while (!isCancelled
                     && isExecuting
                     && (nextInstruction = program.getInstruction(Short.toUnsignedInt(regPC++))) != null) {
+
                 try {
                     //kontrola nastavenia breaku v programe
                     if (program.isSetBreak(regPC - 1) || f_pause) {
+                        updateMessage("Vykonávanie pozastavené");
                         state.setValue(CPUStates.Paused);
                         this.f_pause = true;
                         haltAwait();
@@ -239,6 +237,7 @@ public class CPU extends Thread {
         if(this.isExecuting) {
             this.isExecuting = false;
             if(this.cdlHalt != null) cdlHalt.countDown();
+            else interrupt();
         }
     }
 
@@ -253,14 +252,20 @@ public class CPU extends Thread {
 
     /**
      * Resetovanie stavu CPU.
+     * Prístup k pamäti RAM a Stack nie je synchronizovaný, preto dávajte pozor, aby ste stav CPU resetovali
+     * iba mimo jeho aktívneho stavu.
      */
     public void reset(){
         regA = regB = regC = regD = 0;
         regMP = regPC = regSP = 0;
         flagCY = flagIE = flagZ = false;
 
-        for (int i = 0; i < RAM.length; i++) RAM[i] = 0;
-        for (int i = 0; i < stack.length; i++) stack[i] = 0;
+        synchronized (this.RAM) {
+            for (int i = 0; i < RAM.length; i++) RAM[i] = 0;
+        }
+        synchronized (this.stack) {
+            for (int i = 0; i < stack.length; i++) stack[i] = 0;
+        }
 
         if (semKey.availablePermits() > 0)
             semKey.drainPermits();
@@ -359,7 +364,7 @@ public class CPU extends Thread {
      * @return Obsah pamäte.
      */
     public byte[] getRAM() {
-        synchronized (this) {
+        synchronized (this.RAM) {
             return RAM.clone();
         }
 	}
@@ -369,7 +374,7 @@ public class CPU extends Thread {
      * @return Obsah zásobníka.
      */
     public byte[] getStack() {
-        synchronized (this) {
+        synchronized (this.stack) {
             return stack.clone();
         }
 	}
@@ -665,7 +670,9 @@ public class CPU extends Thread {
             case STR:
                 Rd = getRegisterVal(instruction.getFirstParameter());
                 Rs = getRegisterVal(instruction.getSecondParameter());
-                RAM[Rd] = (byte) Rs;
+                synchronized (this) {
+                    RAM[Rd] = (byte) Rs;
+                }
                 break;
             case LDR:
                 Rs = getRegisterVal(instruction.getSecondParameter());
@@ -773,7 +780,7 @@ public class CPU extends Thread {
 
         //synchronizovane citanie
         bus.setIA_(false);
-        this.waitForSteadySimulation(null);
+        this.waitForSteadySimulation(null, true);
         byte data = bus.getDataBus();
         bus.setIA_(true);
 
@@ -829,9 +836,11 @@ public class CPU extends Thread {
      * @param value Hodnota, ktorá sa pridá na vrchol zásobníka.
      */
     private void push(byte value){
-        int SP = Short.toUnsignedInt(regSP);
-        stack[SP--] = value;
-        regSP = (short) SP;
+        int SP = Short.toUnsignedInt(this.regSP);
+        synchronized (this.stack) {
+            this.stack[SP--] = value;
+        }
+        this.regSP = (short) SP;
     }
 
     /**
@@ -853,11 +862,11 @@ public class CPU extends Thread {
      * @return Hodnota na vrchole zásobníka.
      */
     private byte pop(){
-        int SP = Short.toUnsignedInt(regSP);
+        int SP = Short.toUnsignedInt(this.regSP);
         if(SP == 65535) SP = 0;
         else SP++;
-        regSP = (short) SP;
-        return stack[SP];
+        this.regSP = (short) SP;
+        return this.stack[SP];
     }
 
     /**
@@ -874,24 +883,6 @@ public class CPU extends Thread {
     }
 
     /**
-     * Ak je zapnuté mikrokrokovanie, metóda aktualizuje správu CPU, stav a pozastaví vykonávanie.
-     *
-     * @param msg Telo správy pre stavový riadok.
-     * @throws InterruptedException Výnimka pri prerušení počas čakania na pokračovanie vykonávania.
-     */
-    private void microstepAwait(String msg) throws InterruptedException {
-        //ak je zapnute mikrokrokovanie a zaroven sa aj krokuje
-        if (isExecuting && f_microstep && f_pause) {
-            //String syncMethod ="Synchronne - ";
-            //updateMessage(syncMethod + msg);
-            updateMessage(msg);
-            state.setValue(CPUStates.MicroStep);
-            haltAwait();
-            state.setValue(CPUStates.Running);
-        }
-    }
-
-    /**
      * Metóda zaobstaravajúca čítanie z externého zariadenia pripojeného k vývojovej doske.
      *
      * @param inst Inštrukcia, ktorá vyvolala čítanie
@@ -905,42 +896,24 @@ public class CPU extends Thread {
         bus.setAddressBus(addr);
 
         microstepAwait("Nastavenie priznaku " + (inst == enumInstructionsSet.INN?"IOR":"MR") + " = 0");
-        /*if(f_async){ //ak je nastavene asynchronne vykonavanie
-            //nastavenie priznaku citania do nuly
-            if(inst == enumInstructionsSet.INN)
-                bus.setIR_(false);
-            else
-                bus.setMR_(false);
 
-            //cakaj na RDY
-            updateMessage("Cakanie na RY");
-            readyAwait();
-            microstepAwait("Cakanie na RY - prijate");
+        //nastavenie priznaku citania
+        if (inst == enumInstructionsSet.INN)
+            bus.setIR_(false);
+        else
+            bus.setMR_(false);
 
-        } else {*/
-            //synchronne vykonavanie
-            //nastavenie priznaku citania
-        System.out.println("CPU NASTAVENIE PRIZNAKU CITANIA");
-            if(inst == enumInstructionsSet.INN)
-                bus.setIR_(false);
-            else
-                bus.setMR_(false);
-
-            //cakanie na nastavenie dat na datovej zbernici
-            updateMessage("Cakanie na nastavenie dat");
-        System.out.println("CPU CAKANIE NA STEADY STATE PRE CITANIE DAT");
-        this.waitForSteadySimulation(inst);
-        //}
+        //cakanie na nastavenie dat na datovej zbernici
+        //updateMessage("Cakanie na nastavenie dat");
+        this.waitForSteadySimulation(inst, true);
 
         //nacitaj data
         microstepAwait("Nacitanie dat");
-        System.out.println("CPU CITANIE DAT");
         byte Rd = bus.getDataBus();
         setRegisterVal(destRegName, Rd);
 
         //zrus priznak citania
         microstepAwait("Zrusenie priznaku " + (inst == enumInstructionsSet.INN?"IOR":"MR"));
-        System.out.println("CPU ODNASTAVENIE PRIZNAKU CITANIA");
         if(inst == enumInstructionsSet.INN)
             bus.setIR_(true);
         else
@@ -966,55 +939,53 @@ public class CPU extends Thread {
 
         //nastavenie dat
         microstepAwait("Nastavenie dat");
-        System.out.println("CPU NASTAVENIE DAT PRI ZAPISE");
         bus.setDataBus(data);
 
         //nastavenie priznaku
         microstepAwait("Nastavenie priznaku " + (inst == enumInstructionsSet.OUT?"IOW":"MW") + " = 0");
-        /*if(f_async){ //asynchronne
-            //nastavenie priznaku
-            if (inst == enumInstructionsSet.OUT)
-                bus.setIW_(false);
-            else
-                bus.setMW_(false);
 
-            //cakaj na RDY
-            updateMessage("Cakanie na RY");
-            readyAwait();
-            microstepAwait("Cakanie na RY - prijate");
-        } else {*/
-            //synchronne
-            //nastavenie priznaku
-        System.out.println("CPU NASTAVENIE PRIZNAKU ZAPISU");
-            if (inst == enumInstructionsSet.OUT)
-                bus.setIW_(false);
-            else
-                bus.setMW_(false);
+        //nastavenie priznaku
+        if (inst == enumInstructionsSet.OUT)
+            bus.setIW_(false);
+        else
+            bus.setMW_(false);
 
-            updateMessage("Cakanie na nastavenie dat");
-        System.out.println("CPU CAKANIE NA STEADY STATE PO NASTAVENI PRIZNAKU ZAPISU");
-        this.waitForSteadySimulation(inst);
-        //}
+        //updateMessage("Cakanie na nastavenie dat");
+        this.waitForSteadySimulation(inst, true);
 
         //zrusenie priznaku
         microstepAwait("Zrusenie priznaku ZAPISU");
-        System.out.println("CPU ZRUSENIE PRIZNAKU");
         if(inst == enumInstructionsSet.OUT)
             bus.setIW_(true);
         else
             bus.setMW_(true);
 
-        System.out.println("CPU CAKANIE NA STEADY STATE PO ZRUSENI PRIZNAKU");
-        this.waitForSteadySimulation(inst);
+        //cakanie, aby sa nezapisali nespravne data //TODO v novej simulacii kontrola ci to je stale potrebne
+        this.waitForSteadySimulation(inst, false);
 
         //zrusenie dat
         microstepAwait("Zrusenie dat");
-        System.out.println("CPU ZRUSENIE DAT");
         bus.setRandomData();
 
         //zrusenie adresy
-        microstepAwait("Zruesnie adresy");
+        microstepAwait("Zrusenie adresy");
         bus.setRandomAddress();
+    }
+
+    /**
+     * Ak je zapnuté mikrokrokovanie, metóda aktualizuje správu CPU, stav a pozastaví vykonávanie.
+     *
+     * @param msg Telo správy pre stavový riadok.
+     * @throws InterruptedException Výnimka pri prerušení počas čakania na pokračovanie vykonávania.
+     */
+    private void microstepAwait(String msg) throws InterruptedException {
+        //ak je zapnute mikrokrokovanie a zaroven sa aj krokuje
+        if (isExecuting && f_microstep && f_pause) {
+            updateMessage(msg);
+            state.setValue(CPUStates.Paused);
+            haltAwait();
+            state.setValue(CPUStates.Running);
+        }
     }
 
     /**
@@ -1033,22 +1004,20 @@ public class CPU extends Thread {
      *
      * @param inst Inštrukcia, ktorá požaduje čítanie.
      */
-    private void waitForSteadySimulation(enumInstructionsSet inst) {
+    private void waitForSteadySimulation(enumInstructionsSet inst, boolean showConsoleMsg) {
         try {
             if (!bus.waitForSteadyState()) {
                 //data nie su nastavene (simulator nebezi alebo nie je sekunda na nastavenie dat dostacujuca)
-                try {
+                if (showConsoleMsg) {
                     console.write((" " + ((inst != null) ? inst.toString() : "IT")
                             + ": Data nie su nastavene! Spustite prosim simulaciu a uistite sa, ze nedochadza k zacykleniu. ")
                             .getBytes(Charset.forName("UTF-8")));
                     console.write(10);
                     console.write(13);
-                } catch (IOException e) {
-                    e.printStackTrace();
                 }
             }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        } catch (InterruptedException | IOException e) {
+            //e.printStackTrace();
         }
     }
 
