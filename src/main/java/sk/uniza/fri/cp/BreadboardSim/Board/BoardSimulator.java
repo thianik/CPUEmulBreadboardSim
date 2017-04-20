@@ -42,6 +42,7 @@ public class BoardSimulator {
                     //simulationTime = 0L;
                     running.setValue(true);
                     steadyState.set(false);
+                    Bus.getBus().simulationIsRunning(true);
                     Bus.getBus().dataIsChanging();
 
                     int processedEvents = 0;
@@ -91,6 +92,7 @@ public class BoardSimulator {
                     }
 
                     steadyState.set(true);
+                    Bus.getBus().simulationIsRunning(false);
 
                     System.out.println("Processed events: " + processedEvents);
                     return null;

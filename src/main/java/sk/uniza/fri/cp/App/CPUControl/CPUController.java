@@ -599,7 +599,7 @@ public class CPUController implements Initializable {
         };
 
         if (showSidebar.statusProperty().get() == Animation.Status.STOPPED && hideSidebar.statusProperty().get() == Animation.Status.STOPPED) {
-            if ( Math.abs(hidedAt - splitPaneHoriz.getDividers().get(dividerIndex).getPosition()) > 0.02) {
+            if (Math.abs(hidedAt - splitPaneHoriz.getDividers().get(dividerIndex).getPosition()) > 0.03) {
                 hideSidebar.play();
             } else {
                 showSidebar.play();
@@ -697,9 +697,11 @@ public class CPUController implements Initializable {
         if(file != null)
             try(BufferedReader br = new BufferedReader(new FileReader(file))){
                 codeEditor.clear();
+                StringBuilder sb = new StringBuilder();
                 br.lines().forEach(line -> {
-                    codeEditor.appendText(line + "\n");
+                    sb.append(line + "\n");
                 });
+                codeEditor.appendText(sb.toString());
                 currentFile = file;
                 titPaneCode.setText("Kód - " + currentFile.getName());
                 fileSaved = true;

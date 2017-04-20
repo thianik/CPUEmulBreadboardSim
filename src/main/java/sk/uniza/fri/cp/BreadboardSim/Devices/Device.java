@@ -22,7 +22,7 @@ import java.util.List;
  */
 public abstract class Device extends Item {
 
-	private Component component;
+    private Component component;//TODO da sa zbavit zavislosti na komponente
     private ArrayList<Socket> socketsToConnectTo;
     //private boolean isConnected;
 
@@ -106,7 +106,11 @@ public abstract class Device extends Item {
 	}
 
 	public boolean isConnected(Pin pin){
-	    return pin.getSocket().getPotential().getValue() != Potential.Value.NC;
+        if (pin != null && pin.getSocket() != null) {
+            return pin.getSocket().getPotential().getValue() != Potential.Value.NC;
+        } else {
+            return false;
+        }
     }
 
     /**

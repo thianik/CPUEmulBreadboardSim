@@ -26,6 +26,7 @@ public class SchoolBreadboard extends Item {
     private Component breadboard;
     private Component hexSegmentsPanel;
     private Component numKeys;
+    private Component probe;
 
 	private SchoolBreadboard(Board board){
         super(board);
@@ -53,7 +54,7 @@ public class SchoolBreadboard extends Item {
 		this.hexSegmentsPanel.makeImmovable();
         this.hexSegmentsPanel.setSelectable(false);
 		this.hexSegmentsPanel.setLayoutX(grid.getSizeX() * 2);
-		this.hexSegmentsPanel.setLayoutY(busInterface.getGridHeight() + breadboard.getGridHeight() + grid.getSizeY() );
+        this.hexSegmentsPanel.setLayoutY(busInterface.getGridHeight() + breadboard.getGridHeight() + grid.getSizeY());
 
 		this.numKeys = new NumKeys(board);
 		this.numKeys.makeImmovable();
@@ -61,8 +62,14 @@ public class SchoolBreadboard extends Item {
 		this.numKeys.setLayoutX(grid.getSizeX() * 2 + breadboard.getGridWidth() - numKeys.getGridWidth());
 		this.numKeys.setLayoutY(busInterface.getGridHeight() + breadboard.getGridHeight());
 
-		this.getChildren().addAll(background, busInterface, breadboard, numKeys, hexSegmentsPanel);
-	}
+        this.probe = new Probe(board);
+        this.probe.makeImmovable();
+        this.probe.setSelectable(false);
+        this.probe.setLayoutX(grid.getSizeX() * 27);
+        this.probe.setLayoutY(busInterface.getGridHeight() + breadboard.getGridHeight() + grid.getSizeY());
+
+        this.getChildren().addAll(background, busInterface, breadboard, hexSegmentsPanel, probe, numKeys);
+    }
 
 	public static SchoolBreadboard getSchoolBreadboard(Board board){
 		if(instance == null)

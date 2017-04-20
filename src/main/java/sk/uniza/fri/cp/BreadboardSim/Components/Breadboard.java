@@ -88,12 +88,12 @@ public class Breadboard extends Component {
         this.addAllSockets(socketList);
 
 		//ciarove oznacenie
-		Line redLine = new Line(-grid.getSizeX(), -grid.getSizeY(), grid.getSizeX() * 59, -grid.getSizeY());
-		redLine.setStrokeWidth(2);
+        Line redLine = new Line(-grid.getSizeX(), grid.getSizeY() * 2, grid.getSizeX() * 59, grid.getSizeY() * 2);
+        redLine.setStrokeWidth(2);
 		redLine.setStroke(Color.RED);
 
-		Line blueLine = new Line(-grid.getSizeX(), grid.getSizeY() * 2, grid.getSizeX() * 59, grid.getSizeY() * 2);
-		blueLine.setStrokeWidth(2);
+        Line blueLine = new Line(-grid.getSizeX(), -grid.getSizeY(), grid.getSizeX() * 59, -grid.getSizeY());
+        blueLine.setStrokeWidth(2);
 		blueLine.setStroke(Color.BLUE);
 
 		return new Group(vccSockets, gndSockets, redLine, blueLine);

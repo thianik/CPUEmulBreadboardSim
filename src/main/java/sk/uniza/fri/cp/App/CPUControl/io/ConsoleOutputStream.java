@@ -5,6 +5,8 @@ import org.fxmisc.richtext.InlineCssTextArea;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Semaphore;
 
 /**
  * Výstupný stream ako obal pre CPU konzolu aka. InlineCssTextArea.
@@ -70,7 +72,8 @@ public class ConsoleOutputStream extends OutputStream {
         if( b == 10) { //LF - novy riadok, rovnaka pozicia
             int carretCol = console.getCaretColumn();
             console.appendText("\n");
-            console.appendText(String.format("%" + carretCol + "s", ""));
+            if (carretCol > 0)
+                console.appendText(String.format("%" + carretCol + "s", ""));
         } else if( b == 13) { //CR - vratenie na zaciatok riadku
             console.moveTo(console.getCurrentParagraph(), 0);
         } else {
@@ -82,14 +85,41 @@ public class ConsoleOutputStream extends OutputStream {
         console.requestFollowCaret();
     }
 
+    private final ConcurrentLinkedQueue<Integer> charsQueue = new ConcurrentLinkedQueue<>(); //buffer na znaky
+    private final Semaphore allowedToWrite = new Semaphore(1); //povolenie zapisu
+
+    /**
+     * "Škrtiaca klapka" proti zaplneniu RunLater queue na FXApplicationThread-e.
+     * Výpis povolený na 15ms. Ak po tomto čase v buffery nieco ostalo, naplánuje sa opätovné spustenie.
+     * Až do skončenia a povolenia semaforu zápisu zamyká konzolu.
+     */
+    private void fxWriteThrottle() {
+        console.setDisable(true);
+        long start = System.currentTimeMillis();
+
+        synchronized (charsQueue) {
+            while (System.currentTimeMillis() - start < 15 && charsQueue.peek() != null) {
+                writeToConsole(charsQueue.poll());
+            }
+
+            if (charsQueue.peek() != null) {
+                //ak mas este co vyflusnut na konzolu, naplanuj svoje dalsie ucinkovanie
+                Platform.runLater(this::fxWriteThrottle);
+            } else {
+                //ak nemas, povol CPU naplanovat dalsi zapis
+                console.setDisable(false);
+                allowedToWrite.release();
+            }
+        }
+    }
+
     @Override
     public void write(int b) throws IOException {
-        if(Platform.isFxApplicationThread()) {
-            writeToConsole(b);
-        } else {
-            Platform.runLater(()->{
-                writeToConsole(b);
-            });
+        synchronized (charsQueue) {
+            charsQueue.add(b);
+            if (!Platform.isFxApplicationThread() && allowedToWrite.tryAcquire()) {
+                Platform.runLater(this::fxWriteThrottle);
+            }
         }
     }
 

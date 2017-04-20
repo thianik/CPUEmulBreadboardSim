@@ -173,7 +173,7 @@ public class BusInterface extends Component {
 
                     for (int i = 0; i < 8; i++) {
                         ((DataBusCommunicator) dataBusCommunicators[i]).setToRead(true);
-                        //dataBusCommunicators[i].update();
+                        dataBusCommunicators[i].update(); //ABY SI PREDISIEL DALSIM INFAKRTOM, TOTO TU MUSI BYT
                     }
                 } else {
                     for (int i = 0; i < 8; i++)

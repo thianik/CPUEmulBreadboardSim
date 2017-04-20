@@ -31,22 +31,31 @@ import java.util.List;
 public abstract class Chip extends Device {
 
 	private Pin[] pins;
+    private int gridHeight = 3;
 
     public Chip(int pinsCount) {
         this.pins = new Pin[pinsCount];
         fillPins();
     }
 
-	public Chip(Board board, int pinsCount){
-		super(board);
-		this.pins = new Pin[pinsCount];
+    public Chip(Board board, int pinsCount){
+        super(board);
+        this.pins = new Pin[pinsCount];
 
-		fillPins();
+        fillPins();
 
+        this.getChildren().add(generateGraphic());
+    }
 
-		this.getChildren().add(generateGraphic());
+    public Chip(Board board, int pinsCount, int chipGridHeight) {
+        super(board);
+        this.pins = new Pin[pinsCount];
+        this.gridHeight = chipGridHeight;
 
-	}
+        fillPins();
+
+        this.getChildren().add(generateGraphic());
+    }
 
 	public Pin getPin(int index){
 		if(index < pins.length)
@@ -87,7 +96,6 @@ public abstract class Chip extends Device {
 	 */
 	protected abstract void fillPins();
 
-
 	/**
 	 * Zaregistruje cipu pin s cislom
 	 * @param pinNumber Cislo pinu na cipe
@@ -126,8 +134,8 @@ public abstract class Chip extends Device {
 		Group graphic = new Group();
 		GridSystem grid = getBoard().getGrid();
 
-		double gridHeight = 3; //vyska cipu v jednotkach policok
-		double heightReduction = grid.getSizeY() * 0.3 ; //zmensenie na jednej strane
+        //double gridHeight = 3; //vyska cipu v jednotkach policok
+        double heightReduction = grid.getSizeY() * 0.3 ; //zmensenie na jednej strane
 
 		double width = grid.getSizeX() * (this.pins.length / 2) + grid.getSizeX();
 		double height = grid.getSizeY() * gridHeight - heightReduction*2;
@@ -199,12 +207,16 @@ public abstract class Chip extends Device {
 		return graphic;
 	}
 
-	protected static Pane generateItemImage(String chipName, int pinsCount){
+    protected static Pane generateItemImage(String chipName, int pinsCount) {
+        return generateItemImage(chipName, pinsCount, 3);
+    }
+
+    protected static Pane generateItemImage(String chipName, int pinsCount, int chipHeight) {
 
 		Group graphic = new Group();
 
 		double width = 10 * (pinsCount / 2);
-		double height = 30;
+        double height = 10 * chipHeight;
 
 		double topBevel = 10*0.3;
 		double leftBevel = 10*0.2;
@@ -247,7 +259,7 @@ public abstract class Chip extends Device {
 			if(i < pinsCount/2){
 				//spodne nozicky
 				leg.setLayoutX(10 * i - legWidth/2);
-                leg.setLayoutY(11 * legHeight * 0.7);
+                leg.setLayoutY(height - legHeight * 0.7);
             } else {
 				//horne nozicky
 				leg.setRotate(180);

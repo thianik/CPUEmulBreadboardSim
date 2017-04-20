@@ -53,7 +53,7 @@ public class U6264B extends Chip {
     }
 
     public U6264B(Board board) {
-        super(board, PINS_COUNT);
+        super(board, PINS_COUNT, 5);
     }
 
     private void updateGate() {
@@ -180,6 +180,6 @@ public class U6264B extends Chip {
     }
 
     public Pane getImage() {
-        return generateItemImage(NAME, PINS_COUNT);
+        return generateItemImage(NAME, PINS_COUNT, 5);
     }
 }

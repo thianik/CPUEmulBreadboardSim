@@ -155,7 +155,10 @@ public class CPU extends Thread {
                     if (!usbConnected || UsbITCheckSkipped >= 16) {
                         it = bus.isIT();
                         UsbITCheckSkipped = 0;
-                    } else UsbITCheckSkipped++;
+                    } else {
+                        UsbITCheckSkipped++;
+                        it = false;
+                    }
 
                     //ak je povolene prerusenie a aj vyvolane
                     if (flagIE && it) {
@@ -960,7 +963,7 @@ public class CPU extends Thread {
         else
             bus.setMW_(true);
 
-        //cakanie, aby sa nezapisali nespravne data //TODO v novej simulacii kontrola ci to je stale potrebne
+        //cakanie, aby sa nezapisali nespravne data
         this.waitForSteadySimulation(inst, false);
 
         //zrusenie dat
@@ -999,21 +1002,25 @@ public class CPU extends Thread {
         cdlHalt = null;
     }
 
+    private long lastErrorMsgPrint = 0;
+
     /**
      * Pasívne čakanie na nastavenie dát na dátovej zbernici pre ich čítanie.
      *
-     * @param inst Inštrukcia, ktorá požaduje čítanie.
+     * @param inst Inštrukcia, ktorá požaduje čítanie. Null ak sa jedná o IT.
+     * @param showConsoleMsg True ak sa má zobraziť chybová správa v konzole, false ak nie.
      */
     private void waitForSteadySimulation(enumInstructionsSet inst, boolean showConsoleMsg) {
         try {
             if (!bus.waitForSteadyState()) {
-                //data nie su nastavene (simulator nebezi alebo nie je sekunda na nastavenie dat dostacujuca)
-                if (showConsoleMsg) {
-                    console.write((" " + ((inst != null) ? inst.toString() : "IT")
-                            + ": Data nie su nastavene! Spustite prosim simulaciu a uistite sa, ze nedochadza k zacykleniu. ")
+                //data nie su nastavene (simulator nebezi alebo nie je 5 sekund na nastavenie dat dostacujucich)
+                if (System.currentTimeMillis() - lastErrorMsgPrint > 2000) {
+                    console.write(
+                            ("Pozor! Chyba zbernice. Spustite prosim simulaciu a usisite sa, ze nedochadza k zacykleniu. ")
                             .getBytes(Charset.forName("UTF-8")));
                     console.write(10);
                     console.write(13);
+                    lastErrorMsgPrint = System.currentTimeMillis();
                 }
             }
         } catch (InterruptedException | IOException e) {

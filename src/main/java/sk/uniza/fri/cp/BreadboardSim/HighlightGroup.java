@@ -22,7 +22,8 @@ public abstract class HighlightGroup extends Group implements Selectable {
 	    this.isSelectable = true;
 
 		EventHandler<MouseEvent> onMouseClickEventHandler = (event) -> {
-			Board board = getBoard();
+            if (!event.isPrimaryButtonDown()) return;
+            Board board = getBoard();
 
 			//ak je objekt na ploche
 			if(board != null) {
@@ -38,7 +39,7 @@ public abstract class HighlightGroup extends Group implements Selectable {
 			}
 		};
 
-		this.addEventFilter(MouseEvent.MOUSE_PRESSED, onMouseClickEventHandler);
+        this.addEventHandler(MouseEvent.MOUSE_PRESSED, onMouseClickEventHandler);
 
 	}
 

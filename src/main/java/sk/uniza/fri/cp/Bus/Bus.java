@@ -22,6 +22,7 @@ public class Bus{
 	private static Bus instance; //inštancia singletonu
 	private SimpleBooleanProperty USBConnected; //indikátor pripojenia vývojovej dosky cez USB
     private Semaphore dataSemaphore; //semafor pre cakanie na nastavenie dat simulatorom
+    private boolean isSimulationRunning; //je spustena simulacia?
 
 	private IntegerProperty addressBus;
 	private IntegerProperty dataBus;
@@ -193,8 +194,8 @@ public class Bus{
 
     /**
      * Pasívne čakanie na ustálenie simulácie alebo nastavenie dát dátovej zbernice vývojovou doskou,
-     * maximálne však 1 sekundu v prípade, ak je pripojený k simulátoru.
-     * Ak je pripojenie riešené pomocou USB k reálnej doske, čaká sa 50ms. //TODO SYNCHRONIZACNY CAS uprava
+     * maximálne však 5 sekundu v prípade, ak je pripojený k simulátoru a simulácia beží. Ak nebeží, nečaká.
+     * Ak je pripojenie riešené pomocou USB k reálnej doske, čaká sa 50ms.
      *
      * @return True ak prišiel v časovom úseku oznam o nastavení dát, false inak.
      * @throws InterruptedException Prerušenie počas čakania na nastavenie dát.
@@ -202,10 +203,11 @@ public class Bus{
     public boolean waitForSteadyState() throws InterruptedException {
         if (!this.isUsbConnected()) {
             //ak nie je pripojenie cez USB -> je pripojenie na simulátor
-            //cakaj na data
-            return dataSemaphore.tryAcquire(1, TimeUnit.SECONDS);
+            //ak nebezi, nemas ake data dostat... sorry
+            //ak simulacia bezi, cakaj na data 5 sekund. Ak sa simulacia neustali, je tam cyklus alebo mas woodenPC
+            return isSimulationRunning && dataSemaphore.tryAcquire(5, TimeUnit.SECONDS);
         } else {
-            //ak je pripojenie cez USB, cakaj aka synchronne
+            //ak je pripojenie cez USB, cakaj aka synchronne //TODO je potrebne cakanie?
             Thread.sleep(50);
             return true;
         }
@@ -224,6 +226,15 @@ public class Bus{
      */
     public void dataIsChanging() {
         dataSemaphore.drainPermits();
+    }
+
+    /**
+     * Oznámenie simulácie o zmene stavu. Či je spustená a má CPU čakať na nastavenie dát alebo nie je spustená.
+     *
+     * @param isRunning Stav simulácie, true ak je spustená, false inak.
+     */
+    public void simulationIsRunning(boolean isRunning) {
+        this.isSimulationRunning = isRunning;
     }
 
     /**

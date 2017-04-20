@@ -366,7 +366,8 @@
                                                                         <Font size="9.0" />
                                                                      </font>
                                                                   </ToggleButton>
-                                                                  <ToggleButton minWidth="25.0" text="Bin" toggleGroup="$btnGroupStackData">
+                                                                   <ToggleButton minWidth="28.0" text="Bin"
+                                                                                 toggleGroup="$btnGroupStackData">
                                                                      <font>
                                                                         <Font size="9.0" />
                                                                      </font>
@@ -403,7 +404,8 @@
                                                    <children>
                                                       <HBox alignment="TOP_CENTER" spacing="5.0" VBox.vgrow="NEVER">
                                                          <children>
-                                                            <HBox alignment="CENTER" maxWidth="1.7976931348623157E308" prefWidth="120.0" spacing="2.0">
+                                                             <HBox alignment="CENTER" maxWidth="1.7976931348623157E308"
+                                                                   prefWidth="90.0" spacing="2.0">
                                                                <children>
                                                                   <ToggleButton selected="true" text="Dec">
                                                                      <toggleGroup>
@@ -426,7 +428,8 @@
                                                             <Separator orientation="VERTICAL" prefWidth="5.0" />
                                                             <HBox alignment="CENTER" prefWidth="120.0">
                                                                <children>
-                                                                  <ToggleButton selected="true" text="Dec">
+                                                                   <ToggleButton minWidth="28.0" selected="true"
+                                                                                 text="Dec">
                                                                      <toggleGroup>
                                                                         <ToggleGroup fx:id="btnGroupProgMemoryData" />
                                                                      </toggleGroup>
@@ -434,17 +437,20 @@
                                                                         <Font size="9.0" />
                                                                      </font>
                                                                   </ToggleButton>
-                                                                  <ToggleButton text="Hex" toggleGroup="$btnGroupProgMemoryData">
+                                                                   <ToggleButton minWidth="28.0" text="Hex"
+                                                                                 toggleGroup="$btnGroupProgMemoryData">
                                                                      <font>
                                                                         <Font size="9.0" />
                                                                      </font>
                                                                   </ToggleButton>
-                                                                  <ToggleButton text="Bin" toggleGroup="$btnGroupProgMemoryData">
+                                                                   <ToggleButton minWidth="28.0" text="Bin"
+                                                                                 toggleGroup="$btnGroupProgMemoryData">
                                                                      <font>
                                                                         <Font size="9.0" />
                                                                      </font>
                                                                   </ToggleButton>
-                                                                  <ToggleButton text="ASCII" toggleGroup="$btnGroupProgMemoryData">
+                                                                   <ToggleButton minWidth="33.0" text="ASCII"
+                                                                                 toggleGroup="$btnGroupProgMemoryData">
                                                                      <font>
                                                                         <Font size="9.0" />
                                                                      </font>
@@ -458,7 +464,10 @@
                                                       </HBox>
                                                       <TableView fx:id="tableViewProgMemory" VBox.vgrow="ALWAYS">
                                                          <columns>
-                                                            <TableColumn fx:id="tableColumnProgMemoryAddr" editable="false" minWidth="100.0" prefWidth="125.0" sortable="false" text="Addr" />
+                                                             <TableColumn fx:id="tableColumnProgMemoryAddr"
+                                                                          editable="false" minWidth="70.0"
+                                                                          prefWidth="70.0" sortable="false"
+                                                                          text="Addr"/>
                                                             <TableColumn fx:id="tableColumnProgMemoryData" editable="false" minWidth="100.0" prefWidth="125.0" sortable="false" text="Data" />
                                                          </columns>
                                                          <columnResizePolicy>
@@ -475,7 +484,8 @@
                                                    <children>
                                                       <HBox alignment="TOP_CENTER" spacing="5.0" VBox.vgrow="NEVER">
                                                          <children>
-                                                            <HBox alignment="CENTER" maxWidth="1.7976931348623157E308" prefWidth="120.0" spacing="2.0">
+                                                             <HBox alignment="CENTER" maxWidth="1.7976931348623157E308"
+                                                                   prefWidth="90.0" spacing="2.0">
                                                                <children>
                                                                   <ToggleButton selected="true" text="Dec">
                                                                      <font>
@@ -498,7 +508,8 @@
                                                             <Separator orientation="VERTICAL" prefWidth="5.0" />
                                                             <HBox alignment="CENTER" prefWidth="120.0">
                                                                <children>
-                                                                  <ToggleButton selected="true" text="Dec">
+                                                                   <ToggleButton minWidth="28.0" selected="true"
+                                                                                 text="Dec">
                                                                      <font>
                                                                         <Font size="9.0" />
                                                                      </font>
@@ -506,17 +517,20 @@
                                                                         <ToggleGroup fx:id="btnGroupRAMData" />
                                                                      </toggleGroup>
                                                                   </ToggleButton>
-                                                                  <ToggleButton text="Hex" toggleGroup="$btnGroupRAMData">
+                                                                   <ToggleButton minWidth="28.0" text="Hex"
+                                                                                 toggleGroup="$btnGroupRAMData">
                                                                      <font>
                                                                         <Font size="9.0" />
                                                                      </font>
                                                                   </ToggleButton>
-                                                                  <ToggleButton text="Bin" toggleGroup="$btnGroupRAMData">
+                                                                   <ToggleButton minWidth="28.0" text="Bin"
+                                                                                 toggleGroup="$btnGroupRAMData">
                                                                      <font>
                                                                         <Font size="9.0" />
                                                                      </font>
                                                                   </ToggleButton>
-                                                                  <ToggleButton text="ASCII" toggleGroup="$btnGroupRAMData">
+                                                                   <ToggleButton minWidth="33.0" text="ASCII"
+                                                                                 toggleGroup="$btnGroupRAMData">
                                                                      <font>
                                                                         <Font size="9.0" />
                                                                      </font>
@@ -530,7 +544,9 @@
                                                       </HBox>
                                                       <TableView fx:id="tableViewRAM" VBox.vgrow="ALWAYS">
                                                          <columns>
-                                                            <TableColumn fx:id="tableColumnRAMAddr" editable="false" minWidth="100.0" prefWidth="125.0" sortable="false" text="Addr" />
+                                                             <TableColumn fx:id="tableColumnRAMAddr" editable="false"
+                                                                          minWidth="70.0" prefWidth="70.0"
+                                                                          sortable="false" text="Addr"/>
                                                             <TableColumn fx:id="tableColumnRAMData" editable="false" minWidth="100.0" prefWidth="125.0" sortable="false" text="Data" />
                                                          </columns>
                                                          <columnResizePolicy>

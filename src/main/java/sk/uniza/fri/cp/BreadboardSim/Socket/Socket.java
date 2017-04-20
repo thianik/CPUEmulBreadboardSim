@@ -93,14 +93,16 @@ public class Socket extends Group {
 	private EventHandler<MouseEvent> onMousePressed = new EventHandler<MouseEvent>() {
         @Override
         public void handle(MouseEvent event) {
-            
-            event.consume();
+
+            //event.consume();
         }
     };
 
     private EventHandler<MouseEvent> onMouseDragged = new EventHandler<MouseEvent>() {
         @Override
         public void handle(MouseEvent event) {
+            if (!event.isPrimaryButtonDown()) return;
+
             Socket socket = (Socket)event.getSource();
 
             if(creatingWire != null)
@@ -132,6 +134,8 @@ public class Socket extends Group {
 	private EventHandler<MouseEvent> onMouseDragDetected = new EventHandler<MouseEvent>() {
         @Override
         public void handle(MouseEvent event) {
+            if (!event.isPrimaryButtonDown()) return;
+
             startFullDrag();
 
             Socket socket = (Socket) event.getSource();

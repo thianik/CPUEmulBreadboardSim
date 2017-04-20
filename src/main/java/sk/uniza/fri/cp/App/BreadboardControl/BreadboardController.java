@@ -1,7 +1,10 @@
 package sk.uniza.fri.cp.App.BreadboardControl;
 
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.geometry.Bounds;
 import javafx.geometry.Point2D;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
@@ -10,9 +13,7 @@ import javafx.stage.Stage;
 import org.controlsfx.control.ToggleSwitch;
 import sk.uniza.fri.cp.BreadboardSim.*;
 import sk.uniza.fri.cp.BreadboardSim.Board.Board;
-import sk.uniza.fri.cp.BreadboardSim.Components.Breadboard;
-import sk.uniza.fri.cp.BreadboardSim.Components.HexSegment;
-import sk.uniza.fri.cp.BreadboardSim.Components.NumKeys;
+import sk.uniza.fri.cp.BreadboardSim.Components.*;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Chips.*;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Chips.Gates.*;
 import sk.uniza.fri.cp.BreadboardSim.Wire.Wire;
@@ -92,6 +93,16 @@ public class BreadboardController implements Initializable {
         });
 
         this.boardPane.getChildren().add(board);
+
+        //zmena celkosti scrollable plochy aby sa na nej dalo posuvat
+        //TODO skusit najst lepsie riesenie
+        boardPane.layoutBoundsProperty().addListener(new ChangeListener<Bounds>() {
+            @Override
+            public void changed(ObservableValue<? extends Bounds> observable, Bounds oldValue, Bounds newValue) {
+                board.setPrefViewportWidth(newValue.getWidth());
+                board.setPrefViewportHeight(newValue.getHeight());
+            }
+        });
     }
 
     public void callDelete(){
@@ -121,6 +132,8 @@ public class BreadboardController implements Initializable {
         this.newItemPicker.registerItem(new Breadboard());
         this.newItemPicker.registerItem(new HexSegment());
         this.newItemPicker.registerItem(new NumKeys());
+        this.newItemPicker.registerItem(new Probe());
+        //this.newItemPicker.registerItem(new BusInterface());
     }
 
     @FXML
@@ -231,6 +244,8 @@ public class BreadboardController implements Initializable {
         if (file != null) {
             if (board.save(file)) {
                 board.clearChange();
+                ((Stage) root.getScene().getWindow()).setTitle("Simulátor - " + file.getName());
+                currentFile = file;
                 return true;
             }
         }

@@ -1,13 +1,9 @@
 package sk.uniza.fri.cp.BreadboardSim.Socket;
 
 
-import sk.uniza.fri.cp.BreadboardSim.Components.BusInterface;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Device;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * @author Moris
@@ -373,8 +369,12 @@ public class Potential {
      */
     private void unhighlightShortCircuitSockets(){
         if(this.shortedSockets.size() > 0) {
-            this.shortedSockets.forEach(socket -> socket.unhighlight(Socket.WARNING));
-            this.shortedSockets.clear();
+            try {
+                this.shortedSockets.forEach(socket -> socket.unhighlight(Socket.WARNING));
+                this.shortedSockets.clear();
+            } catch (NoSuchElementException e) {
+                e.printStackTrace();
+            }
         }
     }
 

@@ -6,12 +6,10 @@ import javafx.scene.Group;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.paint.Color;
-import javafx.scene.paint.Paint;
 import sk.uniza.fri.cp.BreadboardSim.Board.Board;
 import sk.uniza.fri.cp.BreadboardSim.Board.BoardEvent;
 import sk.uniza.fri.cp.BreadboardSim.Components.BusInterface;
 import sk.uniza.fri.cp.BreadboardSim.HighlightGroup;
-import sk.uniza.fri.cp.BreadboardSim.SchoolBreadboard;
 import sk.uniza.fri.cp.BreadboardSim.Socket.Potential;
 import sk.uniza.fri.cp.BreadboardSim.Socket.Socket;
 

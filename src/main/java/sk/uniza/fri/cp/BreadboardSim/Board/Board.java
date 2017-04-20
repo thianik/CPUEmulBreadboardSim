@@ -3,9 +3,11 @@ package sk.uniza.fri.cp.BreadboardSim.Board;
 
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.event.Event;
 import javafx.event.EventHandler;
+import javafx.geometry.Bounds;
 import javafx.geometry.Point2D;
 import javafx.scene.Group;
 import javafx.scene.control.ScrollPane;
@@ -88,10 +90,17 @@ public class Board extends ScrollPane {
 		this.cursorPosition = new SimpleObjectProperty<>();
 
 		this.setContent(this.layersManager.getLayers());
-		this.setPannable(true);
+
+        this.setHbarPolicy(ScrollBarPolicy.ALWAYS);
+        this.setVbarPolicy(ScrollBarPolicy.ALWAYS);
+        this.setPannable(true);
 
 		gridBackground.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> clearSelect());
 
+        // Let the ScrollPane.viewRect only pan on middle button.
+        this.getContent().addEventHandler(MouseEvent.ANY, event -> {
+            if (event.getButton() != MouseButton.MIDDLE) event.consume();
+        });
 
 		//sandbox
 		SchoolBreadboard sb = SchoolBreadboard.getSchoolBreadboard(this);
