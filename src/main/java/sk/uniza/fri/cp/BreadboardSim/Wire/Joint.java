@@ -1,6 +1,7 @@
 package sk.uniza.fri.cp.BreadboardSim.Wire;
 
 
+import javafx.application.Platform;
 import javafx.scene.Group;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
@@ -26,8 +27,8 @@ public class Joint extends Movable {
 	protected WireSegment[] wireSegments; //segmenty ktore spaja
 
 	private Wire wire;
-	private Group graphic;
-	private Circle colorizer;
+    private Circle joint;
+    private Circle colorizer;
 	private Rectangle boundingBox;
 	private double radius;
 
@@ -49,8 +50,8 @@ public class Joint extends Movable {
 		boundingBox.setLayoutX(-grid.getSizeX()/2.0);
 		boundingBox.setLayoutY(-grid.getSizeY()/2.0);
 
-		this.radius = grid.getSizeMin() / 3.5;
-		this.graphic = generateJointGraphic(radius);
+        this.radius = grid.getSizeMin() / 3.7;
+        Group graphic = generateJointGraphic(radius);
 
 		this.getChildren().addAll(boundingBox, graphic);
 	}
@@ -91,27 +92,48 @@ public class Joint extends Movable {
 	}
 
 	public void setColor(Color color){
-        this.colorizer.setFill(color);
-        this.colorizer.setOpacity(1);
+        if (Platform.isFxApplicationThread()) {
+            this.colorizer.setFill(color);
+            this.colorizer.setOpacity(1);
+        } else {
+            Platform.runLater(() -> {
+                this.colorizer.setFill(color);
+                this.colorizer.setOpacity(1);
+            });
+        }
     }
 
     public void setDefaultColor(){
-	    this.colorizer.setOpacity(0);
+        if (Platform.isFxApplicationThread()) {
+            this.colorizer.setOpacity(0);
+        } else {
+            Platform.runLater(() -> this.colorizer.setOpacity(0));
+        }
+    }
+
+    public void incRadius() {
+        radius *= 1.2;
+        this.joint.setRadius(radius);
+    }
+
+    public void decRadius() {
+        radius *= 1.2;
+        this.joint.setRadius(radius);
     }
 
 	protected Group generateJointGraphic(double radius){
 
 		Group graphics = new Group();
 
-		Circle joint = new Circle(radius, radius, radius, DEFAULT_COLOR);
-        joint.setTranslateX(-radius);
-        joint.setLayoutY(-radius);
+        this.joint = new Circle(radius, radius, radius, DEFAULT_COLOR);
+        this.joint.setTranslateX(-radius);
+        this.joint.setLayoutY(-radius);
 
 
         this.colorizer = new Circle(0,0,radius, Color.RED);
         this.colorizer.setOpacity(0);
 
-        graphics.getChildren().addAll(joint,colorizer);
+        graphics.getChildren().addAll(this.joint, this.colorizer);
 
 
 		return graphics;

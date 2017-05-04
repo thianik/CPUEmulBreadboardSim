@@ -7,6 +7,7 @@ import javafx.scene.text.Text;
 import sk.uniza.fri.cp.BreadboardSim.Board.Board;
 import sk.uniza.fri.cp.BreadboardSim.Board.GridSystem;
 import sk.uniza.fri.cp.BreadboardSim.Devices.LED;
+import sk.uniza.fri.cp.BreadboardSim.SchoolBreadboard;
 import sk.uniza.fri.cp.BreadboardSim.Socket.Potential;
 import sk.uniza.fri.cp.BreadboardSim.Socket.Socket;
 
@@ -15,7 +16,6 @@ import sk.uniza.fri.cp.BreadboardSim.Socket.Socket;
  */
 public class Probe extends Component {
 
-    private static final Color BACKGROUND_COLOR = Color.rgb(51, 100, 68);
     private static final Color PROBE_ON_COLOR = Color.RED;
     private static final Color PROBE_OFF_COLOR = Color.YELLOW;
     private static final double RADIUS_COEF = 0.4;
@@ -34,7 +34,7 @@ public class Probe extends Component {
 
         GridSystem grid = board.getGrid();
 
-        this.background = new Rectangle(grid.getSizeX() * 5, grid.getSizeY() * 4, BACKGROUND_COLOR);
+        this.background = new Rectangle(grid.getSizeX() * 5, grid.getSizeY() * 4, SchoolBreadboard.BACKGROUND_COLOR);
 
         //sokety
         this.inputSocket = new Socket(this);
@@ -59,6 +59,7 @@ public class Probe extends Component {
         this.gndSocket.connect(this.led.getCathode());
 
         this.getChildren().addAll(this.background, this.inputSocket, this.led, probeText);
+        this.addSocket(this.inputSocket);
     }
 
     public void removeBackground() {

@@ -68,7 +68,7 @@ public class BreadboardController implements Initializable {
 
         toolsSplitPane.getItems().addAll(this.newItemPicker, this.descriptionPane);
 
-        board = new Board(2000,2000);
+        board = new Board(2000, 2000, 10);
         board.setDescriptionPane(this.descriptionPane);
         board.setOnMouseMoved(event -> {
             double offsetX = board.getViewportBounds().getMinX();
@@ -94,15 +94,14 @@ public class BreadboardController implements Initializable {
 
         this.boardPane.getChildren().add(board);
 
-        //zmena celkosti scrollable plochy aby sa na nej dalo posuvat
-        //TODO skusit najst lepsie riesenie
-        boardPane.layoutBoundsProperty().addListener(new ChangeListener<Bounds>() {
-            @Override
-            public void changed(ObservableValue<? extends Bounds> observable, Bounds oldValue, Bounds newValue) {
-                board.setPrefViewportWidth(newValue.getWidth());
-                board.setPrefViewportHeight(newValue.getHeight());
-            }
-        });
+        AnchorPane.setTopAnchor(this.board, 0.0);
+        AnchorPane.setRightAnchor(this.board, 0.0);
+        AnchorPane.setBottomAnchor(this.board, 0.0);
+        AnchorPane.setLeftAnchor(this.board, 0.0);
+        this.board.setHvalue(0.5);
+        this.board.setVvalue(0.5);
+//        this.board.setHbarPolicy(ScrollPane.ScrollBarPolicy.ALWAYS);
+//        this.board.setVbarPolicy(ScrollPane.ScrollBarPolicy.ALWAYS);
     }
 
     public void callDelete(){
@@ -133,7 +132,7 @@ public class BreadboardController implements Initializable {
         this.newItemPicker.registerItem(new HexSegment());
         this.newItemPicker.registerItem(new NumKeys());
         this.newItemPicker.registerItem(new Probe());
-        //this.newItemPicker.registerItem(new BusInterface());
+        this.newItemPicker.registerItem(new BusInterface());
     }
 
     @FXML
@@ -165,8 +164,9 @@ public class BreadboardController implements Initializable {
                 currentFile != null
                         ? currentFile.getParentFile()
                         : new File(Paths.get("").toAbsolutePath().toString()));
-        chooser.getExtensionFilters().add(
-                new FileChooser.ExtensionFilter("SCHX", "*.schx"));
+        chooser.getExtensionFilters().addAll(
+                new FileChooser.ExtensionFilter("SCHX", "*.schx"),
+                new FileChooser.ExtensionFilter("SCH", "*.sch"));
 
         File file = chooser.showOpenDialog(root.getScene().getWindow());
 

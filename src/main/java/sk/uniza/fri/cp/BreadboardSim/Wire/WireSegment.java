@@ -31,11 +31,11 @@ public class WireSegment extends Line {
         this.endXProperty().bind(this.endJoint.layoutXProperty());
         this.endYProperty().bind(this.endJoint.layoutYProperty());
 
-		this.setStrokeWidth(start.getBoard().getGrid().getSizeMin() * 2.0/5.0);
+        this.setStrokeWidth(start.getBoard().getGrid().getSizeMin() * 2.0 / 6.0);
         this.setFill(wire.getColor());
         this.setStroke(wire.getColor());
-        this.setOpacity(0.8);
-	}
+        this.setOpacity(1);
+    }
 
 	public Wire getWire(){return this.wire;}
 
@@ -74,6 +74,11 @@ public class WireSegment extends Line {
 	public void setColor(Paint color){
         this.setFill(color);
         this.setStroke(color);
+    }
+
+    public void highlihgt() {
+        //this.setStroke();
+
     }
 
 }

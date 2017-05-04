@@ -6,6 +6,7 @@ import sk.uniza.fri.cp.BreadboardSim.Board.Board;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.InputPin;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.OutputPin;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.Pin;
+import sk.uniza.fri.cp.Bus.Bus;
 
 import java.util.Arrays;
 
@@ -52,19 +53,33 @@ public class SN74573 extends Chip {
 
     private void updateGate() {
         if (this.isHigh(_LE)) {
+            //debug
+            int data = 0;
+
             //povoleny zapis
             for (int i = 0; i < 8; i++) {
                 this.savedData[i] = this.isHigh(inputs[i]);
+                data += this.savedData[i] ? 1 << (7 - i) : 0;
             }
+
+//            System.out.println("Zapisane data na chip: " + data + " \t\t\t\t\t\t\t\t\t\t" + Thread.currentThread().getName());
+
         }
 
         if (this.isHigh(_OE_)) {
             Arrays.stream(outputs).forEach(output -> this.setPin(output, Pin.PinState.HIGH_IMPEDANCE));
         } else if (this.isLow(_OE_)) {
+            //debug
+            int data = 0;
+
             //povoleny vystup
             for (int i = 0; i < 8; i++) {
                 this.setPin(outputs[i], savedData[i] ? Pin.PinState.HIGH : Pin.PinState.LOW);
+                data += this.savedData[i] ? 1 << (7 - i) : 0;
             }
+
+//            if(!Bus.getBus().isIA_())
+//            System.out.println("Nastavene data chipom: " + data + " \t\t\t\t\t\t\t\t\t\t" + Thread.currentThread().getName());
         }
 
     }

@@ -24,7 +24,7 @@ public class Potential {
 
 	//skrat
 	private boolean shortCircuit; //nastal skrat na potenciali?
-    private LinkedList<Socket> shortedSockets;
+    private final LinkedList<Socket> shortedSockets;
 
 	/**
 	 * 
@@ -149,8 +149,8 @@ public class Potential {
 	 * @return True - hodnota sa spravne aktualizovala / False - nastal skrat
 	 */
     public boolean setValue(Value newVal) {
-        if (this.parent1 == null && this.parent2 == null && this.value == newVal)
-            return true;//TODO OVERIT CI TO neznicilo nejaku funkcnost
+        // if (this.parent1 == null && this.parent2 == null && this.value == newVal)
+        //    return true;//TODO OVERIT CI TO neznicilo nejaku funkcnost
 
         //zistenie skratu na predkoch
 	    this.shortCircuit =
@@ -359,8 +359,10 @@ public class Potential {
      */
     private void highlightShortCircuitSockets(){
         if(this.shortCircuit) {
-            getOutputSockets(this.shortedSockets);
-            this.shortedSockets.forEach(socket -> socket.highlight(Socket.WARNING));
+            synchronized (this.shortedSockets) {
+                getOutputSockets(this.shortedSockets);
+                this.shortedSockets.forEach(socket -> socket.highlight(Socket.WARNING));
+            }
         }
     }
 
@@ -368,12 +370,14 @@ public class Potential {
      * Zrušenie zvýraznenie výstupných soketov, na ktorých bol zobrazený skrat, ak také existujú.
      */
     private void unhighlightShortCircuitSockets(){
-        if(this.shortedSockets.size() > 0) {
-            try {
-                this.shortedSockets.forEach(socket -> socket.unhighlight(Socket.WARNING));
-                this.shortedSockets.clear();
-            } catch (NoSuchElementException e) {
-                e.printStackTrace();
+        synchronized (this.shortedSockets) {
+            if (this.shortedSockets.size() > 0) {
+                try {
+                    this.shortedSockets.forEach(socket -> socket.unhighlight(Socket.WARNING));
+                    this.shortedSockets.clear();
+                } catch (NoSuchElementException e) {
+                    e.printStackTrace();
+                }
             }
         }
     }
@@ -393,6 +397,8 @@ public class Potential {
                 //nastav nahodnu hodnotu potencialu
                 if (Math.random() < 0.5) this.value = Value.LOW;
                 else this.value = Value.HIGH;
+//                System.out.println("POTENCIAL SKRAT na " + this.parent1.getSocket1().getPin().getName() + ": " + this.parent1.value +
+//                        " a " + this.parent2.getSocket1().getPin().getName() + ": " + this.parent2.value + " NAKONIEC NASTAVENE: " + this.value);
                 return;
             } else {
                 //nedoslo ku skratu, na obochy vystupoch su rovnake hodnoty

@@ -1,12 +1,15 @@
 package sk.uniza.fri.cp.BreadboardSim;
 
 
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
+import javafx.event.Event;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
+import javafx.scene.transform.Transform;
 import sk.uniza.fri.cp.BreadboardSim.Board.Board;
 import sk.uniza.fri.cp.BreadboardSim.Board.GridSystem;
 import sk.uniza.fri.cp.BreadboardSim.Components.*;
-import sk.uniza.fri.cp.Bus.Bus;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -18,7 +21,9 @@ import java.util.List;
  */
 public class SchoolBreadboard extends Item {
 
-	private static final Color BACKGROUND_COLOR = Color.rgb(51,100,68);
+    public static final Color BACKGROUND_COLOR = Color.rgb(68, 117, 84);
+    private static final int GRID_WIDTH = 70;
+    private static final int GRID_HEIGHT = 46;
 
 	private static SchoolBreadboard instance;
 
@@ -33,14 +38,14 @@ public class SchoolBreadboard extends Item {
 
 		GridSystem grid =  board.getGrid();
 
-        int gridWidth = grid.getSizeX() * 70;
-        int gridHeight = grid.getSizeY() * 46;
-        Rectangle background = new Rectangle(gridWidth, gridHeight, BACKGROUND_COLOR);
+        int widthPx = grid.getSizeX() * GRID_WIDTH;
+        int heightPx = grid.getSizeY() * GRID_HEIGHT;
+        Rectangle background = new Rectangle(widthPx, heightPx, BACKGROUND_COLOR);
         background.setArcWidth(grid.getSizeX());
 		background.setArcHeight(grid.getSizeY());
 
-		this.busInterface = new BusInterface(board, Bus.getBus());
-		this.busInterface.makeImmovable();
+        this.busInterface = new BusInterface(board);
+        this.busInterface.makeImmovable();
         this.busInterface.setSelectable(false);
 		this.busInterface.setLayoutX(grid.getSizeX() * 2);
 
@@ -85,6 +90,34 @@ public class SchoolBreadboard extends Item {
         list.addAll(((HexSegmentsPanel) this.hexSegmentsPanel).getComponents());
         list.add(this.numKeys);
         return list;
+    }
+
+    public Component getBusInterface() {
+        return busInterface;
+    }
+
+    public Component getBreadboard() {
+        return breadboard;
+    }
+
+    public Component getHexSegmentsPanel() {
+        return hexSegmentsPanel;
+    }
+
+    public Component getNumKeys() {
+        return numKeys;
+    }
+
+    public Component getProbe() {
+        return probe;
+    }
+
+    public int getGridWidth() {
+        return GRID_WIDTH;
+    }
+
+    public int getGridHeight() {
+        return GRID_HEIGHT;
     }
 
 	@Override

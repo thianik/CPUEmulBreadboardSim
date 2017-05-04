@@ -157,7 +157,7 @@ public class CPU extends Thread {
                         UsbITCheckSkipped = 0;
                     } else {
                         UsbITCheckSkipped++;
-                        it = false;
+                        it = false;//TODO ma tu byt alebo nie??
                     }
 
                     //ak je povolene prerusenie a aj vyvolane
@@ -782,10 +782,15 @@ public class CPU extends Thread {
         flagIE = false;
 
         //synchronizovane citanie
+//        System.out.println("IA_ LOW");
         bus.setIA_(false);
+//        System.out.println("IA_ Cakanie na steady state");
         this.waitForSteadySimulation(null, true);
+//        System.out.println("IA_ Nacitanie dat");
         byte data = bus.getDataBus();
+//        System.out.println("IA_ Nacitane " + Byte.toUnsignedInt(data));
         bus.setIA_(true);
+//        System.out.println("IA_ HIGH");
 
         //odlozenie PC na zasobnik
         push(regPC);
@@ -896,11 +901,14 @@ public class CPU extends Thread {
     private void read(enumInstructionsSet inst, short addr, String destRegName) throws InterruptedException {
         //nastavenie adresy
         microstepAwait("Nastavenie adresy");
+//        System.out.println("CPU Zaciatok nastavovania adresy");
         bus.setAddressBus(addr);
+//        System.out.println("CPU Koniec nastavovania adresy");
 
         microstepAwait("Nastavenie priznaku " + (inst == enumInstructionsSet.INN?"IOR":"MR") + " = 0");
 
         //nastavenie priznaku citania
+//        System.out.println("CPU Nastavenie priznaku citania ");
         if (inst == enumInstructionsSet.INN)
             bus.setIR_(false);
         else
@@ -908,14 +916,18 @@ public class CPU extends Thread {
 
         //cakanie na nastavenie dat na datovej zbernici
         //updateMessage("Cakanie na nastavenie dat");
+//        System.out.println("CPU Cakanie na steady state pri citani ");
         this.waitForSteadySimulation(inst, true);
 
         //nacitaj data
         microstepAwait("Nacitanie dat");
+//        System.out.println("CPU Citanie dat");
         byte Rd = bus.getDataBus();
+//        System.out.println("CPU Citanie dat dokoncene " + Byte.toUnsignedInt(Rd));
         setRegisterVal(destRegName, Rd);
 
         //zrus priznak citania
+//        System.out.println("CPU Zrusenie priznaku pri citani z chipu");
         microstepAwait("Zrusenie priznaku " + (inst == enumInstructionsSet.INN?"IOR":"MR"));
         if(inst == enumInstructionsSet.INN)
             bus.setIR_(true);
@@ -942,32 +954,38 @@ public class CPU extends Thread {
 
         //nastavenie dat
         microstepAwait("Nastavenie dat");
+//        System.out.println("CPU Nastavenie dat pri zapise na chip");
         bus.setDataBus(data);
 
         //nastavenie priznaku
         microstepAwait("Nastavenie priznaku " + (inst == enumInstructionsSet.OUT?"IOW":"MW") + " = 0");
 
         //nastavenie priznaku
+//        System.out.println("CPU Nastavenie priznaku zapisu na chip");
         if (inst == enumInstructionsSet.OUT)
             bus.setIW_(false);
         else
             bus.setMW_(false);
 
         //updateMessage("Cakanie na nastavenie dat");
+//        System.out.println("CPU Cakanie na steady state");
         this.waitForSteadySimulation(inst, true);
 
         //zrusenie priznaku
         microstepAwait("Zrusenie priznaku ZAPISU");
+//        System.out.println("CPU Zrusenie priznaku zapisu na chip");
         if(inst == enumInstructionsSet.OUT)
             bus.setIW_(true);
         else
             bus.setMW_(true);
 
         //cakanie, aby sa nezapisali nespravne data
+//        System.out.println("CPU Cakanie na steady state");
         this.waitForSteadySimulation(inst, false);
 
         //zrusenie dat
         microstepAwait("Zrusenie dat");
+//        System.out.println("CPU Zrusenie dat pri zapise na chip");
         bus.setRandomData();
 
         //zrusenie adresy
@@ -1011,6 +1029,7 @@ public class CPU extends Thread {
      * @param showConsoleMsg True ak sa má zobraziť chybová správa v konzole, false ak nie.
      */
     private void waitForSteadySimulation(enumInstructionsSet inst, boolean showConsoleMsg) {
+        if (bus.isUsbConnected()) return;
         try {
             if (!bus.waitForSteadyState()) {
                 //data nie su nastavene (simulator nebezi alebo nie je 5 sekund na nastavenie dat dostacujucich)

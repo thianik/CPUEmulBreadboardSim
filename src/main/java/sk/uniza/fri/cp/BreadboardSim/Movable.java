@@ -28,8 +28,8 @@ public abstract class Movable extends HighlightGroup {
 		public void handle(MouseEvent event) {
 			if(!event.isPrimaryButtonDown()) return;
 
-			nodeOffsetX = event.getSceneX() - getLayoutX();
-			nodeOffsetY = event.getSceneY() - getLayoutY();
+            nodeOffsetX = event.getSceneX() - getLayoutX() * board.getAppliedScale();
+            nodeOffsetY = event.getSceneY() - getLayoutY() * board.getAppliedScale();
 
 			event.consume();
 		}
@@ -45,21 +45,23 @@ public abstract class Movable extends HighlightGroup {
 			//ak nebol nastaveny offset, zrejme nejde o kliknutie na objekt a tahanie ale vytvorenie noveho objektu
 			//ten chceme chitit v strede
 			if(nodeOffsetX == -1){
-				nodeOffsetX = getBoundsInParent().getWidth()/2;
-				nodeOffsetY = getBoundsInParent().getHeight()/2;
-			}
+                nodeOffsetX = getBoundsInParent().getWidth() / 2 * board.getAppliedScale();
+                nodeOffsetY = getBoundsInParent().getHeight() / 2 * board.getAppliedScale();
+            }
 
 			GridSystem grid = board.getGrid();
 			int gridX;
 			int gridY;
 
 			if(event.getSource() instanceof Joint) {
-				gridX = (int) (Math.round((event.getSceneX() - board.getOriginSceneOffsetX()) / grid.getSizeX()) * grid.getSizeX()) / grid.getSizeX();
-				gridY = (int) (Math.round((event.getSceneY() - board.getOriginSceneOffsetY()) / grid.getSizeY()) * grid.getSizeY()) / grid.getSizeY();
-			} else {
-				gridX = (int) (Math.round((event.getSceneX() - nodeOffsetX) / grid.getSizeX()) * grid.getSizeX()) / grid.getSizeX();
-				gridY = (int) (Math.round((event.getSceneY() - nodeOffsetY) / grid.getSizeY()) * grid.getSizeY()) / grid.getSizeY();
-			}
+                //jointy chytame za stred
+                Point2D boardXY = board.sceneToBoard(event.getSceneX(), event.getSceneY());
+                gridX = (int) (Math.round(boardXY.getX() / grid.getSizeX()) * grid.getSizeX()) / grid.getSizeX();
+                gridY = (int) (Math.round(boardXY.getY() / grid.getSizeY()) * grid.getSizeY()) / grid.getSizeY();
+            } else {
+                gridX = (int) (Math.round((event.getSceneX() - nodeOffsetX) / grid.getSizeX() / board.getAppliedScale()) * grid.getSizeX()) / grid.getSizeX();
+                gridY = (int) (Math.round((event.getSceneY() - nodeOffsetY) / grid.getSizeY() / board.getAppliedScale()) * grid.getSizeY()) / grid.getSizeY();
+            }
 
 			//ak sa pozicia zmenila
 			if (gridPosX != gridX || gridPosY != gridY) {
@@ -111,10 +113,21 @@ public abstract class Movable extends HighlightGroup {
 	 * @param deltaY Y-ova zmena pozicie na mriezke oproti aktualnej
 	 */
 	public void moveBy(double deltaX, double deltaY){
-        this.gridPosX += deltaX / board.getGrid().getSizeX();
-        this.gridPosY += deltaY / board.getGrid().getSizeY();
+        this.gridPosX += Math.round(deltaX) / board.getGrid().getSizeX();
+        this.gridPosY += Math.round(deltaY) / board.getGrid().getSizeY();
+
+//        if(this.gridPosX < 0) {
+//            this.setLayoutX(0);
+//            this.gridPosX = 0;
+//        } else
         this.setLayoutX(getLayoutX() + deltaX);
-		this.setLayoutY(getLayoutY() + deltaY);
+
+//        if(this.gridPosY < 0){
+//            this.setLayoutY(0);
+//            this.gridPosY = 0;
+//        } else
+        this.setLayoutY(getLayoutY() + deltaY);
+
 	}
 
 	/**
@@ -143,8 +156,8 @@ public abstract class Movable extends HighlightGroup {
 	 * @param posY Suradnica Y na ploche board
 	 */
 	public void moveTo(double posX, double posY){
-		this.setLayoutX(posX);
-		this.setLayoutY(posY);
+        this.setLayoutX(posX);
+        this.setLayoutY(posY);
 		//this.relocate(posX, posY);
 	}
 

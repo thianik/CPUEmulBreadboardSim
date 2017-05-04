@@ -1,8 +1,15 @@
 package sk.uniza.fri.cp.BreadboardSim.Wire;
 
 
+import javafx.beans.InvalidationListener;
+import javafx.beans.Observable;
 import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
+import javafx.event.EventDispatcher;
+import javafx.geometry.Bounds;
+import javafx.geometry.Point2D;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.paint.Color;
 import javafx.scene.transform.Transform;
 import sk.uniza.fri.cp.BreadboardSim.Board.Board;
 import sk.uniza.fri.cp.BreadboardSim.Board.BoardEvent;
@@ -16,24 +23,38 @@ import sk.uniza.fri.cp.BreadboardSim.Socket.Socket;
  */
 public class WireEnd extends Joint {
 
+    private static final Color CONNECTED_COLOR = Color.DARKGREEN;
+
 	private Socket socket;
 
 	private double lastPosX = -1;
 	private double lastPosY = -1;
 
+    private static long time = 0;
+    private static long count = 0;
     private ChangeListener<Transform> socketPositionChangeListener = (observable, oldValue, newValue) -> {
+        long startTime = System.nanoTime();
         if(lastPosX == -1){
-				lastPosX = getLayoutX();
-				lastPosY = getLayoutY();
-			}
+            lastPosX = getLayoutX();
+            lastPosY = getLayoutY();
+        }
 
-			setLayoutX(socket.getBoardX());
-			setLayoutY(socket.getBoardY());
+//		Point2D a =  socket.getBoardLayoutX();
+//        setLayoutX(a.getX());
+//		setLayoutY(a.getY());
+        setLayoutX(socket.getBoardX() / getBoard().getAppliedScale());
+        setLayoutY(socket.getBoardY() / getBoard().getAppliedScale());
 
         getWire().moveJointsWithEnd(this, getLayoutX() - lastPosX, getLayoutY() - lastPosY);
+
         lastPosX = getLayoutX();
-			lastPosY = getLayoutY();
-	};
+        lastPosY = getLayoutY();
+
+        long endtime = System.nanoTime();
+        time += endtime - startTime;
+        count++;
+        System.out.println("nanotime: " + (endtime - startTime) + ",count: " + count + ", Avg. : " + (time / count));
+    };
 
 	public WireEnd(Board board, Wire wire){
 		super(board, wire);
@@ -42,10 +63,10 @@ public class WireEnd extends Joint {
 			getWire().setMouseTransparent(true);
 			getWire().setOpacity(0.5);
 
-			board.addSelect(this);
+            //board.addSelect(this);
 
-			event.consume();
-		});
+//			event.consume();
+        });
 
         this.addEventFilter(MouseEvent.DRAG_DETECTED, event -> {
             startFullDrag();
@@ -62,34 +83,53 @@ public class WireEnd extends Joint {
 
             event.consume();
         });
-	}
+
+        this.incRadius();
+    }
 
 	@Override
 	public void connectWireSegment(WireSegment segment) {
 		this.wireSegments[0] = segment;
 	}
 
+    public boolean isConnected() {
+        return this.socket != null;
+    }
+
 	public void connectSocket(Socket socket){
 		if(this.socket == null) {
 			this.socket = socket;
 			this.socket.connect(this);
-			this.socket.localToSceneTransformProperty().addListener(socketPositionChangeListener);
-			setLayoutX(socket.getBoardX());
-			setLayoutY(socket.getBoardY());
+            this.socket.getItem().localToParentTransformProperty().addListener(socketPositionChangeListener);
+            setLayoutX(socket.getBoardX() / getBoard().getAppliedScale());
+            setLayoutY(socket.getBoardY() / getBoard().getAppliedScale());
 
-			this.getWire().updatePotential();
+            lastPosX = getLayoutX();
+            lastPosY = getLayoutY();
+
+            this.setColor(this.getWire().getColor().brighter());
+
+            this.getWire().updatePotential();
+
 		} else {
 			disconnectSocket();
 			connectSocket(socket);
 		}
 	}
 
-	public void disconnectSocket(){
-	    if(this.socket == null) return;
+    @Override
+    public void setDefaultColor() {
+        if (this.isConnected()) this.setColor(this.getWire().getColor().brighter());
+        else super.setDefaultColor();
+    }
+
+    public void disconnectSocket() {
+        if(this.socket == null) return;
 		Socket socketToUpdate = this.socket;
 
-		this.socket.localToSceneTransformProperty().removeListener(socketPositionChangeListener);
-		this.socket.disconnect();
+        this.socket.getItem().localToParentTransformProperty().removeListener(socketPositionChangeListener);
+        //this.socket.localToSceneTransformProperty().removeListener(socketPositionChangeListener);
+        this.socket.disconnect();
 		this.socket = null;
 		this.getWire().updatePotential();
 
@@ -104,4 +144,9 @@ public class WireEnd extends Joint {
 		return socket;
 	}
 
+    @Override
+    public void delete() {
+        super.delete();
+        this.getWire().delete();
+    }
 }

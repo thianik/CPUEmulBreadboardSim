@@ -18,7 +18,7 @@ import java.util.List;
  */
 public class HexSegmentsPanel extends Component {
 
-	public HexSegment[] hexSegments;
+    private HexSegment[] hexSegments;
 
 	public HexSegmentsPanel(Board board){
         super(board);
@@ -76,6 +76,12 @@ public class HexSegmentsPanel extends Component {
         list.add(this.hexSegments[3]);
         list.add(this);
         return list;
+    }
+
+    public HexSegment getSegment(int index) {
+        if (index >= 0 && index <= 4)
+            return this.hexSegments[index];
+        else return null;
     }
 
     @Override

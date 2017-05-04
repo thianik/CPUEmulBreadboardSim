@@ -366,6 +366,7 @@ public abstract class Chip extends Device {
 
         imageGroup.setLayoutX(longestTextOnLeft + pinWidth + textMargin + 10);
 
+        imageGroup.setRotate(270);
         return imageGroup;
     }
 }

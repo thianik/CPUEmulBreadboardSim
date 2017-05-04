@@ -188,10 +188,11 @@ public class Parser extends Task<Program>{
                                 //asi to malo byt prerusenie ale je v zlom tvare
                                 addError("Nesprávny tvar návestia pre prerušenie '" + label + "'", lineIndex);
                             }
-                        } else {
-                            //obycajne navestie
-                            labels.put(label, instructions.size()); //index nasledujucej instrukcie, ktora bude pridana
                         }
+
+                        //obycajne navestie aj prerusenie, aby sa bolo mozne nan odkazova //TODO ma byt povolene odkazovat aj na prerusenia?
+                        labels.put(label, instructions.size()); //index nasledujucej instrukcie, ktora bude pridana
+
                     } else {
                         addError("Návestie " + label + " už existuje", lineIndex);
                     }

@@ -34,7 +34,12 @@ public class BoardChangeEvent extends BoardEvent {
 			if(potential != null) {
 				Potential.Value oldValue = potential.getValue();
 
-				//ak nenastal skrat, ak by nastal a boli by pripojene zariadenia ktore ho vyvolali, zacal by sa cyklit
+//				if(socket.getPin() != null)
+//                    System.out.println("Spracovanie udalosti nad pinom " + socket.getPin().getName() + " na vlakne " + Thread.currentThread().getName() );
+//				else
+//                    System.out.println("Spracovanie udalosti nad soketom " + socket.getId() + " na vlakne " + Thread.currentThread().getName() );
+
+                //ak nenastal skrat, ak by nastal a boli by pripojene zariadenia ktore ho vyvolali, zacal by sa cyklit
                 if(socket.setPotential(newValue))
                     //a ak sa hodnota zmenila
                     if (oldValue != socket.getPotential().getValue())

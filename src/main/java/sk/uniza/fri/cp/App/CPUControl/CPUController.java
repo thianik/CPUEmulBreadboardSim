@@ -127,14 +127,16 @@ public class CPUController implements Initializable {
     @FXML private ToggleGroup btnGroupRAMData;
 
 	//tlacidla
-	@FXML private Button btnParse;
+    @FXML
+    private HBox toolBox;
+    @FXML private Button btnParse;
 	@FXML private Button btnStart;
 	@FXML private Button btnStep;
 	@FXML private Button btnPause;
 	@FXML private Button btnReset;
 	@FXML private Button btnStop;
     private static final String BTN_TXT_START = "Spusti [F5]";
-    private static final String BTN_TXT_CONTINUE = "Pokračovať [F5]";
+    private static final String BTN_TXT_CONTINUE = "Pokračuj [F5]";
 
     @FXML
     private Button btnSimulator;
@@ -322,22 +324,28 @@ public class CPUController implements Initializable {
         btnSimulator.setDisable(true);
 
         //tlacidlo smerovania zbernice cez USB / BreadboardSim
-        tsConnectBusUsb.selectedProperty().addListener(new ChangeListener<Boolean>() {
-            @Override
-            public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {
-                if(newValue){   //ak sa chce pripojit na USB
-                    if(!Bus.getBus().connectUSB()){ //ak sa neporadilo pripojit na USB
-                        Notifications.create()
-                                .title("Chyba na USB")
-                                .text("Nepodarilo sa pripojiť")
-                                .showWarning();
-                        tsConnectBusUsb.selectedProperty().setValue(false);
+        if (System.getProperty("os.name").startsWith("Windows") && System.getProperty("sun.arch.data.model").equals("32")) {
+            //32bit windows -> mozna podpora komunikacie cez USB
+            tsConnectBusUsb.selectedProperty().addListener(new ChangeListener<Boolean>() {
+                @Override
+                public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {
+                    if (newValue) {   //ak sa chce pripojit na USB
+                        if (!Bus.getBus().connectUSB()) { //ak sa neporadilo pripojit na USB
+                            Notifications.create()
+                                    .title("Chyba na USB")
+                                    .text("Nepodarilo sa pripojiť")
+                                    .showWarning();
+                            tsConnectBusUsb.selectedProperty().setValue(false);
+                        }
+                    } else { //ak false - odpojenie
+                        Bus.getBus().disconnectUSB();
                     }
-                } else { //ak false - odpojenie
-                    Bus.getBus().disconnectUSB();
                 }
-            }
-        });
+            });
+        } else {
+            //nie je mozna komunikacie cez USB
+            toolBox.getChildren().remove(tsConnectBusUsb);
+        }
 
         //inicializacia pozicie oddelovacov v horizontalnom SplitPaneli
         defSplitPaneHorizDividerPositions = splitPaneHoriz.getDividerPositions();
@@ -680,6 +688,7 @@ public class CPUController implements Initializable {
      */
    	@FXML
 	private void handleMenuFileOpenAction(){
+        if (isExecuting()) handleButtonStopAction();
         if(!fileSaved && !continueIfUnsavedFile()) return;
 
         FileChooser chooser = new FileChooser();
@@ -1042,7 +1051,7 @@ public class CPUController implements Initializable {
     private void startExecution(){
         //ak cpu bezi
         if(this.cpu != null && this.cpu.isAlive()){
-            if (this.program.hasIOInstruction()) {
+            if (this.program.hasIOInstruction() && !Bus.getBus().isUsbConnected()) {
                 breadboardController.powerOn();
             }
 

@@ -2,10 +2,16 @@ package sk.uniza.fri.cp.BreadboardSim.Wire;
 
 
 import javafx.event.Event;
+import javafx.event.EventHandler;
+import javafx.geometry.Bounds;
 import javafx.scene.Group;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Line;
+import javafx.scene.shape.Rectangle;
+import javafx.scene.shape.Shape;
+import javafx.scene.shape.StrokeLineCap;
 import sk.uniza.fri.cp.BreadboardSim.Board.Board;
 import sk.uniza.fri.cp.BreadboardSim.Board.BoardEvent;
 import sk.uniza.fri.cp.BreadboardSim.Components.BusInterface;
@@ -13,6 +19,7 @@ import sk.uniza.fri.cp.BreadboardSim.HighlightGroup;
 import sk.uniza.fri.cp.BreadboardSim.Socket.Potential;
 import sk.uniza.fri.cp.BreadboardSim.Socket.Socket;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -37,6 +44,36 @@ public class Wire extends HighlightGroup {
 	private Group segmentsGroup;
 
 	private Joint createdJoint;
+
+    //EVENTY
+    //pri zacati tahania vytvori novy
+    private EventHandler<MouseEvent> onMouseDragDetected = new EventHandler<MouseEvent>() {
+        @Override
+        public void handle(MouseEvent event) {
+            if (event.isPrimaryButtonDown() && event.isControlDown() && event.getTarget() instanceof WireSegment) {
+                WireSegment segmentToSplit = ((WireSegment) event.getTarget());
+                createdJoint = splitSegment(segmentToSplit);
+                event.consume();
+            }
+        }
+    };
+
+    private EventHandler<MouseEvent> onMouseDragged = new EventHandler<MouseEvent>() {
+        @Override
+        public void handle(MouseEvent event) {
+            if (event.isPrimaryButtonDown()) {
+                if (createdJoint != null) {
+                    Event.fireEvent(createdJoint, new MouseEvent(MouseEvent.MOUSE_DRAGGED, event.getSceneX(), event.getSceneY(),
+                            event.getScreenX(), event.getScreenY(), MouseButton.PRIMARY, 1, true,
+                            true, true, true, true, true,
+                            true, true, true, true, null));
+                }
+                event.consume();
+            }
+        }
+    };
+
+    private EventHandler<MouseEvent> onMouseReleased = event -> createdJoint = null;
 
 	/**
 	 * 
@@ -69,25 +106,8 @@ public class Wire extends HighlightGroup {
 		this.jointsGroup.getChildren().addAll(this.ends[0], this.ends[1]);
 		this.getChildren().addAll(segmentsGroup, jointsGroup);
 
-		//pri zacati tahania vytvori novy
-		this.addEventHandler(MouseEvent.DRAG_DETECTED, event -> {
-			if(event.getTarget() instanceof WireSegment){
-				WireSegment segmentToSplit = ((WireSegment) event.getTarget());
-				createdJoint = splitSegment(segmentToSplit);
-			}
-		});
-
-		this.addEventHandler(MouseEvent.MOUSE_DRAGGED, event -> {
-			if(createdJoint != null){
-				Event.fireEvent(createdJoint, new MouseEvent(MouseEvent.MOUSE_DRAGGED, event.getSceneX(), event.getSceneY(),
-						event.getScreenX(), event.getScreenY(), MouseButton.PRIMARY, 1, true,
-						true, true, true, true, true,
-						true, true, true, true, null));
-			}
-		});
-
-		this.addEventHandler(MouseEvent.MOUSE_RELEASED, event -> createdJoint = null);
-	}
+        this.registerEvents();
+    }
 
     public Wire(Board board) {
         this.joints = new LinkedList<>();
@@ -116,24 +136,7 @@ public class Wire extends HighlightGroup {
         this.jointsGroup.getChildren().addAll(this.ends[0], this.ends[1]);
         this.getChildren().addAll(segmentsGroup, jointsGroup);
 
-        //pri zacati tahania vytvori novy joint
-        this.addEventHandler(MouseEvent.DRAG_DETECTED, event -> {
-            if (event.getTarget() instanceof WireSegment) {
-                WireSegment segmentToSplit = ((WireSegment) event.getTarget());
-                createdJoint = splitSegment(segmentToSplit);
-            }
-        });
-
-        this.addEventHandler(MouseEvent.MOUSE_DRAGGED, event -> {
-            if (createdJoint != null) {
-                Event.fireEvent(createdJoint, new MouseEvent(MouseEvent.MOUSE_DRAGGED, event.getSceneX(), event.getSceneY(),
-                        event.getScreenX(), event.getScreenY(), MouseButton.PRIMARY, 1, true,
-                        true, true, true, true, true,
-                        true, true, true, true, null));
-            }
-        });
-
-        this.addEventHandler(MouseEvent.MOUSE_RELEASED, event -> createdJoint = null);
+        this.registerEvents();
     }
 
 	/**
@@ -245,6 +248,12 @@ public class Wire extends HighlightGroup {
         return this.splitSegment(((LinkedList<WireSegment>) this.segments).getLast());
     }
 
+    private void registerEvents() {
+        this.addEventHandler(MouseEvent.DRAG_DETECTED, onMouseDragDetected);
+        this.addEventHandler(MouseEvent.MOUSE_DRAGGED, onMouseDragged);
+        this.addEventHandler(MouseEvent.MOUSE_RELEASED, onMouseReleased);
+    }
+
     //posuvanie jointov spojenia
     private double firstDeltaX, firstDeltaY;
     private WireEnd lastMovingEnd;
@@ -262,7 +271,7 @@ public class Wire extends HighlightGroup {
         //ak je posunutie vyvolane druhym koncom, ako tym co sa posuval naposledy
         if (this.lastMovingEnd != wireEnd) {
             //ak sa oba konce posunuli o rovnaky deltu
-            if (firstDeltaX == deltaX && firstDeltaY == deltaY) {
+            if (Math.abs(firstDeltaX - deltaX) < 0.5 && Math.abs(firstDeltaY - deltaY) < 0.5) {
                 //posun aj vsetky jointy a vynuluj posun
                 this.joints.forEach(joint -> joint.moveBy(deltaX, deltaY));
                 this.firstDeltaX = 0;
@@ -310,6 +319,10 @@ public class Wire extends HighlightGroup {
 		}
 	}
 
+    public boolean areBotheEndsConnected() {
+        return this.ends[0].isConnected() && this.ends[1].isConnected();
+    }
+
 	@Override
 	public void delete() {
 		super.delete();
@@ -318,4 +331,51 @@ public class Wire extends HighlightGroup {
         this.ends[1].disconnectSocket();
 		this.ends[0].getBoard().removeItem(this);
 	}
+
+    @Override
+    public void select() {
+        super.select();
+
+        if (!this.isSelectable()) return;
+
+        this.highlightSegments();
+    }
+
+    @Override
+    public void deselect() {
+        super.deselect();
+
+        this.unhighlighSegments();
+    }
+
+    private ArrayList<Shape> selectionShapes = new ArrayList<>();
+
+    private void highlightSegments() {
+
+        double offset = 1;
+        this.selectionShapes.clear();
+
+        this.segments.forEach(segment -> {
+
+            Line newLine = new Line(segment.getStartX(), segment.getStartY(), segment.getEndX(), segment.getEndY());
+            for (double value : STROKE_DASH_ARRAY)
+                newLine.getStrokeDashArray().add(value);
+
+            //this.selectionShape.getStrokeDashArray().add(Collections.(STOKE_DASH_ARRAY));
+            newLine.setStrokeWidth(1.5);
+            newLine.setStroke(this.getColor().invert());
+            newLine.setStrokeLineCap(StrokeLineCap.ROUND);
+            newLine.setOpacity(0.8);
+            newLine.setMouseTransparent(true);
+
+            this.selectionShapes.add(newLine);
+            this.getChildren().add(newLine);
+        });
+
+    }
+
+    private void unhighlighSegments() {
+        this.getChildren().removeAll(this.selectionShapes);
+        this.selectionShapes.clear();
+    }
 }

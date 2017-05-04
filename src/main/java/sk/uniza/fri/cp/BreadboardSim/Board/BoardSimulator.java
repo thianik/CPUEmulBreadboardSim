@@ -39,16 +39,17 @@ public class BoardSimulator {
 			return new Task() {
 				@Override
 				protected Object call() throws Exception {
-                    //simulationTime = 0L;
+
+
+                    int processedEvents = 0;
+
+                    //pripojenie napajania
+                    powerSockets.forEach(PowerSocket::powerUp);
+
                     running.setValue(true);
                     steadyState.set(false);
                     Bus.getBus().simulationIsRunning(true);
                     Bus.getBus().dataIsChanging();
-
-                    int processedEvents = 0;
-
-					//pripojenie napajania
-					powerSockets.forEach(PowerSocket::powerUp);
 
                     HashSet<Device> devicesToUpdate = new HashSet<>();
 
@@ -66,21 +67,26 @@ public class BoardSimulator {
                                 Bus.getBus().dataIsChanging();
                                 steadyState.set(false);
                             }
+//                            if(!Bus.getBus().isIA_())
+//                            System.out.println("------------------------------------------------------------------------ PROCESS " + event.getSocket().getComponent());
 
-							event.process(devicesToUpdate);
+                            event.process(devicesToUpdate);
                             processedEvents++;
 
-							devicesToUpdate.forEach((Device::simulate));
+//                            if(!Bus.getBus().isIA_())
+//                            System.out.println("----------------------------------- SIMULATE ");
+                            devicesToUpdate.forEach((Device::simulate));
 
 							devicesToUpdate.clear();
 						} catch (InterruptedException e){
 							if(isCancelled()) break;
 						} catch (NullPointerException e){
 							e.printStackTrace(System.err);
-						}
+                            devicesToUpdate.clear();
+                        }
 					}
 
-                    running.setValue(false);
+
                     Bus.getBus().dataIsChanging();
 
 					powerSockets.forEach(PowerSocket::powerDown);
@@ -90,7 +96,7 @@ public class BoardSimulator {
                         devicesToUpdate.forEach((Device::simulate));
                         devicesToUpdate.clear();
                     }
-
+                    running.setValue(false);
                     steadyState.set(true);
                     Bus.getBus().simulationIsRunning(false);
 

@@ -1,15 +1,15 @@
 package sk.uniza.fri.cp.BreadboardSim.Socket;
 
+import javafx.application.Platform;
 import javafx.event.EventHandler;
+import javafx.geometry.Point2D;
 import javafx.scene.Group;
+import javafx.scene.Parent;
 import javafx.scene.effect.BoxBlur;
 import javafx.scene.input.MouseDragEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.paint.Color;
-import javafx.scene.shape.Arc;
-import javafx.scene.shape.ArcType;
-import javafx.scene.shape.Circle;
-import javafx.scene.shape.Rectangle;
+import javafx.scene.shape.*;
 import sk.uniza.fri.cp.BreadboardSim.Board.BoardChangeEvent;
 import sk.uniza.fri.cp.BreadboardSim.Board.BoardEvent;
 import sk.uniza.fri.cp.BreadboardSim.Board.GridSystem;
@@ -19,6 +19,8 @@ import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.InputOutputPin;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.InputPin;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.OutputPin;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.Pin;
+import sk.uniza.fri.cp.BreadboardSim.Item;
+import sk.uniza.fri.cp.BreadboardSim.SchoolBreadboard;
 import sk.uniza.fri.cp.BreadboardSim.Wire.Wire;
 import sk.uniza.fri.cp.BreadboardSim.Wire.WireEnd;
 
@@ -56,12 +58,12 @@ public class Socket extends Group {
 	private Circle colorizer;
 
 	private Arc topBorder;
-	private static final Color TOP_BORDER_DEF_COLOR = Color.DARKGRAY;
-	private static final Color TOP_BORDER_HIGHLIGHT_COLOR = Color.DARKBLUE;
+    private static final Color TOP_BORDER_DEF_COLOR = Color.rgb(190, 190, 190);
+    private static final Color TOP_BORDER_HIGHLIGHT_COLOR = Color.DARKBLUE;
 
 	private Arc bottomBorder;
-	private static final Color BOTTOM_BORDER_DEF_COLOR = Color.rgb(160,0,216);
-	private static final Color BOTTOM_BORDER_HIGHLIGHT_COLOR = Color.LIGHTBLUE;
+    private static final Color BOTTOM_BORDER_DEF_COLOR = Color.rgb(230, 230, 230);
+    private static final Color BOTTOM_BORDER_HIGHLIGHT_COLOR = Color.LIGHTBLUE;
 
 	//Eventy
     private static Wire creatingWire;
@@ -105,10 +107,10 @@ public class Socket extends Group {
 
             Socket socket = (Socket)event.getSource();
 
-            if(creatingWire != null)
-                creatingWire.catchFreeEnd().moveTo(
-                		event.getSceneX() - socket.component.getBoard().getOriginSceneOffsetX(),
-						event.getSceneY() - socket.component.getBoard().getOriginSceneOffsetY());
+            if (creatingWire != null) {
+                Point2D boardXY = socket.component.getBoard().sceneToBoard(event.getSceneX(), event.getSceneY());
+                creatingWire.catchFreeEnd().moveTo(boardXY.getX(), boardXY.getY());
+            }
 
             event.consume();
         }
@@ -121,6 +123,7 @@ public class Socket extends Group {
             if(creatingWire != null){
                 creatingWire.setMouseTransparent(false);
                 creatingWire.setOpacity(1);
+                if (!creatingWire.areBotheEndsConnected()) creatingWire.delete();
                 creatingWire = null;
             }
 
@@ -230,20 +233,20 @@ public class Socket extends Group {
 		boundingBox.setOpacity(0);
 		boundingBox.setLayoutX(-grid.getSizeX()/2.0);
         boundingBox.setLayoutY(-grid.getSizeY()/2.0);
-		coreRadius = grid.getSizeX() * 3.0/15.0;
-		borderRadius = grid.getSizeX() * 5.0/15.0;
+        coreRadius = grid.getSizeX() * 3.0 / 16.1;
+        borderRadius = grid.getSizeX() * 5.3 / 15.0;
 
 		//grafika
 		core = new Circle(borderRadius, borderRadius, coreRadius);
 		core.setFill(Color.BLACK);
 
 		topBorder = new Arc(borderRadius, borderRadius, borderRadius, borderRadius, 0.0, 180.0);
-		topBorder.setFill(Color.DARKGRAY);
-		topBorder.setType(ArcType.ROUND);
+        topBorder.setFill(TOP_BORDER_DEF_COLOR);
+        topBorder.setType(ArcType.ROUND);
 
 		bottomBorder = new Arc(borderRadius, borderRadius, borderRadius, borderRadius, 180.0, 180.0);
-		bottomBorder.setFill(Color.LIGHTGRAY);
-		bottomBorder.setType(ArcType.ROUND);
+        bottomBorder.setFill(BOTTOM_BORDER_DEF_COLOR);
+        bottomBorder.setType(ArcType.ROUND);
 
         this.colorizer = new Circle(borderRadius, borderRadius, borderRadius+borderRadius*0.3);
         this.colorizer.setFill(Color.ORANGE);
@@ -287,6 +290,10 @@ public class Socket extends Group {
 		return borderRadius;
 	}
 
+    public Point2D getBoardLayoutX() {
+        return component.getBoard().sceneToBoard(this.getLocalToSceneTransform().getTx(), this.getLocalToSceneTransform().getTy());
+    }
+
 	public double getBoardX(){
         return this.getLocalToSceneTransform().getTx() - component.getBoard().getOriginSceneOffsetX();
     }
@@ -323,28 +330,36 @@ public class Socket extends Group {
 
 	private void updateHighlight(){
         if(this.activeHighlights[WARNING]){
-            this.colorizer.setFill(Color.RED);
-            if(this.connectedWireEnd != null)
+            changeColor(this.colorizer, Color.RED, 0.8);
+            if (this.connectedWireEnd != null) {
                 this.connectedWireEnd.setColor(Color.RED);
-            colorizer.setOpacity(0.8);
+            }
             return;
         } else if(this.activeHighlights[COMMON_POTENTIAL]){
-            this.colorizer.setFill(Color.YELLOW);
-            this.colorizer.setOpacity(0.5);
+            changeColor(this.colorizer, Color.YELLOW, 0.5);
         } else if(this.activeHighlights[OK]){
-            this.colorizer.setFill(Color.GREEN);
-            this.colorizer.setOpacity(0.5);
+            changeColor(this.colorizer, Color.GREEN, 0.5);
         } else if(this.activeHighlights[INFO]){
-            this.colorizer.setFill(Color.ORANGE);
-            this.colorizer.setOpacity(0.5);
+            changeColor(this.colorizer, Color.ORANGE, 0.5);
         } else {
             //ak nie je nic na zvyrazenie
-            this.colorizer.setOpacity(0);
-            this.colorizer.setFill(Color.WHITE);
+            changeColor(this.colorizer, Color.WHITE, 0);
         }
 
         if(this.connectedWireEnd != null)
             this.connectedWireEnd.setDefaultColor();
+    }
+
+    private void changeColor(Shape shape, Color color, double opacity) {
+        if (Platform.isFxApplicationThread()) {
+            shape.setFill(color);
+            shape.setOpacity(opacity);
+        } else {
+            Platform.runLater(() -> {
+                shape.setFill(color);
+                shape.setOpacity(opacity);
+            });
+        }
     }
 
 	/**
@@ -472,6 +487,21 @@ public class Socket extends Group {
 	    return component;
     }
 
+    /**
+     * Pohyblivy item . ak je komponent na ktorom je soket scholbreadboar vrat ten inak komponent samotny
+     *
+     * @return
+     */
+    public Item getItem() {
+
+        Parent parent = this.component;
+        while (parent.getParent() instanceof Item) {
+            parent = parent.getParent();
+        }
+        return (Item) parent;
+
+    }
+
 	public void setType(SocketType socketType){
 		this.potential.setType(socketType);
 	}
@@ -483,9 +513,9 @@ public class Socket extends Group {
 	/**
 	 * Nastavenie hodnoty potencialu priradeneho tomuto soketu
 	 * @param potentialValue
-	 */
-	public boolean setPotential(Potential.Value potentialValue){
-		return this.potential.setValue(potentialValue);
+     */
+    public boolean setPotential(Potential.Value potentialValue){
+        return this.potential.setValue(potentialValue);
 	}
 
 

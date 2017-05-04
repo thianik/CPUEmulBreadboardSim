@@ -77,9 +77,9 @@
                 </Menu>
               </menus>
             </MenuBar>
-            <HBox alignment="CENTER">
+             <HBox fx:id="toolBox" alignment="CENTER">
                <children>
-                  <ButtonBar buttonMinWidth="100.0" maxWidth="1.7976931348623157E308" prefHeight="40.0" prefWidth="200.0">
+                   <ButtonBar buttonMinWidth="110.0" maxWidth="1.7976931348623157E308" prefHeight="40.0">
                     <buttons>
                         <Button fx:id="btnParse" layoutX="280.0" layoutY="18.0" mnemonicParsing="false" onAction="#handleButtonParseAction" text="Zaveď [F4]" />
                         <Button fx:id="btnStart" mnemonicParsing="false" onAction="#handleButtonStartAction" text="Spusti [F5]" />
@@ -173,10 +173,25 @@
                                                    <toggleGroup>
                                                       <ToggleGroup fx:id="btnGroupRegisters" />
                                                    </toggleGroup>
+                                                      <font>
+                                                          <Font size="11.0"/>
+                                                      </font>
                                                   </ToggleButton>
-                                                  <ToggleButton text="Hex" toggleGroup="$btnGroupRegisters" />
-                                                  <ToggleButton text="Bin" toggleGroup="$btnGroupRegisters" />
-                                                <ToggleButton text="ASCII" toggleGroup="$btnGroupRegisters" />
+                                                 <ToggleButton text="Hex" toggleGroup="$btnGroupRegisters">
+                                                     <font>
+                                                         <Font size="11.0"/>
+                                                     </font>
+                                                 </ToggleButton>
+                                                 <ToggleButton text="Bin" toggleGroup="$btnGroupRegisters">
+                                                     <font>
+                                                         <Font size="11.0"/>
+                                                     </font>
+                                                 </ToggleButton>
+                                                 <ToggleButton text="ASCII" toggleGroup="$btnGroupRegisters">
+                                                     <font>
+                                                         <Font size="11.0"/>
+                                                     </font>
+                                                 </ToggleButton>
                                              </children>
                                           </HBox>
                                           <Separator layoutX="10.0" layoutY="110.0" />
@@ -330,7 +345,8 @@
                                                    <children>
                                                       <HBox alignment="TOP_CENTER" spacing="5.0" VBox.vgrow="NEVER">
                                                          <children>
-                                                            <HBox alignment="CENTER" maxWidth="1.7976931348623157E308" prefWidth="90.0" spacing="2.0">
+                                                             <HBox alignment="CENTER" maxWidth="1.7976931348623157E308"
+                                                                   prefWidth="80.0" spacing="2.0">
                                                                <children>
                                                                   <ToggleButton selected="true" text="Dec">
                                                                      <font>
@@ -351,9 +367,9 @@
                                                                </HBox.margin>
                                                             </HBox>
                                                             <Separator orientation="VERTICAL" prefWidth="5.0" />
-                                                            <HBox alignment="CENTER" prefWidth="120.0">
+                                                             <HBox alignment="CENTER" prefWidth="130.0">
                                                                <children>
-                                                                  <ToggleButton minWidth="28.0" selected="true" text="Dec">
+                                                                   <ToggleButton selected="true" text="Dec">
                                                                      <font>
                                                                         <Font size="9.0" />
                                                                      </font>
@@ -361,18 +377,20 @@
                                                                         <ToggleGroup fx:id="btnGroupStackData" />
                                                                      </toggleGroup>
                                                                   </ToggleButton>
-                                                                  <ToggleButton minWidth="28.0" text="Hex" toggleGroup="$btnGroupStackData">
-                                                                     <font>
-                                                                        <Font size="9.0" />
-                                                                     </font>
-                                                                  </ToggleButton>
-                                                                   <ToggleButton minWidth="28.0" text="Bin"
+                                                                   <ToggleButton text="Hex"
                                                                                  toggleGroup="$btnGroupStackData">
                                                                      <font>
                                                                         <Font size="9.0" />
                                                                      </font>
                                                                   </ToggleButton>
-                                                                  <ToggleButton minWidth="33.0" text="ASCII" toggleGroup="$btnGroupStackData">
+                                                                   <ToggleButton text="Bin"
+                                                                                 toggleGroup="$btnGroupStackData">
+                                                                     <font>
+                                                                        <Font size="9.0" />
+                                                                     </font>
+                                                                  </ToggleButton>
+                                                                   <ToggleButton text="ASCII"
+                                                                                 toggleGroup="$btnGroupStackData">
                                                                      <font>
                                                                         <Font size="9.0" />
                                                                      </font>

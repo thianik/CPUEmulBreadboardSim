@@ -3,6 +3,7 @@ package sk.uniza.fri.cp.BreadboardSim.Board;
 
 import javafx.scene.Group;
 import javafx.scene.layout.Pane;
+import javafx.scene.layout.StackPane;
 import sk.uniza.fri.cp.BreadboardSim.Components.Component;
 import sk.uniza.fri.cp.BreadboardSim.SchoolBreadboard;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Device;
@@ -25,9 +26,11 @@ public class BoardLayersManager {
 	private Pane componentsLayer;
 	private Pane devicesLayer;
 	private Pane wiresLayer;
-	private ArrayList<Component> components;
+    private ArrayList<SchoolBreadboard> schoolBreadboards;
+    private ArrayList<Component> components;
 	private ArrayList<Device> devices;
 	private ArrayList<Wire> wires;
+
 
     private int lastCompnentId = 0;
 
@@ -37,9 +40,15 @@ public class BoardLayersManager {
 		this.componentsLayer = new Pane();
 		this.devicesLayer = new Pane();
 		this.wiresLayer = new Pane();
-		this.components = new ArrayList<>();
+        this.schoolBreadboards = new ArrayList<>();
+        this.components = new ArrayList<>();
 		this.devices = new ArrayList<>();
 		this.wires = new ArrayList<>();
+
+        this.componentsLayer.setMinWidth(this.backgroundLayer.getBoundsInParent().getWidth());
+        this.componentsLayer.setMinHeight(this.backgroundLayer.getBoundsInParent().getHeight());
+        this.devicesLayer.setMinWidth(this.backgroundLayer.getBoundsInParent().getWidth());
+        this.devicesLayer.setMinHeight(this.backgroundLayer.getBoundsInParent().getHeight());
 
 		this.layers = new Group(backgroundLayer, componentsLayer, devicesLayer, wiresLayer);
 
@@ -82,6 +91,7 @@ public class BoardLayersManager {
         if (object instanceof SchoolBreadboard) {
             SchoolBreadboard schoolBreadboard = (SchoolBreadboard) object;
             this.componentsLayer.getChildren().add(schoolBreadboard);
+            this.schoolBreadboards.add(schoolBreadboard);
             //ak sa jedna o schoolbreadboard, pridaj vsetky komponenty do zoznamu ktore obsahuje zvlast
             for (Component schBComponent : schoolBreadboard.getComponents()) {
                 if (schBComponent.getId() == null)
@@ -125,6 +135,14 @@ public class BoardLayersManager {
 			return true;
 		}
 
+        if (object instanceof SchoolBreadboard) {
+            SchoolBreadboard schoolBreadboard = ((SchoolBreadboard) object);
+            this.componentsLayer.getChildren().remove(schoolBreadboard);
+            this.schoolBreadboards.remove(schoolBreadboard);
+            this.components.removeAll(schoolBreadboard.getComponents());
+            return true;
+        }
+
 		return false;
 	}
 
@@ -138,6 +156,10 @@ public class BoardLayersManager {
 
 		return backgroundLayer;
 	}
+
+    public List<SchoolBreadboard> getSchoolBreadboards() {
+        return new ArrayList<>(this.schoolBreadboards);
+    }
 
 	public List<Component> getComponents(){
         return new ArrayList<>(this.components);

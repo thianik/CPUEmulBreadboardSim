@@ -16,6 +16,7 @@ public class GridSystem {
 
 	private int sizeX;
 	private int sizeY;
+    private double scale = 1;
 
 	public GridSystem(int sizeX, int sizeY){
 		this.sizeX = sizeX;
@@ -27,18 +28,23 @@ public class GridSystem {
 		this.sizeY = size;
 	}
 
-	public int getSizeX(){ return sizeX;}
+    public void changeScale(double scale) {
+        this.scale = scale;
+    }
 
-	public int getSizeY(){ return sizeY;}
+    public int getSizeX() {
+        return (int) (sizeX * this.scale);
+    }
+
+    public int getSizeY() {
+        return (int) (sizeY * this.scale);
+    }
 
 	public int getSizeMin(){ return Math.min(sizeX, sizeY);}
 
 	public int getSizeMax(){ return Math.max(sizeX, sizeY);}
 
 	public Point2D screenToGrid(double screenX, double screenY){
-
-
-
 		return new Point2D(0,0);
 	}
 
@@ -49,8 +55,8 @@ public class GridSystem {
 		gridX = (int) (Math.round(x) / sizeX) * sizeX;
 		gridY = (int) (Math.round(y) / sizeY) * sizeY;
 
-		return new Point2D(gridX,gridY);
-	}
+        return new Point2D(gridX * this.scale, gridY * this.scale);
+    }
 
 	public Point2D getPosition(Point2D point){
 		return getPosition(point.getX(), point.getY());
@@ -62,8 +68,9 @@ public class GridSystem {
 	}
 
 	public Point2D gridToLocal(int gridX, int gridY){
-		return new Point2D(gridX * sizeX, gridY * sizeY);
-	}
+        return new Point2D(gridX * sizeX * this.scale,
+                gridY * sizeY * this.scale);
+    }
 
 	public Pane generateBackground(double width, double height, Paint bgColor, Paint linesColor){
 		Pane bck = new Pane(new Rectangle(width, height, bgColor));

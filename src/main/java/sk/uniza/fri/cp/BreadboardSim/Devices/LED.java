@@ -62,7 +62,7 @@ public class LED extends Device {
         this.glowingShape = glowingShape;
         this.onColor = onColor;
         this.offColor = (glowingShape.getFill() instanceof Color) ? (Color) glowingShape.getFill() : null;
-        this.emitter = new LightEmitter(board, this.glowingShape, this.onColor, this.offColor, 50);
+        this.emitter = new LightEmitter(board, this.glowingShape, this.onColor, this.offColor, 10);
         this.background = new Group();
 
         //piny

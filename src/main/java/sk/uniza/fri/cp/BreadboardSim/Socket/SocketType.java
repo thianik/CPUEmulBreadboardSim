@@ -18,8 +18,8 @@ public enum SocketType {
 	NC; //nepripojene, nema na hodnotu potencialu vplyv
 
 	/**
-	 * 
-	 * @param st1
+     *
+     * @param st1
 	 * @param st2
 	 */
 	public static boolean isConflict(SocketType st1, SocketType st2){
@@ -27,8 +27,8 @@ public enum SocketType {
 	}
 
 	/**
-	 * 
-	 * @param other
+     *
+     * @param other
 	 */
 	public boolean isConflict(SocketType other){
 		return false;

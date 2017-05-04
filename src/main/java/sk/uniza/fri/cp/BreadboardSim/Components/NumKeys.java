@@ -1,5 +1,6 @@
 package sk.uniza.fri.cp.BreadboardSim.Components;
 
+import javafx.application.Platform;
 import javafx.event.Event;
 import javafx.event.EventHandler;
 import javafx.scene.Group;
@@ -16,10 +17,18 @@ import javafx.scene.text.Text;
 import sk.uniza.fri.cp.BreadboardSim.Board.Board;
 import sk.uniza.fri.cp.BreadboardSim.Board.BoardChangeEvent;
 import sk.uniza.fri.cp.BreadboardSim.Board.GridSystem;
+import sk.uniza.fri.cp.BreadboardSim.Devices.Device;
+import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.InputPin;
+import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.Pin;
+import sk.uniza.fri.cp.BreadboardSim.SchoolBreadboard;
 import sk.uniza.fri.cp.BreadboardSim.Socket.Potential;
 import sk.uniza.fri.cp.BreadboardSim.Socket.Socket;
 import sk.uniza.fri.cp.BreadboardSim.Socket.SocketType;
 import sk.uniza.fri.cp.BreadboardSim.Socket.SocketsFactory;
+import sk.uniza.fri.cp.Bus.Bus;
+
+import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * Komponent s klavesnicou
@@ -34,6 +43,7 @@ public class NumKeys extends Component {
 
 	private Socket[] columnSockets;
 	private Socket[] rowSockets;
+    private Button[][] buttons;
 
     //kontextove menu
     private ContextMenu contextMenu;
@@ -49,13 +59,14 @@ public class NumKeys extends Component {
 
 		columnSockets = new Socket[4];
 		rowSockets = new Socket[4];
+        buttons = new Button[4][4];
 
 		//grafika
 		GridSystem grid = getBoard().getGrid();
 
 		this.gridWidth = grid.getSizeX() * 22;
 		this.gridHeight = grid.getSizeY() * 17;
-		background = new Rectangle(this.gridWidth, this.gridHeight, Color.rgb(51,100,68));
+        background = new Rectangle(this.gridWidth, this.gridHeight, SchoolBreadboard.BACKGROUND_COLOR);
 
 		//sokety
 		Group columnGroup = generateColumnSockets();
@@ -91,11 +102,13 @@ public class NumKeys extends Component {
 
 		for (int y = 0; y < 4; y++) {
 			for (int x = 0; x < 4; x++) {
-				Button button = new Button(rowSockets[x], columnSockets[3-y]);
-				button.setLayoutX(button.getWidth() * x);
+                Button button = new Button(board, rowSockets[3 - y], columnSockets[x], y, x);
+                button.setUserData(x + ", " + y);
+                button.setLayoutX(button.getWidth() * x);
 				button.setLayoutY(button.getHeight() * (3-y));
 
-				buttonsGroup.getChildren().add(button);
+                buttons[x][y] = button;
+                buttonsGroup.getChildren().add(button);
 			}
 		}
         buttonsGroup.setLayoutX(grid.getSizeX() * 5);
@@ -176,8 +189,9 @@ public class NumKeys extends Component {
 
         for (int i = 0; i < 4; i++) {
             Socket socket = new Socket(this);
-            //socket.setType(SocketType.IN);
+            //socket.setType(SocketType.);
             socket.setLayoutX(grid.getSizeX() * (3-i) );
+            socket.setUserData(i);
 
             Text numberText = new Text(String.valueOf(i+1));
             numberText.setFont(Font.font(grid.getSizeX()));
@@ -201,33 +215,38 @@ public class NumKeys extends Component {
         return rowGroup;
     }
 
-	private class Button extends Region {
-		private final Color DEFAULT_BUTTON_COLOR = Color.BLACK;
+    private class Button extends Device {
+        private final Color DEFAULT_BUTTON_COLOR = Color.BLACK;
 		private final Color DEFAULT_HOVER_BUTTON_COLOR = Color.DARKGRAY;
 		private final Color PUSHED_BUTTON_COLOR = Color.RED;
 		private final Color PUSHED_HOVER_BUTTON_COLOR = Color.DARKRED;
 
-		private Socket row;
-		private Socket column;
+        private final Socket row;
+        private final Socket column;
+
+        private final int rowPos;
+        private final int columnPos;
+
+        private final InputPin rowInputPin;
 
 		//eventy
 		private boolean mouseHover;
-		private boolean pressed;
+        private volatile boolean pressed;
 
 		//grafika
-		private Circle button;
-		private Group buttonBase;
+        private final Circle button;
+        private final Group buttonBase;
 
-		private double width;
-		private double height;
+        private final double width;
+        private final double height;
 
 		private EventHandler<MouseEvent> onMouseEnter = new EventHandler<MouseEvent>() {
             @Override
             public void handle(MouseEvent event) {
             	if(pressed)
-					button.setFill(PUSHED_HOVER_BUTTON_COLOR);
-            	else
-                	button.setFill(DEFAULT_HOVER_BUTTON_COLOR);
+                    setColor(PUSHED_HOVER_BUTTON_COLOR);
+                else
+                    setColor(DEFAULT_HOVER_BUTTON_COLOR);
 
                 mouseHover = true;
 
@@ -239,11 +258,11 @@ public class NumKeys extends Component {
             @Override
             public void handle(MouseEvent event) {
             	if(event.isPrimaryButtonDown())
-                	button.setFill(PUSHED_BUTTON_COLOR);
-            	else if(pressed)
-            		button.setFill(PUSHED_HOVER_BUTTON_COLOR);
-            	else
-            		button.setFill(DEFAULT_BUTTON_COLOR);
+                    setColor(PUSHED_BUTTON_COLOR);
+                else if(pressed)
+                    setColor(PUSHED_HOVER_BUTTON_COLOR);
+                else
+                    setColor(DEFAULT_BUTTON_COLOR);
 
             	mouseHover = false;
 
@@ -255,15 +274,15 @@ public class NumKeys extends Component {
             @Override
             public void handle(MouseEvent event) {
             	if(event.isPrimaryButtonDown() && !contextMenu.isShowing()) {
-					button.setFill(PUSHED_BUTTON_COLOR);
+                    setColor(PUSHED_BUTTON_COLOR);
 
 					pressed = !twoClick || !pressed;
 
 					if (pressed)
-						fireEvent(true);
+                        simulate();//fireEvent(true);
 
-					event.consume();
-				}
+                    event.consume();
+                }
             }
         };
 
@@ -274,34 +293,39 @@ public class NumKeys extends Component {
 				if(!twoClick) pressed = false;
 
 				if(!pressed) {
-					fireEvent(false);
+                    simulate();//fireEvent(false);
 
 					if(mouseHover)
-						button.setFill(DEFAULT_HOVER_BUTTON_COLOR);
-					else
-						button.setFill(DEFAULT_BUTTON_COLOR);
-				} else {
+                        setColor(DEFAULT_HOVER_BUTTON_COLOR);
+                    else
+                        setColor(DEFAULT_BUTTON_COLOR);
+                } else {
 					if(mouseHover)
-						button.setFill(PUSHED_HOVER_BUTTON_COLOR);
-					else
-						button.setFill(PUSHED_BUTTON_COLOR);
-				}
+                        setColor(PUSHED_HOVER_BUTTON_COLOR);
+                    else
+                        setColor(PUSHED_BUTTON_COLOR);
+                }
 
 				event.consume();
 			}
 		};
 
-		Button(Socket row, Socket column){
-			this.row = row;
+        Button(Board board, Socket row, Socket column, int rowPos, int columnPos) {
+            super(board);
+            this.row = row;
 			this.column = column;
+            this.rowInputPin = new InputPin(this, "ROW PIN " + row.getUserData());
+            this.rowPos = rowPos;
+            this.columnPos = columnPos;
+
+            Socket innerSocket = new Socket(row.getComponent());
+            Potential innerPotential = new Potential(innerSocket, this.row);
+            innerSocket.connect(this.rowInputPin);
 
 			GridSystem grid = getBoard().getGrid();
 
 			width = grid.getSizeX()*3;
 			height = grid.getSizeY()*3;
-
-			this.setWidth(width);
-			this.setHeight(height);
 
 			//button core
 			button = new Circle(grid.getSizeX(), Color.BLACK);
@@ -346,15 +370,74 @@ public class NumKeys extends Component {
 			button.addEventFilter(MouseEvent.MOUSE_DRAGGED, Event::consume);
 
 			this.getChildren().addAll(buttonBase, button);
-		}
 
-		//simulacia stlacenia tlacidla
-		private void fireEvent(boolean pushed){
-			//ak je riadok napojeny na zem
-			if(this.row.getPotential().getValue() == Potential.Value.LOW){
-				getBoard().addEvent(new BoardChangeEvent(this.column, pushed? Potential.Value.LOW : Potential.Value.HIGH));
-			}
-		}
+            this.makeImmovable();
+        }
 
-	}
+
+        public double getWidth() {
+            return width;
+        }
+
+        public double getHeight() {
+            return height;
+        }
+
+        private void setColor(Color newColor) {
+            if (Platform.isFxApplicationThread()) button.setFill(newColor);
+            else Platform.runLater(() -> button.setFill(newColor));
+        }
+
+//		//simulacia stlacenia tlacidla
+//		private void fireEvent(boolean pushed){
+//			//ak je riadok napojeny na zem
+//			if(this.row.getPotential().getValue() == Potential.Value.LOW){
+//				getBoard().addEvent(new BoardChangeEvent(this.column, pushed? Potential.Value.LOW : Potential.Value.HIGH)); //TODO pushed moze byt nahradene pressed?
+//			}
+//		}
+
+        /**
+         * Je stlacene tlacidlo a riadok zapojeny?
+         *
+         * @return
+         */
+        private boolean isActive() {
+            return this.pressed && this.isLow(this.rowInputPin);
+        }
+
+        /**
+         * Je niekto v stlpci aktivny?
+         *
+         * @return
+         */
+        private boolean shouldBeColumnLow() {
+            for (int y = 0; y < 4; y++) {
+                if (buttons[columnPos][y].isActive()) return true;
+            }
+
+            return false;
+        }
+
+
+        @Override
+        public void simulate() {
+            if (shouldBeColumnLow()) {
+//                System.out.println("HW KEY " + columnPos + " LOW");
+                getBoard().addEvent(new BoardChangeEvent(this.column, Potential.Value.LOW));
+            } else {
+//                System.out.println("HW KEY " + columnPos + " HIGH");
+                getBoard().addEvent(new BoardChangeEvent(this.column, Potential.Value.HIGH));
+            }
+        }
+
+        @Override
+        public void reset() {
+
+        }
+
+        @Override
+        public List<Pin> getPins() {
+            return null;
+        }
+    }
 }

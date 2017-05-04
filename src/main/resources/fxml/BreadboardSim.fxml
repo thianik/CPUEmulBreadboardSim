@@ -48,7 +48,7 @@
        </HBox>
       <SplitPane dividerPositions="0.750501002004008" prefHeight="160.0" prefWidth="200.0" VBox.vgrow="ALWAYS">
         <items>
-            <AnchorPane fx:id="boardPane" minHeight="0.0" minWidth="0.0"/>
+            <AnchorPane fx:id="boardPane" minHeight="0.0" minWidth="0.0" prefWidth="256.0"/>
           <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="160.0" prefWidth="100.0" SplitPane.resizableWithParent="false">
                <children>
                   <VBox fx:id="toolsBox" alignment="TOP_CENTER" prefHeight="200.0" prefWidth="300.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">

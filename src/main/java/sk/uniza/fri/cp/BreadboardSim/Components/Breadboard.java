@@ -24,7 +24,7 @@ public class Breadboard extends Component {
 
 	//grafika
 	private Rectangle background;
-	private static final Color BACKGROUND_COLOR = Color.WHITESMOKE;
+    private static final Color BACKGROUND_COLOR = Color.rgb(217, 217, 217);
 
     public Breadboard() {
     }
@@ -38,6 +38,8 @@ public class Breadboard extends Component {
 		this.gridHeight = grid.getSizeY() * 23;
 
 		background = new Rectangle(this.gridWidth, this.gridHeight, BACKGROUND_COLOR);
+        Rectangle middleSpace = new Rectangle(this.gridWidth, grid.getSizeY(), Color.rgb(204, 201, 201));
+        middleSpace.setLayoutY(grid.getSizeY() * 11);
 
         Group topPowerLines = generatePowerLines();
         topPowerLines.setLayoutX(grid.getSizeX() * 4);
@@ -72,8 +74,8 @@ public class Breadboard extends Component {
 		numberLabelsBottom.setLayoutX(grid.getSizeX() * 2);
 		numberLabelsBottom.setLayoutY(grid.getSizeY() * 17.5);
 
-		this.getChildren().addAll(background, topPowerLines, topSockets, bottomSockets, bottomPowerLines, charLabelsLeft, charLabelsRight, numberLabelsTop, numberLabelsBottom);
-	}
+        this.getChildren().addAll(background, middleSpace, topPowerLines, topSockets, bottomSockets, bottomPowerLines, charLabelsLeft, charLabelsRight, numberLabelsTop, numberLabelsBottom);
+    }
 
     private Group generatePowerLines() {
         GridSystem grid = getBoard().getGrid();

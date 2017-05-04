@@ -7,6 +7,7 @@ import sk.uniza.fri.cp.BreadboardSim.Board.Board;
 import sk.uniza.fri.cp.BreadboardSim.Board.BoardChangeEvent;
 import sk.uniza.fri.cp.BreadboardSim.Board.BoardEvent;
 import sk.uniza.fri.cp.BreadboardSim.Components.Component;
+import sk.uniza.fri.cp.BreadboardSim.Devices.Chips.Chip;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.Pin;
 import sk.uniza.fri.cp.BreadboardSim.Socket.Potential;
 import sk.uniza.fri.cp.BreadboardSim.Socket.Socket;
@@ -32,9 +33,9 @@ public abstract class Device extends Item {
     private EventHandler<MouseEvent> onMousePressedEventHandler = new EventHandler<MouseEvent>() {
         @Override
         public void handle(MouseEvent event) {
-            if(isConnected()) disconnectAllPins();
-            searchForSockets();
-            highlightConnectibleSockets();
+//            if(isConnected()) disconnectAllPins();
+//            searchForSockets();
+//            highlightConnectibleSockets();
         }
     };
 
@@ -73,9 +74,9 @@ public abstract class Device extends Item {
 		
         socketsToConnectTo = new ArrayList<>();
 
-        this.addEventFilter(MouseEvent.MOUSE_PRESSED, onMousePressedEventHandler);
-        this.addEventFilter(MouseEvent.MOUSE_DRAGGED, onMouseDraggedEventHandler);
-        this.addEventFilter(MouseEvent.MOUSE_RELEASED, onMouseReleasedEventHandler);
+        this.addEventHandler(MouseEvent.MOUSE_PRESSED, onMousePressedEventHandler);
+        this.addEventHandler(MouseEvent.MOUSE_DRAGGED, onMouseDraggedEventHandler);
+        this.addEventHandler(MouseEvent.MOUSE_RELEASED, onMouseReleasedEventHandler);
 
 	}
 
@@ -84,9 +85,9 @@ public abstract class Device extends Item {
         super.makeImmovable();
 
         if(getBoard() != null) {
-            this.removeEventFilter(MouseEvent.MOUSE_PRESSED, onMousePressedEventHandler);
-            this.removeEventFilter(MouseEvent.MOUSE_DRAGGED, onMouseDraggedEventHandler);
-            this.removeEventFilter(MouseEvent.MOUSE_RELEASED, onMouseReleasedEventHandler);
+            this.removeEventHandler(MouseEvent.MOUSE_PRESSED, onMousePressedEventHandler);
+            this.removeEventHandler(MouseEvent.MOUSE_DRAGGED, onMouseDraggedEventHandler);
+            this.removeEventHandler(MouseEvent.MOUSE_RELEASED, onMouseReleasedEventHandler);
         }
     }
 
@@ -161,7 +162,7 @@ public abstract class Device extends Item {
      * @param state
      */
     public void setPin(Pin pin, Pin.PinState state){
-        if (pin.getState() != state) {
+        //if (pin.getState() != state) {
             pin.setState(state);
 
             switch (state) {
@@ -175,7 +176,7 @@ public abstract class Device extends Item {
                 case NOT_CONNECTED:
                     getBoard().addEvent(new BoardChangeEvent(pin.getSocket(), Potential.Value.NC));
             }
-        }
+        //}
     }
 
     public void setDataPin(Pin pin, Pin.PinState state) {
@@ -215,9 +216,9 @@ public abstract class Device extends Item {
         //vycistenie pola pre sokety ku ktorym sa moze pripojit
         this.socketsToConnectTo.clear();
 
-
         //ak existuje komponent s ktorym sa toto zariadenie prekryva
-        if(collisionComponents != null){
+        //a zaroven, ak sa jedna o IC, musi byt prave jeden komponet, lebo sa neda pripojit cez viacero
+        if ((collisionComponents != null) && (!(this instanceof Chip) || (collisionComponents.size() == 1))) {
             List<Pin> pins = getPins();
             Socket[] sockets = new Socket[pins.size()];
 

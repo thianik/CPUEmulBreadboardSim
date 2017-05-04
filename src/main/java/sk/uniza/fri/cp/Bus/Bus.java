@@ -68,7 +68,6 @@ public class Bus{
 		else
 			USBConnected.setValue(true);
 
-		System.out.println("USBInitDevice: " + ret);
 		return USBConnected.getValue();
 	}
 
@@ -130,11 +129,8 @@ public class Bus{
      * @return Hodnota na dátovej zbernici.
      */
     synchronized public byte getDataBus() {
-        if(USBConnected.getValue()) {
-            byte data = (byte) USBReadData();
-            System.out.println("USBReadData: " + data);
-            return data;
-        }
+        if (USBConnected.getValue())
+            return (byte) USBReadData();
         else
             return dataBus.getValue().byteValue();
     }
@@ -202,21 +198,28 @@ public class Bus{
      */
     public boolean waitForSteadyState() throws InterruptedException {
         if (!this.isUsbConnected()) {
+//            System.out.println("BUS V METODE CAKANIA S " + dataSemaphore.availablePermits() + " POVOLENIAMI \t\t" + Thread.currentThread().getName());
             //ak nie je pripojenie cez USB -> je pripojenie na simulátor
             //ak nebezi, nemas ake data dostat... sorry
             //ak simulacia bezi, cakaj na data 5 sekund. Ak sa simulacia neustali, je tam cyklus alebo mas woodenPC
             return isSimulationRunning && dataSemaphore.tryAcquire(5, TimeUnit.SECONDS);
         } else {
             //ak je pripojenie cez USB, cakaj aka synchronne //TODO je potrebne cakanie?
-            Thread.sleep(50);
+            //Thread.sleep(50);
             return true;
         }
+    }
+
+    public void drainPermits() {
+        dataSemaphore.drainPermits();
+//        System.out.println("BUS DRAIN PERMITS " + Thread.currentThread().getName());
     }
 
     /**
      * Oznámevnie zbernici, že dáta boli ustálené a je možné ich čítať.
      */
     public void dataInSteadyState() {
+//        System.out.println("BUS IN STEADY STATE " + Thread.currentThread().getName());
         dataSemaphore.release();
     }
 
@@ -225,6 +228,7 @@ public class Bus{
      * z nej čítať.
      */
     public void dataIsChanging() {
+//        System.out.println("BUS DATA CHANGING " + Thread.currentThread().getName());
         dataSemaphore.drainPermits();
     }
 
@@ -434,9 +438,9 @@ public class Bus{
 //		return mapFromControlBus("IR");
 //	}
 //
-//	synchronized public boolean isIA_() {
-//		return mapFromControlBus("IA_");
-//	}
+    synchronized public boolean isIA_() {
+        return mapFromControlBus("IA_");
+    }
 //    
 //    /**
 //     * Zistenie hodoty signálu RY - ready

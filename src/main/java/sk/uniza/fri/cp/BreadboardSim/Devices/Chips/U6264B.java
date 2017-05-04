@@ -2,6 +2,7 @@ package sk.uniza.fri.cp.BreadboardSim.Devices.Chips;
 
 import javafx.scene.layout.Pane;
 import sk.uniza.fri.cp.BreadboardSim.Board.Board;
+import sk.uniza.fri.cp.BreadboardSim.Components.BusInterface;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.*;
 
 import java.util.Arrays;
@@ -53,7 +54,17 @@ public class U6264B extends Chip {
     }
 
     public U6264B(Board board) {
-        super(board, PINS_COUNT, 5);
+        super(board, PINS_COUNT, 6);
+    }
+
+    /**
+     * Konstruktor pri kotrom sa da nastavit sirka IC.
+     * Z dovodu kompatibility so startym simulatorom.
+     *
+     * @param board
+     */
+    public U6264B(Board board, int chipGridHeight) {
+        super(board, PINS_COUNT, chipGridHeight);
     }
 
     private void updateGate() {
@@ -79,6 +90,7 @@ public class U6264B extends Chip {
                 }
             }
 
+//            System.out.println("U6264B Zapisala na BUSINTERFACE data: " + data + " \t\t" + Thread.currentThread().getName());
             return;
         }
 
@@ -86,6 +98,11 @@ public class U6264B extends Chip {
             //zapis do pamate
             byte data = decodeData();
             this.savedData[decodeAddress()] = data;
+
+//            if(data != BusInterface.DEBUG_DATA)
+//                System.out.println("CHYBA");
+
+//            System.out.println("U6264B Zapisala na CHIP data: " + data + " \t\t" + Thread.currentThread().getName());
 
             return;
         }
