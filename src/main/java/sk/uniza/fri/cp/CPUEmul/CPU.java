@@ -7,6 +7,8 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.scene.control.Alert;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import sk.uniza.fri.cp.Bus.Bus;
 import sk.uniza.fri.cp.CPUEmul.Exceptions.NonExistingInterruptLabelException;
 
@@ -26,6 +28,7 @@ import java.util.concurrent.Semaphore;
  * @created 07-feb-2017 18:40:27
  */
 public class CPU extends Thread {
+    public static final Logger LOGGER = LogManager.getLogger("MainLogger");
 
     private final OutputStream console; //vystupny stream pre vypis znakov na terminal
     private Program program; //zavedeny program s instrukciami a konstantami programu
@@ -95,6 +98,9 @@ public class CPU extends Thread {
         this.setName("CPU_Thread");
 	}
 
+    private long startInstExeTime = 0;
+    private long endInstExeTime = 0;
+
 	/**
 	 * Spustenie vykonávania vlákna.
      * Obsahuje dve slučky. Vonkajšia pre beh vlákna s CPU emulátorom a vnútorná pre beh programu.
@@ -105,6 +111,7 @@ public class CPU extends Thread {
         threadLoop:
         while(!isCancelled) {
             state.setValue(CPUStates.Idle);
+
             //cakaj na spustenie vykonavania
             while(!isExecuting){
                 try {
@@ -147,7 +154,9 @@ public class CPU extends Thread {
                     }
 
                     //vykonanie instrukcie
+                    startInstExeTime = System.nanoTime();
                     execute(nextInstruction);
+                    endInstExeTime = System.nanoTime();
 
                     //kontrola vyvolania prerusenia
                     usbConnected = bus.isUsbConnected();
@@ -171,6 +180,8 @@ public class CPU extends Thread {
                         }
                     }
                     f_int_level_old = it;
+
+                    //System.out.println(nextInstruction.getType().name() + "\t ns: " + (endInstExeTime - startInstExeTime) + "\t kontrola IT: " + (System.nanoTime() - endInstExeTime));
 
                 } catch (Exception e ) {
                     //ak doslo k vynimke
@@ -782,15 +793,15 @@ public class CPU extends Thread {
         flagIE = false;
 
         //synchronizovane citanie
-//        System.out.println("IA_ LOW");
+//        LOGGER.debug("IA_ LOW");
         bus.setIA_(false);
-//        System.out.println("IA_ Cakanie na steady state");
+//        LOGGER.debug("IA_ Cakanie na steady state");
         this.waitForSteadySimulation(null, true);
-//        System.out.println("IA_ Nacitanie dat");
+//        LOGGER.debug("IA_ Nacitanie dat");
         byte data = bus.getDataBus();
-//        System.out.println("IA_ Nacitane " + Byte.toUnsignedInt(data));
+//        LOGGER.debug("IA_ Nacitane " + Byte.toUnsignedInt(data));
         bus.setIA_(true);
-//        System.out.println("IA_ HIGH");
+//        LOGGER.debug("IA_ HIGH");
 
         //odlozenie PC na zasobnik
         push(regPC);
@@ -916,14 +927,14 @@ public class CPU extends Thread {
 
         //cakanie na nastavenie dat na datovej zbernici
         //updateMessage("Cakanie na nastavenie dat");
-//        System.out.println("CPU Cakanie na steady state pri citani ");
+//        LOGGER.debug("CPU Cakanie na steady state pri citani ");
         this.waitForSteadySimulation(inst, true);
 
         //nacitaj data
         microstepAwait("Nacitanie dat");
-//        System.out.println("CPU Citanie dat");
+//        LOGGER.debug("CPU Citanie dat");
         byte Rd = bus.getDataBus();
-//        System.out.println("CPU Citanie dat dokoncene " + Byte.toUnsignedInt(Rd));
+//        LOGGER.debug("CPU Citanie dat dokoncene " + Byte.toUnsignedInt(Rd));
         setRegisterVal(destRegName, Rd);
 
         //zrus priznak citania
@@ -954,14 +965,14 @@ public class CPU extends Thread {
 
         //nastavenie dat
         microstepAwait("Nastavenie dat");
-//        System.out.println("CPU Nastavenie dat pri zapise na chip");
+//        LOGGER.debug("CPU Nastavenie dat pri zapise na chip");
         bus.setDataBus(data);
 
         //nastavenie priznaku
         microstepAwait("Nastavenie priznaku " + (inst == enumInstructionsSet.OUT?"IOW":"MW") + " = 0");
 
         //nastavenie priznaku
-//        System.out.println("CPU Nastavenie priznaku zapisu na chip");
+//        LOGGER.debug("CPU Nastavenie priznaku zapisu na chip");
         if (inst == enumInstructionsSet.OUT)
             bus.setIW_(false);
         else
@@ -973,7 +984,7 @@ public class CPU extends Thread {
 
         //zrusenie priznaku
         microstepAwait("Zrusenie priznaku ZAPISU");
-//        System.out.println("CPU Zrusenie priznaku zapisu na chip");
+//        LOGGER.debug("CPU Zrusenie priznaku zapisu na chip");
         if(inst == enumInstructionsSet.OUT)
             bus.setIW_(true);
         else
@@ -985,7 +996,7 @@ public class CPU extends Thread {
 
         //zrusenie dat
         microstepAwait("Zrusenie dat");
-//        System.out.println("CPU Zrusenie dat pri zapise na chip");
+//        LOGGER.debug("CPU Zrusenie dat pri zapise na chip");
         bus.setRandomData();
 
         //zrusenie adresy
@@ -1042,7 +1053,7 @@ public class CPU extends Thread {
                     lastErrorMsgPrint = System.currentTimeMillis();
                 }
             }
-        } catch (InterruptedException | IOException e) {
+        } catch (IOException e) {
             //e.printStackTrace();
         }
     }

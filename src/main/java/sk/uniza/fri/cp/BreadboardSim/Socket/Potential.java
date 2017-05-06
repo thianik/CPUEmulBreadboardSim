@@ -397,8 +397,6 @@ public class Potential {
                 //nastav nahodnu hodnotu potencialu
                 if (Math.random() < 0.5) this.value = Value.LOW;
                 else this.value = Value.HIGH;
-//                System.out.println("POTENCIAL SKRAT na " + this.parent1.getSocket1().getPin().getName() + ": " + this.parent1.value +
-//                        " a " + this.parent2.getSocket1().getPin().getName() + ": " + this.parent2.value + " NAKONIEC NASTAVENE: " + this.value);
                 return;
             } else {
                 //nedoslo ku skratu, na obochy vystupoch su rovnake hodnoty

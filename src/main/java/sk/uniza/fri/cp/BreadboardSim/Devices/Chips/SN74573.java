@@ -2,6 +2,8 @@ package sk.uniza.fri.cp.BreadboardSim.Devices.Chips;
 
 import javafx.application.Platform;
 import javafx.scene.layout.Pane;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import sk.uniza.fri.cp.BreadboardSim.Board.Board;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.InputPin;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.OutputPin;
@@ -14,6 +16,7 @@ import java.util.Arrays;
  * Created by Moris on 13.4.2017.
  */
 public class SN74573 extends Chip {
+    public static final Logger LOGGER = LogManager.getLogger("MainLogger");
 
     private static final String NAME = "SN74573";
     private static final String DESCRIPTION = "8bit register";
@@ -62,12 +65,16 @@ public class SN74573 extends Chip {
                 data += this.savedData[i] ? 1 << (7 - i) : 0;
             }
 
-//            System.out.println("Zapisane data na chip: " + data + " \t\t\t\t\t\t\t\t\t\t" + Thread.currentThread().getName());
-
+//            LOGGER.debug("74573 Zapisane data na chip: " + data);
         }
 
         if (this.isHigh(_OE_)) {
-            Arrays.stream(outputs).forEach(output -> this.setPin(output, Pin.PinState.HIGH_IMPEDANCE));
+            for (int i = 0; i < 8; i++) {
+                this.setPin(outputs[i], Pin.PinState.HIGH_IMPEDANCE);
+            }
+
+//            LOGGER.debug("74573 Odpojenie -> HiZ ");
+
         } else if (this.isLow(_OE_)) {
             //debug
             int data = 0;
@@ -78,8 +85,7 @@ public class SN74573 extends Chip {
                 data += this.savedData[i] ? 1 << (7 - i) : 0;
             }
 
-//            if(!Bus.getBus().isIA_())
-//            System.out.println("Nastavene data chipom: " + data + " \t\t\t\t\t\t\t\t\t\t" + Thread.currentThread().getName());
+//            LOGGER.debug("74573 Nastavene data chipom: " + data);
         }
 
     }

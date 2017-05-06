@@ -14,6 +14,8 @@ import javafx.scene.shape.Rectangle;
 
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import sk.uniza.fri.cp.BreadboardSim.Board.Board;
 import sk.uniza.fri.cp.BreadboardSim.Board.BoardChangeEvent;
 import sk.uniza.fri.cp.BreadboardSim.Board.GridSystem;
@@ -418,14 +420,16 @@ public class NumKeys extends Component {
             return false;
         }
 
-
+        private final Logger QUEUELOGGER = LogManager.getLogger("QueueLogger");
         @Override
         public void simulate() {
             if (shouldBeColumnLow()) {
 //                System.out.println("HW KEY " + columnPos + " LOW");
+//                QUEUELOGGER.debug("HW KEY " + columnPos + "," + rowPos + " LOW");
                 getBoard().addEvent(new BoardChangeEvent(this.column, Potential.Value.LOW));
             } else {
 //                System.out.println("HW KEY " + columnPos + " HIGH");
+//                QUEUELOGGER.debug("HW KEY " + columnPos + "," + rowPos + " HIGH");
                 getBoard().addEvent(new BoardChangeEvent(this.column, Potential.Value.HIGH));
             }
         }

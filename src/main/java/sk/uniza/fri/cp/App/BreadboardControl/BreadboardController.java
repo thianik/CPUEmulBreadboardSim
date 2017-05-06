@@ -125,6 +125,8 @@ public class BreadboardController implements Initializable {
         this.newItemPicker.registerItem(new SN74138());
         this.newItemPicker.registerItem(new SN74148());
         this.newItemPicker.registerItem(new SN74151());
+        this.newItemPicker.registerItem(new SN74153());
+        this.newItemPicker.registerItem(new SN74164());
         this.newItemPicker.registerItem(new SN74573());
         this.newItemPicker.registerItem(new U6264B());
 

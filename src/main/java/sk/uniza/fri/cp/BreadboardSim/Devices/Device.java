@@ -11,6 +11,7 @@ import sk.uniza.fri.cp.BreadboardSim.Devices.Chips.Chip;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.Pin;
 import sk.uniza.fri.cp.BreadboardSim.Socket.Potential;
 import sk.uniza.fri.cp.BreadboardSim.Socket.Socket;
+import sk.uniza.fri.cp.Bus.Bus;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -162,7 +163,7 @@ public abstract class Device extends Item {
      * @param state
      */
     public void setPin(Pin pin, Pin.PinState state){
-        //if (pin.getState() != state) {
+        if (pin.getState() != state) {
             pin.setState(state);
 
             switch (state) {
@@ -176,7 +177,7 @@ public abstract class Device extends Item {
                 case NOT_CONNECTED:
                     getBoard().addEvent(new BoardChangeEvent(pin.getSocket(), Potential.Value.NC));
             }
-        //}
+        }
     }
 
     public void setDataPin(Pin pin, Pin.PinState state) {

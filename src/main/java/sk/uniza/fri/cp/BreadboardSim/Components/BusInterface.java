@@ -11,6 +11,8 @@ import javafx.scene.shape.Circle;
 import javafx.scene.shape.Line;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Text;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.reactfx.EventSource;
 import org.reactfx.EventStream;
 import org.reactfx.EventStreams;
@@ -35,7 +37,6 @@ import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-//import javax.swing.event.ChangeListener;
 
 /**
  * Pripojenie na zbernice - address, data, control
@@ -44,7 +45,8 @@ import java.util.concurrent.Executors;
  * @created 17-mar-2017 16:16:34
  */
 public class BusInterface extends Component {
-
+    public static final Logger LOGGER = LogManager.getLogger("MainLogger");
+    public static final Logger QUEUELOGGER = LogManager.getLogger("QueueLogger");
     public static int DEBUG_DATA = 0;
 
     private static final Color ADDRESS_LED_ON = Color.RED;
@@ -140,10 +142,15 @@ public class BusInterface extends Component {
         public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
             ControlBusCommunicator.setControls(newValue.intValue());
 
+
             //0x140 -> 1 0100 0000 => signal zapisu MW/IW je v nule
             if ((newValue.intValue() & 0x140) != 0x140 && !lastWriteStateOn) {
-                //zapis
                 DataBusCommunicator.setToWrite(true);
+
+                Bus.getBus().waitForSteadyState(); // koli skratu
+
+                //zapis
+//                LOGGER.debug("ControlChange SET TO WRITE");
                 for (int i = 0; i < 8; i++)
                     dataBusCommunicators[i].update();
 
@@ -153,35 +160,36 @@ public class BusInterface extends Component {
             //MR/IR/IA
             if ((newValue.intValue() & 0xB0) != 0xB0 && !lastReadStateOn) {
                 //citanie
-                for (int i = 0; i < 8; i++) {
+//                LOGGER.debug("ControlChange SET TO READ");
+                Bus.getBus().waitForSteadyState(); // koli skratu
+
+                for (int i = 0; i < 8; i++)
                     ((DataBusCommunicator) dataBusCommunicators[i]).setToRead(true);
-                    dataBusCommunicators[i].update(); //ABY SI PREDISIEL DALSIM INFAKRTOM, TOTO TU MUSI BYT
-                }
+
                 lastReadStateOn = true;
             } else if (lastReadStateOn) {
-                for (int i = 0; i < 8; i++) {
+//                LOGGER.debug("ControlChange UNSET TO READ");
+                for (int i = 0; i < 8; i++)
                     ((DataBusCommunicator) dataBusCommunicators[i]).setToRead(false);
-//                    dataBusCommunicators[i].update(); //TODO musi tu byt< kontrola
-                }
+
                 lastReadStateOn = false;
             }
-//
-//            for (int i = 0; i < 8; i++)
-//                dataBusCommunicators[i].update();
-//
+
+//            LOGGER.debug("ControlChange UPDATE CONTROL BUS COMMUNICATORS");
             for (int i = 4; i < 9; i++) { //iba pre vystupne signaly
                 controlBusCommunicators[i].update();
             }
-//
-//            for (int i = 0; i < 8; i++)
-//                dataBusCommunicators[i].update();
 
             if ((newValue.intValue() & 0x140) == 0x140 && lastWriteStateOn) {
+                Bus.getBus().waitForSteadyState(); // koli skratu
+
+//                LOGGER.debug("ControlChange UNSET TO WRITE");
                 DataBusCommunicator.setToWrite(false);
                 for (int i = 0; i < 8; i++) {
                     dataBusCommunicators[i].update();
                     //dataBusCommunicators[i].update();
                 }
+                getBoard().addEvent(new BoardEvent(null));
                 lastWriteStateOn = false;
             }
 
@@ -583,7 +591,6 @@ public class BusInterface extends Component {
         private volatile static int data; //aktualne data na zbernici
         private volatile static boolean read; //nastavenie ako vstupu
         private volatile static boolean write; //nastavenie ako vystupu
-        //private volatile static Potential[] connectedPotentials = new Potential[8]; dalo by sa pouzit pre zistovenie, ci su dva vystupy pripojene na rovnaky potencial pre zistenie skratu, mozno
 
         public static void setData(int newData) {
             data = newData;
@@ -592,11 +599,10 @@ public class BusInterface extends Component {
         public void setToRead(boolean newRead) {
             read = newRead;
             Bus.getBus().dataIsChanging();
-            if (read) {
+            if (read)
                 this.setDataPin(this.getPin(), Pin.PinState.HIGH_IMPEDANCE);
-            } else {
-                this.update();
-            }
+
+            this.update();
         }
 
         public static void setToWrite(boolean newWrite) {
@@ -619,12 +625,11 @@ public class BusInterface extends Component {
                 //zapis zo zbernice do externej pamate na zaklade
                 if ((data & 1 << this.getByteNr()) != 0) {
                     this.setHigh();
-//                    System.out.println("BUSINTERFACE WRITE Nastavovane data na interface: " + data + " \t\t" + Thread.currentThread().getName() + " \t bit: " + getByteNr() + " HIGH");
+//                    LOGGER.debug("BUSINTERFACE WRITE Nastavovane data na interface: " + data + "\t bit: " + getByteNr() + " HIGH");
                 } else {
                     this.setLow();
-//                    System.out.println("BUSINTERFACE WRITE Nastavovane data na interface: " + data + " \t\t" + Thread.currentThread().getName() + " \t bit: " + getByteNr() + " LOW");
+//                    LOGGER.debug("BUSINTERFACE WRITE Nastavovane data na interface: " + data + "\t bit: " + getByteNr() + " LOW");
                 }
-                DEBUG_DATA = data;
 
             } else if (read) {
                 Bus.getBus().dataIsChanging();
@@ -632,14 +637,15 @@ public class BusInterface extends Component {
                 if (this.isHigh(this.getPin())) {
                     //ak je na pine jednotka
                     Bus.getBus().setDataBus((byte) (data |= (1 << this.getByteNr())));
-//                    System.out.println("BUSINTERFACE READ Zapisane data na zbernicu: " + data + " \t\t" + Thread.currentThread().getName() + " \t bit: " + getByteNr() + " HIGH");
+//                    LOGGER.debug("BUSINTERFACE READ Zapisane data na zbernicu: " + data + " \t bit: " + getByteNr() + " HIGH");
                 } else if (this.isLow(this.getPin())) {
                     //ak nie tak sa predpoklada ze je tam nula (aj ked je nepripojeny, lebo CPU je odpojene)
                     Bus.getBus().setDataBus((byte) (data &= ~(1 << this.getByteNr())));
-//                    System.out.println("BUSINTERFACE READ Zapisane data na zbernicu: " + data + " \t\t" + Thread.currentThread().getName() + " \t bit: " + getByteNr() + " LOW");
-                } else {
-//                    System.out.println("BUSINTERFACE READ Zapisane rovnake data na zbernicu lebo je NC pri citani: " + data + " \t\t" + Thread.currentThread().getName() + " \t bit: " + getByteNr());
+//                    LOGGER.debug("BUSINTERFACE READ Zapisane data na zbernicu: " + data + " \t bit: " + getByteNr() + " LOW");
                 }
+//                else {
+//                    LOGGER.debug("BUSINTERFACE READ Zapisane rovnake data na zbernicu lebo je NC pri citani: " + data + " \t bit: " + getByteNr() + " HIGH");
+//                }
 
             } else {
                 //ANI ZAPIS ANI CITANIE -> TO DIVNE SPRAVANIE Z POVODNEHO SIMULATORA
@@ -715,14 +721,12 @@ public class BusInterface extends Component {
 
         @Override
         public void update() {
-            Bus.getBus().drainPermits();
+            Bus.getBus().dataIsChanging();
             if ((controls & 1 << this.getByteNr()) != 0) {
-                //if(this.getByteNr() == 8) System.out.println("CONTROL 8 HIGH");
-//                System.out.println("CONTOL BUS nastavenie priznaku" + getByteNr() + " HIGH");
+//                LOGGER.debug("ControlBus nastavenie priznaku " + getByteNr() + " HIGH");
                 this.setHigh();
             } else {
-                // if(this.getByteNr() == 8) System.out.println("CONTROL 8 LOW");
-//                System.out.println("CONTOL BUS nastavenie priznaku" + getByteNr() + " LOW");
+//                LOGGER.debug("ControlBus nastavenie priznaku " + getByteNr() + " LOW");
                 this.setLow();
             }
         }
@@ -741,9 +745,9 @@ public class BusInterface extends Component {
                     }
                     break;
                 case 3:
-                    if (this.isHigh(this.getPin()))
+                    if (this.isHigh(this.getPin())) {
                         Bus.getBus().setIT(true);
-                    else {
+                    } else {
                         Bus.getBus().setIT(false);
                         this.turnIndicatorOff();
                     }

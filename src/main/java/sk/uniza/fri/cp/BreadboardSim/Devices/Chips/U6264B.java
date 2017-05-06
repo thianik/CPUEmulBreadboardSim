@@ -4,6 +4,7 @@ import javafx.scene.layout.Pane;
 import sk.uniza.fri.cp.BreadboardSim.Board.Board;
 import sk.uniza.fri.cp.BreadboardSim.Components.BusInterface;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.*;
+import sk.uniza.fri.cp.BreadboardSim.Socket.Potential;
 
 import java.util.Arrays;
 

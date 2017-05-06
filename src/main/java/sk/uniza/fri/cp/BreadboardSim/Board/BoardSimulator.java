@@ -7,6 +7,8 @@ import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 import javafx.concurrent.WorkerStateEvent;
 import javafx.event.EventHandler;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.reactfx.EventSource;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Device;
 import sk.uniza.fri.cp.BreadboardSim.Socket.PowerSocket;
@@ -15,6 +17,8 @@ import sk.uniza.fri.cp.Bus.Bus;
 import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -23,6 +27,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @created 17-mar-2017 16:16:34
  */
 public class BoardSimulator {
+    public static final Logger LOGGER = LogManager.getLogger("MainLogger");
+    public static final Logger QUEUELOGGER = LogManager.getLogger("QueueLogger");
 
 	private LinkedBlockingQueue<BoardEvent> eventsQueue;
 
@@ -31,15 +37,13 @@ public class BoardSimulator {
 
     private AtomicBoolean steadyState = new AtomicBoolean(false); //TODO steadystate ako property a podla toho riadit emittor
 
-    public static EventSource<Void> tick = new EventSource<>();
-
 	private Service simulatorService = new Service() {
 		@Override
 		protected Task createTask() {
 			return new Task() {
 				@Override
 				protected Object call() throws Exception {
-
+                    Thread.currentThread().setName("SimulationThread");
 
                     int processedEvents = 0;
 
@@ -48,33 +52,35 @@ public class BoardSimulator {
 
                     running.setValue(true);
                     steadyState.set(false);
+
+                    Bus.getBus().setEventsQueue(eventsQueue);
                     Bus.getBus().simulationIsRunning(true);
                     Bus.getBus().dataIsChanging();
 
                     HashSet<Device> devicesToUpdate = new HashSet<>();
-
-					//obsluha eventov
+                    BoardEvent event;
+                    //obsluha eventov
 					while(!isCancelled()){
 						try {
-                            if (eventsQueue.size() == 0) {
-                                Bus.getBus().dataInSteadyState();
-                                steadyState.set(true);
+                            event = eventsQueue.poll();
+                            if (event == null) {
+                                if (eventsQueue.size() > 0) {
+                                    event = eventsQueue.take();
+                                } else {
+                                    Bus.getBus().dataInSteadyState();
+                                    steadyState.set(true);
+                                    event = eventsQueue.take();
+                                }
                             }
-
-                            BoardEvent event = eventsQueue.take();
 
                             if (steadyState.get()) {
                                 Bus.getBus().dataIsChanging();
                                 steadyState.set(false);
                             }
-//                            if(!Bus.getBus().isIA_())
-//                            System.out.println("------------------------------------------------------------------------ PROCESS " + event.getSocket().getComponent());
 
                             event.process(devicesToUpdate);
                             processedEvents++;
 
-//                            if(!Bus.getBus().isIA_())
-//                            System.out.println("----------------------------------- SIMULATE ");
                             devicesToUpdate.forEach((Device::simulate));
 
 							devicesToUpdate.clear();
@@ -85,7 +91,6 @@ public class BoardSimulator {
                             devicesToUpdate.clear();
                         }
 					}
-
 
                     Bus.getBus().dataIsChanging();
 
@@ -139,9 +144,17 @@ public class BoardSimulator {
 	 */
 	public void addEvent(BoardEvent event){
 		try {
-			eventsQueue.put(event);
+
+//            if (event.getSocket() != null)
+//                QUEUELOGGER.debug("[PRIDAVAM k " + eventsQueue.size() + "] soket: " + event.getSocket() + " na komponente: " + event.getSocket().getComponent() +
+//                        (event.getSocket().getDevice() != null ? (" zariadenie: " + event.getSocket().getDevice() + " a pin: " + event.getSocket().getPin().getName()) : "") +
+//                        (event instanceof BoardChangeEvent ? " na hodnotu: " + ((BoardChangeEvent) event).getValue() : ""));
+
+//            Bus.getBus().dataIsChanging();
+            eventsQueue.put(event);
+
         } catch (InterruptedException e) {
-            //e.printStackTrace();
+//            e.printStackTrace();
         }
 	}
 
@@ -151,5 +164,14 @@ public class BoardSimulator {
 
     public boolean inSteadyState() {
         return steadyState.get();
+    }
+
+    private AtomicBoolean wait = new AtomicBoolean(false);
+
+    /**
+     * Cakanie na nastavenie priznakov
+     */
+    public void waitForMe(boolean value) {
+        wait.set(value);
     }
 }

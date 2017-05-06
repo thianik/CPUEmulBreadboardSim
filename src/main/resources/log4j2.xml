@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="warn"><!-- use status="trace" for troubleshooting -->
+    <Appenders>
+        <Console name="STDOUT" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d %-5p [%t] %C{2} (%F:%L) - %m%n"/>
+        </Console>
+        <File name="FILE" fileName="app.log" append="false">
+            <PatternLayout>
+                <pattern>%p [%t] %c{1.} %m%n</pattern>
+            </PatternLayout>
+        </File>
+        <File name="QUEUEFILE" fileName="queue.log" append="false">
+            <PatternLayout>
+                <pattern>%p [%-16t] %c{1.} %m%n</pattern>
+            </PatternLayout>
+        </File>
+    </Appenders>
+    <Loggers>
+        <Root level="trace">
+            <AppenderRef ref="STDOUT" level="info"/>
+            <AppenderRef ref="FILE" level="debug"/>
+        </Root>
+        <Logger name="QueueLogger" level="debug">
+            <AppenderRef ref="QUEUEFILE"/>
+        </Logger>
+    </Loggers>
+</Configuration>

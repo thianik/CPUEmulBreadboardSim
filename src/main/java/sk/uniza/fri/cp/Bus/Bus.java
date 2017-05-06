@@ -1,10 +1,15 @@
 package sk.uniza.fri.cp.Bus;
 
 import javafx.beans.property.*;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
+import java.io.*;
 import java.util.Random;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static sk.uniza.fri.cp.Bus.k041Library.*;
 
@@ -18,6 +23,8 @@ import static sk.uniza.fri.cp.Bus.k041Library.*;
  * @created 07-feb-2017 18:40:27
  */
 public class Bus{
+    public static final Logger LOGGER = LogManager.getLogger("MainLogger");
+    public static final Logger QUEUELOGGER = LogManager.getLogger("QueueLogger");
 
 	private static Bus instance; //inštancia singletonu
 	private SimpleBooleanProperty USBConnected; //indikátor pripojenia vývojovej dosky cez USB
@@ -140,8 +147,8 @@ public class Bus{
      * 
      * @return Hodnota na riadiacej zbernici.
      */
-    synchronized public int getControlBus(){
-	    return controlBus.getValue();
+    public int getControlBus() {
+        return controlBus.getValue();
     }
 
     /**
@@ -161,8 +168,8 @@ public class Bus{
      * 
      * @param dataBus Nová hodnota dátovej zbernice.
      */
-	synchronized public void setDataBus(byte dataBus) {
-		if(USBConnected.getValue())
+    public void setDataBus(byte dataBus) {
+        if(USBConnected.getValue())
 			USBSetData(Byte.toUnsignedInt(dataBus));
 		else
 			this.dataBus.setValue(Byte.toUnsignedInt(dataBus));
@@ -196,13 +203,26 @@ public class Bus{
      * @return True ak prišiel v časovom úseku oznam o nastavení dát, false inak.
      * @throws InterruptedException Prerušenie počas čakania na nastavenie dát.
      */
-    public boolean waitForSteadyState() throws InterruptedException {
+    public boolean waitForSteadyState() {
+        if (Thread.currentThread().getName().equalsIgnoreCase("SimulationThread")) return true;
         if (!this.isUsbConnected()) {
-//            System.out.println("BUS V METODE CAKANIA S " + dataSemaphore.availablePermits() + " POVOLENIAMI \t\t" + Thread.currentThread().getName());
-            //ak nie je pripojenie cez USB -> je pripojenie na simulátor
-            //ak nebezi, nemas ake data dostat... sorry
-            //ak simulacia bezi, cakaj na data 5 sekund. Ak sa simulacia neustali, je tam cyklus alebo mas woodenPC
-            return isSimulationRunning && dataSemaphore.tryAcquire(5, TimeUnit.SECONDS);
+//            LOGGER.debug("WAITING FOR STEADY STATE");
+//            QUEUELOGGER.debug("WAITING FOR STEADY STATE PERMITS " + dataSemaphore.availablePermits());
+
+            if (isSimulationRunning) {
+                while (true) {
+                    try {
+                        if (!(!dataSemaphore.tryAcquire(5, TimeUnit.MINUTES) || queue.size() != 0)) break;
+                    } catch (InterruptedException e) {
+                        return false;
+                    }
+                }
+                return true;
+            } else {
+                return false;
+            }
+
+//            return isSimulationRunning && dataSemaphore.tryAcquire(5, TimeUnit.MINUTES);
         } else {
             //ak je pripojenie cez USB, cakaj aka synchronne //TODO je potrebne cakanie?
             //Thread.sleep(50);
@@ -210,17 +230,21 @@ public class Bus{
         }
     }
 
-    public void drainPermits() {
-        dataSemaphore.drainPermits();
-//        System.out.println("BUS DRAIN PERMITS " + Thread.currentThread().getName());
+    private LinkedBlockingQueue<?> queue;
+
+    public void setEventsQueue(LinkedBlockingQueue<?> queue) {
+        this.queue = queue;
     }
 
     /**
      * Oznámevnie zbernici, že dáta boli ustálené a je možné ich čítať.
      */
     public void dataInSteadyState() {
-//        System.out.println("BUS IN STEADY STATE " + Thread.currentThread().getName());
+//      LOGGER.debug("STEADY STATE IN");
+//      QUEUELOGGER.debug("STEADY STATE BEFORE RELEASE");
         dataSemaphore.release();
+//      QUEUELOGGER.debug("STEADY STATE AFTER RELEASE");
+//      LOGGER.debug("STEADY STATE OUT");
     }
 
     /**
@@ -228,8 +252,9 @@ public class Bus{
      * z nej čítať.
      */
     public void dataIsChanging() {
-//        System.out.println("BUS DATA CHANGING " + Thread.currentThread().getName());
         dataSemaphore.drainPermits();
+//        QUEUELOGGER.debug("DRAIN PERMITS");
+//        LOGGER.debug("DATA IS CHANGING");
     }
 
     /**
@@ -325,7 +350,7 @@ public class Bus{
      *
      * @param IT Nová hodnota signálu IT.
      */
-    synchronized public void setIT(boolean IT) {
+    public void setIT(boolean IT) {
         mapToControlBus("IT", IT);
     }
 
@@ -334,7 +359,7 @@ public class Bus{
      *
      * @param RY Nová hodnota signálu RY.
      */
-    synchronized public void setRY(boolean RY){
+    public void setRY(boolean RY) {
         mapToControlBus("RY", RY);
     }
 
@@ -378,7 +403,7 @@ public class Bus{
      * @param signal Názov signálu.
      * @param value Nová hodnota signálu.
      */
-	synchronized private void mapToControlBus(String signal, boolean value){
+    private void mapToControlBus(String signal, boolean value) {
         int pos = mapSignal(signal);
 
 		if(value)
@@ -438,7 +463,7 @@ public class Bus{
 //		return mapFromControlBus("IR");
 //	}
 //
-    synchronized public boolean isIA_() {
+    public boolean isIA_() {
         return mapFromControlBus("IA_");
     }
 //    
