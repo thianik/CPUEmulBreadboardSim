@@ -1,14 +1,18 @@
 package sk.uniza.fri.cp.BreadboardSim;
 
 
+import javafx.geometry.Bounds;
 import javafx.scene.control.Label;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
+import javafx.scene.shape.Shape;
+import javafx.scene.shape.StrokeLineCap;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import sk.uniza.fri.cp.BreadboardSim.Board.Board;
+import sk.uniza.fri.cp.BreadboardSim.Devices.Chips.Chip;
 
 /**
  * interface???
@@ -19,6 +23,7 @@ import sk.uniza.fri.cp.BreadboardSim.Board.Board;
 public abstract class Item extends Movable {
 
     AnchorPane cachedDescription;
+    private Shape selectionShape; //prekrytie pri selecte
 
 	public Item(Board board){
 		super(board);
@@ -61,5 +66,42 @@ public abstract class Item extends Movable {
 
     protected void cacheDescription(AnchorPane descriptionPane) {
         this.cachedDescription = descriptionPane;
+    }
+
+    @Override
+    public void select() {
+        super.select();
+
+        if (!this.isSelectable()) return;
+        if (this instanceof Chip) return;
+
+        double offset = 1;
+
+        Bounds bounds = this.getBoundsInLocal();
+        this.selectionShape = new Rectangle(bounds.getWidth() + 2 * offset, bounds.getHeight() + 2 * offset);
+
+        this.selectionShape.setFill(null);
+        for (double value : STROKE_DASH_ARRAY)
+            this.selectionShape.getStrokeDashArray().add(value);
+
+        //this.selectionShape.getStrokeDashArray().add(Collections.(STOKE_DASH_ARRAY));
+        this.selectionShape.setStrokeWidth(2);
+        this.selectionShape.setStroke(Color.BLACK);
+        this.selectionShape.setStrokeLineCap(StrokeLineCap.ROUND);
+        this.selectionShape.setOpacity(0.8);
+
+        this.selectionShape.setLayoutX(-offset);
+        this.selectionShape.setLayoutY(-offset);
+
+        this.getChildren().add(this.selectionShape);
+    }
+
+    @Override
+    public void deselect() {
+        super.deselect();
+
+        if (this instanceof Chip) return;
+
+        this.getChildren().remove(this.selectionShape);
     }
 }

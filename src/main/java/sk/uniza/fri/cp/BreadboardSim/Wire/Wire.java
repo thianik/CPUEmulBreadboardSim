@@ -7,6 +7,7 @@ import javafx.geometry.Bounds;
 import javafx.geometry.Pos;
 import javafx.scene.Group;
 import javafx.scene.control.ColorPicker;
+import javafx.scene.effect.Bloom;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.AnchorPane;
@@ -84,12 +85,18 @@ public class Wire extends HighlightGroup {
         if (!this.isSelected()) {
             this.highlightSegments(0.7);
         }
+        Color brighter = color.brighter();
+        this.setStyle("-fx-effect: dropshadow(gaussian, rgb("
+                + brighter.getRed() * 255 + ","
+                + brighter.getGreen() * 255 + ","
+                + brighter.getBlue() * 255 + "), 1, 1.0, 0, 0)");
     };
 
     private EventHandler<MouseEvent> onMouseExited = event -> {
         if (!this.isSelected()) {
             this.unhighlighSegments();
         }
+        this.setStyle("-fx-effect: none");
     };
 
 	/**
@@ -122,7 +129,7 @@ public class Wire extends HighlightGroup {
 		this.segmentsGroup.getChildren().addAll(segment);
 		this.jointsGroup.getChildren().addAll(this.ends[0], this.ends[1]);
 		this.getChildren().addAll(segmentsGroup, jointsGroup);
-
+        this.setId("wire");
         this.registerEvents();
     }
 

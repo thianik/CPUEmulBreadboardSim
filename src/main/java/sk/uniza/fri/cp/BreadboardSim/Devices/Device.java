@@ -180,7 +180,7 @@ public abstract class Device extends Item {
         }
     }
 
-    public void setDataPin(Pin pin, Pin.PinState state) {
+    public void setPinForce(Pin pin, Pin.PinState state) {
         pin.setState(state);
 
         switch (state) {
@@ -280,7 +280,8 @@ public abstract class Device extends Item {
 
     public void disconnectAllPins(){
         List<Pin> pins = getPins();
-        pins.forEach(Pin::disconnect);
+        if (pins != null)
+            pins.forEach(Pin::disconnect);
 
         if(this.component != null){
             this.component.removeDevice(this);

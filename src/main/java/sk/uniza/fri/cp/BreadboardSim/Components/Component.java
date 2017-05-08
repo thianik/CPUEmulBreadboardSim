@@ -30,7 +30,7 @@ public abstract class Component extends Item {
 
 	private LinkedList<ConnectedDevice> connectedDevices;
 
-	private Shape selectionShape; //prekrytie pri selecte
+    //	private Shape selectionShape; //prekrytie pri selecte
     private LinkedList<Wire> connectedWires;
     private ArrayList<Socket> sockets; //pole vsetkych soketov na komponente
     private LinkedList<PowerSocket> powerSockets;
@@ -128,39 +128,39 @@ public abstract class Component extends Item {
 		updateConnectedDevicesPosition();
 	}
 
-	@Override
-	public void select() {
-		super.select();
-
-		if(!this.isSelectable()) return;
-
-		double offset = 1;
-
-		Bounds bounds = this.getBoundsInLocal();
-		this.selectionShape = new Rectangle(bounds.getWidth() + 2*offset, bounds.getHeight() + 2*offset);
-
-		this.selectionShape.setFill(null);
-		for (double value : STROKE_DASH_ARRAY)
-			this.selectionShape.getStrokeDashArray().add(value);
-
-		//this.selectionShape.getStrokeDashArray().add(Collections.(STOKE_DASH_ARRAY));
-		this.selectionShape.setStrokeWidth(2);
-		this.selectionShape.setStroke(Color.BLACK);
-		this.selectionShape.setStrokeLineCap(StrokeLineCap.ROUND);
-		this.selectionShape.setOpacity(0.8);
-
-		this.selectionShape.setLayoutX(-offset);
-		this.selectionShape.setLayoutY(-offset);
-
-		this.getChildren().add(this.selectionShape);
-	}
-
-	@Override
-	public void deselect() {
-		super.deselect();
-
-		this.getChildren().remove(this.selectionShape);
-	}
+//	@Override
+//	public void select() {
+//		super.select();
+//
+//		if(!this.isSelectable()) return;
+//
+//		double offset = 1;
+//
+//		Bounds bounds = this.getBoundsInLocal();
+//		this.selectionShape = new Rectangle(bounds.getWidth() + 2*offset, bounds.getHeight() + 2*offset);
+//
+//		this.selectionShape.setFill(null);
+//		for (double value : STROKE_DASH_ARRAY)
+//			this.selectionShape.getStrokeDashArray().add(value);
+//
+//		//this.selectionShape.getStrokeDashArray().add(Collections.(STOKE_DASH_ARRAY));
+//		this.selectionShape.setStrokeWidth(2);
+//		this.selectionShape.setStroke(Color.BLACK);
+//		this.selectionShape.setStrokeLineCap(StrokeLineCap.ROUND);
+//		this.selectionShape.setOpacity(0.8);
+//
+//		this.selectionShape.setLayoutX(-offset);
+//		this.selectionShape.setLayoutY(-offset);
+//
+//		this.getChildren().add(this.selectionShape);
+//	}
+//
+//	@Override
+//	public void deselect() {
+//		super.deselect();
+//
+//		this.getChildren().remove(this.selectionShape);
+//	}
 
 	@Override
 	public boolean equals(Object obj) {

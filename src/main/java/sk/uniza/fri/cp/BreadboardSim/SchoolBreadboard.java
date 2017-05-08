@@ -4,8 +4,11 @@ package sk.uniza.fri.cp.BreadboardSim;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.event.Event;
+import javafx.geometry.Bounds;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
+import javafx.scene.shape.Shape;
+import javafx.scene.shape.StrokeLineCap;
 import javafx.scene.transform.Transform;
 import sk.uniza.fri.cp.BreadboardSim.Board.Board;
 import sk.uniza.fri.cp.BreadboardSim.Board.GridSystem;
@@ -25,15 +28,16 @@ public class SchoolBreadboard extends Item {
     private static final int GRID_WIDTH = 70;
     private static final int GRID_HEIGHT = 46;
 
-	private static SchoolBreadboard instance;
+    private BusInterface busInterface;
+    private Breadboard breadboard;
+    private HexSegmentsPanel hexSegmentsPanel;
+    private NumKeys numKeys;
+    private Probe probe;
 
-    private Component busInterface;
-    private Component breadboard;
-    private Component hexSegmentsPanel;
-    private Component numKeys;
-    private Component probe;
+    public SchoolBreadboard() {
+    }
 
-	private SchoolBreadboard(Board board){
+    public SchoolBreadboard(Board board) {
         super(board);
 
 		GridSystem grid =  board.getGrid();
@@ -76,39 +80,51 @@ public class SchoolBreadboard extends Item {
         this.getChildren().addAll(background, busInterface, breadboard, hexSegmentsPanel, probe, numKeys);
     }
 
-	public static SchoolBreadboard getSchoolBreadboard(Board board){
-		if(instance == null)
-			instance = new SchoolBreadboard(board);
+    public SchoolBreadboard(Board board, String idBusInterface, String idBreadboard,
+                            String idHexSegmentPanel, String idHS0, String idHS1, String idHS2, String idHS3,
+                            String idProbe, String idNumKeys) {
+        this(board);
+        this.busInterface.setId(idBusInterface);
+        this.breadboard.setId(idBreadboard);
+        this.hexSegmentsPanel.setId(idHexSegmentPanel);
+        int index = 0;
+        for (Component component : this.hexSegmentsPanel.getComponents()) {
+            switch (index) {
+                case 0:
+            }
+            index++;
+        }
+        this.numKeys.setId(idNumKeys);
+        this.probe.setId(idProbe);
+    }
 
-		return instance;
-	}
-
-    public List<? extends Component> getComponents() {
+    public List<Component> getComponents() {
         List<Component> list = new LinkedList<>();
         list.add(this.busInterface);
         list.add(this.breadboard);
-        list.addAll(((HexSegmentsPanel) this.hexSegmentsPanel).getComponents());
+        list.addAll(this.hexSegmentsPanel.getComponents());
         list.add(this.numKeys);
+        list.add(this.probe);
         return list;
     }
 
-    public Component getBusInterface() {
+    public BusInterface getBusInterface() {
         return busInterface;
     }
 
-    public Component getBreadboard() {
+    public Breadboard getBreadboard() {
         return breadboard;
     }
 
-    public Component getHexSegmentsPanel() {
+    public HexSegmentsPanel getHexSegmentsPanel() {
         return hexSegmentsPanel;
     }
 
-    public Component getNumKeys() {
+    public NumKeys getNumKeys() {
         return numKeys;
     }
 
-    public Component getProbe() {
+    public Probe getProbe() {
         return probe;
     }
 
@@ -136,5 +152,9 @@ public class SchoolBreadboard extends Item {
 	}
 
 	@Override
-	public void delete() {}
+    public void delete() {
+        if (!this.getId().equalsIgnoreCase("sb0"))
+            super.delete();
+    }
+
 }

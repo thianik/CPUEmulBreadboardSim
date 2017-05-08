@@ -15,8 +15,6 @@ public class WireSegment extends Line {
 	private Joint startJoint;
 	private Joint endJoint;
 
-	//private Line line;
-
 	public WireSegment(Wire wire, Joint start, Joint end){
 		this.wire = wire;
 		this.startJoint = start;
@@ -74,11 +72,6 @@ public class WireSegment extends Line {
 	public void setColor(Paint color){
         this.setFill(color);
         this.setStroke(color);
-    }
-
-    public void highlihgt() {
-        //this.setStroke();
-
     }
 
 }

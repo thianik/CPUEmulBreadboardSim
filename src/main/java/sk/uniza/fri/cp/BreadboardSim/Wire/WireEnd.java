@@ -30,21 +30,14 @@ public class WireEnd extends Joint {
 	private double lastPosX = -1;
 	private double lastPosY = -1;
 
-    private static long time = 0;
-    private static long count = 0;
-
     private boolean moved;
 
     private ChangeListener<Transform> socketPositionChangeListener = (observable, oldValue, newValue) -> {
-        long startTime = System.nanoTime();
         if(lastPosX == -1){
             lastPosX = getLayoutX();
             lastPosY = getLayoutY();
         }
 
-//		Point2D a =  socket.getBoardLayoutX();
-//        setLayoutX(a.getX());
-//		setLayoutY(a.getY());
         setLayoutX(socket.getBoardX() / getBoard().getAppliedScale());
         setLayoutY(socket.getBoardY() / getBoard().getAppliedScale());
 
@@ -52,11 +45,6 @@ public class WireEnd extends Joint {
 
         lastPosX = getLayoutX();
         lastPosY = getLayoutY();
-
-        long endtime = System.nanoTime();
-        time += endtime - startTime;
-        count++;
-        System.out.println("nanotime: " + (endtime - startTime) + ",count: " + count + ", Avg. : " + (time / count));
     };
 
 	public WireEnd(Board board, Wire wire){
@@ -110,7 +98,9 @@ public class WireEnd extends Joint {
 		if(this.socket == null) {
 			this.socket = socket;
 			this.socket.connect(this);
-            this.socket.getItem().localToParentTransformProperty().addListener(socketPositionChangeListener);
+//            this.socket.getItem().localToParentTransformProperty().addListener(socketPositionChangeListener);
+// TODO localToScene ma udajne vacsie naroky, no vola sa az po localToParent. lisener potrebuje akt. hodnotu lTS
+            this.socket.getItem().localToSceneTransformProperty().addListener(socketPositionChangeListener);
             setLayoutX(socket.getBoardX() / getBoard().getAppliedScale());
             setLayoutY(socket.getBoardY() / getBoard().getAppliedScale());
 
@@ -137,8 +127,8 @@ public class WireEnd extends Joint {
         if(this.socket == null) return;
 		Socket socketToUpdate = this.socket;
 
-        this.socket.getItem().localToParentTransformProperty().removeListener(socketPositionChangeListener);
-        //this.socket.localToSceneTransformProperty().removeListener(socketPositionChangeListener);
+//        this.socket.getItem().localToParentTransformProperty().removeListener(socketPositionChangeListener);
+        this.socket.getItem().localToSceneTransformProperty().removeListener(socketPositionChangeListener);
         this.socket.disconnect();
 		this.socket = null;
 		this.getWire().updatePotential();

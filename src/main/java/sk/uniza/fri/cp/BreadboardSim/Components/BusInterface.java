@@ -1,22 +1,15 @@
 package sk.uniza.fri.cp.BreadboardSim.Components;
 
-import com.sun.org.apache.xpath.internal.operations.Bool;
-import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.scene.Group;
 import javafx.scene.paint.Color;
-import javafx.scene.paint.Paint;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Line;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Text;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.reactfx.EventSource;
-import org.reactfx.EventStream;
-import org.reactfx.EventStreams;
-import org.reactfx.util.FxTimer;
 import sk.uniza.fri.cp.BreadboardSim.Board.Board;
 import sk.uniza.fri.cp.BreadboardSim.Board.BoardEvent;
 import sk.uniza.fri.cp.BreadboardSim.Board.GridSystem;
@@ -29,14 +22,14 @@ import sk.uniza.fri.cp.BreadboardSim.LightEmitter;
 import sk.uniza.fri.cp.BreadboardSim.SchoolBreadboard;
 import sk.uniza.fri.cp.BreadboardSim.Socket.Potential;
 import sk.uniza.fri.cp.BreadboardSim.Socket.Socket;
-import sk.uniza.fri.cp.BreadboardSim.Socket.SocketType;
 import sk.uniza.fri.cp.BreadboardSim.Socket.SocketsFactory;
 import sk.uniza.fri.cp.Bus.Bus;
 
-import java.time.Duration;
+import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Pripojenie na zbernice - address, data, control
@@ -56,6 +49,10 @@ public class BusInterface extends Component {
     private static final Color CONTROL_LED_ON = Color.YELLOW;
     private static final Color CONTROL_LED_OFF = Color.OLIVE;
 
+    private AddressBusCommunicator[] addressBusCommunicators = new AddressBusCommunicator[16];
+    private DataBusCommunicator[] dataBusCommunicators = new DataBusCommunicator[8];
+    private ControlBusCommunicator[] controlBusCommunicators = new ControlBusCommunicator[9];
+
 	private Bus bus;
 
 	private Rectangle background;
@@ -63,9 +60,6 @@ public class BusInterface extends Component {
 	private Socket[] addressSockets;
 	private Socket[] dataSockets;
 	private Socket[] controlSockets;
-	private BusCommunicator[] addressBusCommunicators;
-	private BusCommunicator[] dataBusCommunicators;
-	private BusCommunicator[] controlBusCommunicators;
 
     private final ChangeListener<Boolean> onSimulationStateChange = new ChangeListener<Boolean>() {
         @Override
@@ -142,7 +136,6 @@ public class BusInterface extends Component {
         public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
             ControlBusCommunicator.setControls(newValue.intValue());
 
-
             //0x140 -> 1 0100 0000 => signal zapisu MW/IW je v nule
             if ((newValue.intValue() & 0x140) != 0x140 && !lastWriteStateOn) {
                 DataBusCommunicator.setToWrite(true);
@@ -196,9 +189,6 @@ public class BusInterface extends Component {
         }
     };
 
-    public BusInterface() {
-    }
-
     public BusInterface(Board board) {
         super(board);
         this.bus = Bus.getBus();
@@ -234,17 +224,6 @@ public class BusInterface extends Component {
         this.addAllSockets(getPowerSockets());
         //zvysna sa pridavaju pocas vytvarania v getnerateInterface
 
-        //prvotna inicializacia
-        this.bus.setRandomAddress();
-        this.bus.setRandomData();
-        int control = this.bus.getControlBus();
-        for (int i = 4; i < 9; i++) { //iba pre vystupne signaly
-            if((1<<i & control) != 0)
-                controlBusCommunicators[i].setHigh();
-            else
-                controlBusCommunicators[i].setLow();
-        }
-
         registerListeners();
     }
 
@@ -254,15 +233,36 @@ public class BusInterface extends Component {
 
     @Override
     public void delete() {
-        super.delete();
-        unregisterListeners();
+        if (addressBusCommunicators[0].getPin() == null) {
+            //ak sa nejedna o prvu dosku, ta nemoze byt zmazana
+            super.delete();
+
+            unregisterListeners();
+
+            for (AddressBusCommunicator addressBusCommunicator : addressBusCommunicators)
+                addressBusCommunicator.delete();
+
+            for (DataBusCommunicator dataBusCommunicator : dataBusCommunicators)
+                dataBusCommunicator.delete();
+
+            for (ControlBusCommunicator controlBusCommunicator : controlBusCommunicators)
+                controlBusCommunicator.delete();
+        }
+
     }
 
     private void registerListeners() {
-        this.getBoard().simRunningProperty().addListener(onSimulationStateChange);
-        this.bus.addressBusProperty().addListener(onAddressBusChange);
-        this.bus.dataBusProperty().addListener(onDataBusChange);
-        this.bus.controlBusProperty().addListener(onControlBusChange);
+        if (addressBusCommunicators[0].getPin() != null) {
+            //iba hlavny pocuva na zmeny
+            this.getBoard().simRunningProperty().addListener(onSimulationStateChange);
+            this.bus.addressBusProperty().addListener(onAddressBusChange);
+            this.bus.dataBusProperty().addListener(onDataBusChange);
+            this.bus.controlBusProperty().addListener(onControlBusChange);
+
+            //prvotna inicializacia
+            this.bus.setRandomAddress();
+            this.bus.setRandomData();
+        } else BusCommunicator.MAIN_COMMUNICATORS.forEach(BusCommunicator::update);
     }
 
     private void unregisterListeners() {
@@ -278,7 +278,7 @@ public class BusInterface extends Component {
 
 		//ADRESNA ZBERNICA
 		addressSockets = new Socket[16];
-		addressBusCommunicators = new BusCommunicator[16];
+
 		Group addressInterface = new Group();
 		addressInterface.setLayoutX(grid.getSizeX() * 15);
 		addressInterface.setLayoutY(grid.getSizeY() * 4);
@@ -314,7 +314,6 @@ public class BusInterface extends Component {
 
 		//DATOVA ZBERNICA
         dataSockets = new Socket[8];
-        dataBusCommunicators = new BusCommunicator[8];
         Group dataInterface = new Group();
 		dataInterface.setLayoutX(grid.getSizeX() * 36);
 		dataInterface.setLayoutY(grid.getSizeY() * 4);
@@ -349,7 +348,6 @@ public class BusInterface extends Component {
 
 		//RIADIACA ZBERNICA
 		controlSockets = new Socket[9];
-		controlBusCommunicators = new BusCommunicator[9];
 		Group controlInterface = new Group();
 		controlInterface.setLayoutX(grid.getSizeX() * 45);
 		controlInterface.setLayoutY(grid.getSizeY() * 4);
@@ -418,54 +416,122 @@ public class BusInterface extends Component {
     }
 
 
-	private abstract static class BusCommunicator extends Device{
+    /**
+     * vysvetlenie prepojenia
+     * /* [COMMON_PIN} -> [COMMON_SOCKET] ~ [1. InterfaceSocket]
+     * /*                                 ~ [2. InterfaceSocket] ...
+     * /* -> pripojenie pinu k soketu
+     * /* ~  potenciál
+     */
+    private abstract static class BusCommunicator extends Device{
 
-		private static final double RADIUS_COEF = 0.4;
+        private static final double RADIUS_COEF = 0.4;
 
-		private Circle indicator;
-        private LightEmitter lightEmitter;
-        private Color onColor;
-        private Color offColor;
-        private volatile boolean indicatorOn;
+        //vsetky hlavne komunikatory, ktore komunikuju so zbernicou a riadia vystup
+        private static final ArrayList<BusCommunicator> MAIN_COMMUNICATORS = new ArrayList<>(33);
 
-        protected Pin pin; //pin pripojeny k rozhraniu na doske
-        private int byteNr; //cislo bitu na zbernici od najnizsieho radu
+        //spolocne sokety kazdeho interface pre kazdy komunikator zvlast
+        private static final Pin[] COMMON_PINS_ADDRESS = new Pin[16];
+        private static final Pin[] COMMON_PINS_DATA = new Pin[8];
+        private static final Pin[] COMMON_PINS_CONTROL = new Pin[9];
+
+        private static final Socket[] COMMON_SOCKETS_ADDRESS = new Socket[16];
+        private static final Socket[] COMMON_SOCKETS_DATA = new Socket[8];
+        private static final Socket[] COMMON_SOCKETS_CONTROL = new Socket[9];
+
+        private static final List<List<LightEmitter>> ADDRESS_LIGHT_EMITTERS =
+                Stream.generate(LinkedList<LightEmitter>::new).limit(16).collect(Collectors.toList());
+        private static final List<List<LightEmitter>> DATA_LIGHT_EMITTERS =
+                Stream.generate(LinkedList<LightEmitter>::new).limit(8).collect(Collectors.toList());
+        private static final List<List<LightEmitter>> CONTROL_LIGHT_EMITTERS =
+                Stream.generate(LinkedList<LightEmitter>::new).limit(9).collect(Collectors.toList());
+
+        //kazdy komunikator ma vlastne
+        private final Circle indicator;
+        private final LightEmitter lightEmitter;
+        private final Color onColor;
+        private final Color offColor;
+
+        private final Potential connectingPotential;
+        private final Pin pin; //iba jeden komunikator ma pin, ten hlavny, ten prvy, ktory vsetko riadi
+        private final List<LightEmitter> byteEmittersList; //ma ho iba hlavny
+        private final int byteNr; //cislo bitu na zbernici od najnizsieho radu
 
         public BusCommunicator(Board board, Socket interfaceSocket, int byteNr, Color onColor, Color offColor) {
             super(board);
 
-			this.byteNr = byteNr;
-			this.onColor = onColor;
-			this.offColor = offColor;
+            this.byteNr = byteNr;
+            this.onColor = onColor;
+            this.offColor = offColor;
 
-			GridSystem grid = board.getGrid();
-			this.indicator = new Circle(grid.getSizeMin() * RADIUS_COEF, offColor);
-
+            GridSystem grid = board.getGrid();
+            this.indicator = new Circle(grid.getSizeMin() * RADIUS_COEF, offColor);
             this.lightEmitter = new LightEmitter(board, this.indicator, this.onColor, this.offColor);
 
-			initPin();
+            //vyber spravych strukturo podla vytvaranej instancie
+            Pin[] commonPins = null;
+            Socket[] commonSockets = null;
+            Pin pin = null;
+            List<LightEmitter> thisByteEmittersList = null;
 
-            //vytvorenie vnuterneho soketu, prepojenie potencialom s vonkajsim a pripojenie pinu
-            //TODO TO TU JE ZRADA DAJAKA... TEN POTENCIAL SA STALE MENI... ZMENA V TRIEDE DB -> pri !W && !R
-//			Socket hiddenSocket = new Socket(interfaceSocket.getComponent());
-//			Potential hiddenPotential = new Potential(hiddenSocket, interfaceSocket);
-//			hiddenSocket.connect(this.pin);
-            interfaceSocket.connect(this.pin);
-            interfaceSocket.lockPin();
+            if (this instanceof AddressBusCommunicator) {
+                commonPins = COMMON_PINS_ADDRESS;
+                commonSockets = COMMON_SOCKETS_ADDRESS;
+                pin = new OutputPin(this, "Address Output Pin " + byteNr);
 
-			this.getChildren().addAll(indicator);
-			this.makeImmovable();
-		}
+                thisByteEmittersList = ADDRESS_LIGHT_EMITTERS.get(byteNr);
+            } else if (this instanceof DataBusCommunicator) {
+                commonPins = COMMON_PINS_DATA;
+                commonSockets = COMMON_SOCKETS_DATA;
+                pin = new InputOutputPin(this, "Data IO Pin " + byteNr);
+
+                thisByteEmittersList = DATA_LIGHT_EMITTERS.get(byteNr);
+            } else if (this instanceof ControlBusCommunicator) {
+                commonPins = COMMON_PINS_CONTROL;
+                commonSockets = COMMON_SOCKETS_CONTROL;
+                if (this.getByteNr() == 2 || this.getByteNr() == 3)
+                    pin = new InputPin(this, "Control Input Pin " + byteNr);
+                else
+                    pin = new OutputPin(this, "Control Output Pin " + byteNr);
+
+                thisByteEmittersList = CONTROL_LIGHT_EMITTERS.get(byteNr);
+            }
+
+            thisByteEmittersList.add(this.lightEmitter);
+
+            //inicializacia spolocneho pinu a soketu (ak este neprebehla)
+            if (commonPins[byteNr] == null) {
+                //inicializacia jedineho pinu komunikatora
+                commonPins[byteNr] = pin;
+
+                //inicializacia jedineho spolocneho soketu ku ktoremu sa pripajaju vsetky sokety rozhani
+                commonSockets[byteNr] = new Socket(interfaceSocket.getComponent());
+
+                //pripojenie pinu k soketu
+                commonSockets[byteNr].connect(commonPins[byteNr]);
+
+                //priradenie vytvoreneho pinu jedinemu komunikatoru
+                this.pin = commonPins[byteNr];
+                this.byteEmittersList = thisByteEmittersList;
+
+                MAIN_COMMUNICATORS.add(this);
+            } else {
+                //komunikator je iba podriadeny, zobrazuje informacie z hlavneho komunikatora, nema svoj pin
+                this.pin = null;
+                this.byteEmittersList = null;
+            }
+
+            //potencial spajajuci soket na interface (na doske) s vnutornym spolocnym soketom
+            this.connectingPotential = new Potential(commonSockets[byteNr], interfaceSocket);
+
+            this.getChildren().addAll(indicator);
+            this.makeImmovable();
+        }
 
         /**
          * Aktualizácia hodnoty komunikátora.
          */
         abstract public void update();
-
-        /**
-         * Inicializácia pinu volaná v konštruktore.
-         */
-        abstract protected void initPin();
 
         protected final int getByteNr() {
             return this.byteNr;
@@ -481,14 +547,12 @@ public class BusInterface extends Component {
                 this.turnIndicatorOn();
                 return true;
             } else {
-                //this.turnIndicatorOff();
                 return false;
             }
         }
 
         protected final void setHigh() {
-            //if(this.getBoard().isSimulationRunning())
-            this.setDataPin(this.pin, Pin.PinState.HIGH);
+            this.setPinForce(this.pin, Pin.PinState.HIGH);
             turnIndicatorOn();
         }
 
@@ -498,19 +562,17 @@ public class BusInterface extends Component {
                 this.turnIndicatorOff();
                 return true;
             } else {
-                //this.turnIndicatorOn();
                 return false;
             }
         }
 
         protected final void setLow() {
-            //if(this.getBoard().isSimulationRunning())
-            this.setDataPin(this.pin, Pin.PinState.LOW);
+            this.setPinForce(this.pin, Pin.PinState.LOW);
             turnIndicatorOff();
         }
 
         protected final void setHighImpedance(boolean turnIndicatorOn) {
-            this.setDataPin(this.pin, Pin.PinState.HIGH_IMPEDANCE);
+            this.setPinForce(this.pin, Pin.PinState.HIGH_IMPEDANCE);
             if (turnIndicatorOn)
                 turnIndicatorOn();
             else
@@ -519,11 +581,15 @@ public class BusInterface extends Component {
 
 
         protected final void turnIndicatorOn() {
-            this.lightEmitter.turnOn();
+            if (this.byteEmittersList != null) {
+                this.byteEmittersList.forEach(emitter -> emitter.turnOn());
+            }
         }
 
         protected final void turnIndicatorOff() {
-            this.lightEmitter.turnOff();
+            if (this.byteEmittersList != null) {
+                this.byteEmittersList.forEach(emitter -> emitter.turnOff());
+            }
         }
 
         @Override
@@ -535,13 +601,14 @@ public class BusInterface extends Component {
         public void delete() {
             super.delete();
             this.lightEmitter.delete();
+            this.connectingPotential.delete();
         }
 
         @Override
         public void reset() {
             this.pin.getSocket().setPotential(Potential.Value.NC);
         }
-	}
+    }
 
 	private static class AddressBusCommunicator extends BusCommunicator{
 
@@ -575,12 +642,6 @@ public class BusInterface extends Component {
         @Override
         public void simulate() {
         } //output, neprebieha simulacia
-
-        @Override
-        protected void initPin() {
-            this.pin = new OutputPin(this, "Address Output Pin " + this.getByteNr());
-        }
-
     }
 
 	private static class DataBusCommunicator extends BusCommunicator{
@@ -600,7 +661,7 @@ public class BusInterface extends Component {
             read = newRead;
             Bus.getBus().dataIsChanging();
             if (read)
-                this.setDataPin(this.getPin(), Pin.PinState.HIGH_IMPEDANCE);
+                this.setPinForce(this.getPin(), Pin.PinState.HIGH_IMPEDANCE);
 
             this.update();
         }
@@ -617,7 +678,6 @@ public class BusInterface extends Component {
 
 		/**
 		 * Aktualizacia po zmene dat na zbernici
-         * //TODO REFAKTORING
          */
 		public void update(){
             if (write) {
@@ -697,11 +757,6 @@ public class BusInterface extends Component {
             update();
 		}
 
-		@Override
-        protected void initPin() {
-            this.pin = new InputOutputPin(this, "Data IO Pin " + this.getByteNr());
-        }
-
     }
 
 	private static class ControlBusCommunicator extends BusCommunicator{
@@ -753,14 +808,6 @@ public class BusInterface extends Component {
                     }
                     break;
             }
-        }
-
-        @Override
-        protected void initPin() {
-            if (this.getByteNr() == 2 || this.getByteNr() == 3)
-                this.pin = new InputPin(this, "Control Input Pin " + this.getByteNr());
-            else
-                this.pin = new OutputPin(this, "Control Output Pin " + this.getByteNr());
         }
 	}
 }

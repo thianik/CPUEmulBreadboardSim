@@ -10,6 +10,7 @@ import javafx.scene.text.Text;
 import sk.uniza.fri.cp.BreadboardSim.Board.Board;
 import sk.uniza.fri.cp.BreadboardSim.Devices.LED;
 import sk.uniza.fri.cp.BreadboardSim.Board.GridSystem;
+import sk.uniza.fri.cp.BreadboardSim.SchoolBreadboard;
 import sk.uniza.fri.cp.BreadboardSim.Socket.Potential;
 import sk.uniza.fri.cp.BreadboardSim.Socket.Socket;
 
@@ -50,7 +51,7 @@ public class HexSegment extends Component{
         this.gridWidth = grid.getSizeX() * 8;
         this.gridHeight = grid.getSizeY() * 16;
 
-        this.background = new Rectangle(this.gridWidth, this.gridHeight, Color.rgb(51, 100, 68));
+        this.background = new Rectangle(this.gridWidth, this.gridHeight, SchoolBreadboard.BACKGROUND_COLOR);
 
 		this.inputSockets = new Socket[8];
 		Group inputSocketsGroup = generateInputSockets();

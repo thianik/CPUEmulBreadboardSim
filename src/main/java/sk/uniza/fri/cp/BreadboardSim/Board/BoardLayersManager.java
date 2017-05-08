@@ -31,8 +31,8 @@ public class BoardLayersManager {
 	private ArrayList<Device> devices;
 	private ArrayList<Wire> wires;
 
-
     private int lastCompnentId = 0;
+    private int lastSchoolBreadboardId = 0;
 
 	public BoardLayersManager(Pane backgound){
 		//inicializacia atributov
@@ -75,7 +75,8 @@ public class BoardLayersManager {
 
 		if(object instanceof Component){
 			Component component = (Component) object;
-            component.setId("c" + lastCompnentId++);
+            if (component.getId() == null)
+                component.setId("c" + lastCompnentId++);
             this.componentsLayer.getChildren().add(component);
             this.components.add(component);
             return true;
@@ -90,6 +91,11 @@ public class BoardLayersManager {
 
         if (object instanceof SchoolBreadboard) {
             SchoolBreadboard schoolBreadboard = (SchoolBreadboard) object;
+
+            //ak nema priradene ID, prirad mu nove
+            if (schoolBreadboard.getId() == null)
+                schoolBreadboard.setId("sb" + lastSchoolBreadboardId++);
+
             this.componentsLayer.getChildren().add(schoolBreadboard);
             this.schoolBreadboards.add(schoolBreadboard);
             //ak sa jedna o schoolbreadboard, pridaj vsetky komponenty do zoznamu ktore obsahuje zvlast
@@ -97,9 +103,9 @@ public class BoardLayersManager {
                 if (schBComponent.getId() == null)
                     //ak este nebolo ID nastavene prirad mu nove
                     schBComponent.setId("c" + lastCompnentId++);
-                else if (Integer.parseInt(schoolBreadboard.getId()) > lastCompnentId)
+                else if (Integer.parseInt(schoolBreadboard.getId().substring(2)) > lastCompnentId)
                     //ak uz bolo ID nastavene (napr. pri nacitavani), zisti ci nie je vacsie ako posledne triedy
-                    lastCompnentId = Integer.parseInt(schoolBreadboard.getId());
+                    lastCompnentId = Integer.parseInt(schoolBreadboard.getId().substring(2));
 
                 this.components.add(schBComponent);
             }
@@ -136,10 +142,10 @@ public class BoardLayersManager {
 		}
 
         if (object instanceof SchoolBreadboard) {
-            SchoolBreadboard schoolBreadboard = ((SchoolBreadboard) object);
+            SchoolBreadboard schoolBreadboard = (SchoolBreadboard) object;
             this.componentsLayer.getChildren().remove(schoolBreadboard);
             this.schoolBreadboards.remove(schoolBreadboard);
-            this.components.removeAll(schoolBreadboard.getComponents());
+            schoolBreadboard.getComponents().forEach(Component::delete);
             return true;
         }
 
@@ -179,22 +185,24 @@ public class BoardLayersManager {
     public void clear() {
 
         //cistenie kablikov
-        //this.wiresLayer.getChildren().clear();
-        //this.wires.clear();
         new ArrayList<>(this.wires).forEach(Wire::delete);
 
         //cistenie zariadeni
-        //this.devicesLayer.getChildren().clear();
-        //this.devices.clear();
         new ArrayList<>(this.devices).forEach(Device::delete);
 
         //cistenie komponentov
-        SchoolBreadboard schoolBreadboard = SchoolBreadboard.getSchoolBreadboard(null);
+        //SchoolBreadboard schoolBreadboard = SchoolBreadboard.getSchoolBreadboard(null);
         //this.componentsLayer.getChildren().retainAll(schoolBreadboard);
         //this.components.retainAll(schoolBreadboard.getComponents());
-        ArrayList<Component> componentsToDelete = new ArrayList<>(this.components);
-        componentsToDelete.removeAll(schoolBreadboard.getComponents());
-        componentsToDelete.forEach(Component::delete);
+//        ArrayList<Component> componentsToDelete = new ArrayList<>(this.components);
+        //componentsToDelete.removeAll(schoolBreadboard.getComponents());
+//        componentsToDelete.forEach(Component::delete);
+
+        new ArrayList<>(this.schoolBreadboards).forEach(SchoolBreadboard::delete);
+        List<Component> toRetain = this.schoolBreadboards.get(0).getComponents();
+        new ArrayList<>(this.components).stream().filter(component -> !toRetain.contains(component)).forEach(Component::delete);
+//        new ArrayList<>(this.components).forEach(Component::delete);
+
 
 
     }

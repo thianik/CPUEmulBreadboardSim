@@ -390,14 +390,6 @@ public class NumKeys extends Component {
             else Platform.runLater(() -> button.setFill(newColor));
         }
 
-//		//simulacia stlacenia tlacidla
-//		private void fireEvent(boolean pushed){
-//			//ak je riadok napojeny na zem
-//			if(this.row.getPotential().getValue() == Potential.Value.LOW){
-//				getBoard().addEvent(new BoardChangeEvent(this.column, pushed? Potential.Value.LOW : Potential.Value.HIGH)); //TODO pushed moze byt nahradene pressed?
-//			}
-//		}
-
         /**
          * Je stlacene tlacidlo a riadok zapojeny?
          *
@@ -414,7 +406,8 @@ public class NumKeys extends Component {
          */
         private boolean shouldBeColumnLow() {
             for (int y = 0; y < 4; y++) {
-                if (buttons[columnPos][y].isActive()) return true;
+                Button btn = buttons[columnPos][y];
+                if (btn != null && btn.isActive()) return true;
             }
 
             return false;

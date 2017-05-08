@@ -21,6 +21,4 @@ public interface Selectable {
 
 	boolean isSelectable();
 	void setSelectable(boolean newValue);
-
-    boolean isSelected();
 }

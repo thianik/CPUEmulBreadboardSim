@@ -68,8 +68,8 @@ public class ItemPicker extends VBox {
 	public void registerItem(Item item){
 		if(item instanceof Device)
 			devicesPane.getChildren().add(item);
-		else if(item instanceof Component)
-			componentsPane.getChildren().add(item);
+        else if (item instanceof Component || item instanceof SchoolBreadboard)
+            componentsPane.getChildren().add(item);
 
 		item.addEventFilter(MouseEvent.DRAG_DETECTED, event -> 	item.startFullDrag() );
 		item.addEventFilter(MouseEvent.MOUSE_CLICKED, event -> {

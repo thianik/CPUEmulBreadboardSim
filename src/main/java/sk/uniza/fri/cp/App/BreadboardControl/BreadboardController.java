@@ -139,11 +139,12 @@ public class BreadboardController implements Initializable {
         this.newItemPicker.registerItem(new SN74573());
         this.newItemPicker.registerItem(new U6264B());
 
+        this.newItemPicker.registerItem(new SchoolBreadboard());
         this.newItemPicker.registerItem(new Breadboard());
         this.newItemPicker.registerItem(new HexSegment());
         this.newItemPicker.registerItem(new NumKeys());
         this.newItemPicker.registerItem(new Probe());
-        this.newItemPicker.registerItem(new BusInterface());
+
     }
 
     @FXML
@@ -196,6 +197,7 @@ public class BreadboardController implements Initializable {
 
         board.clearBoard();
         ((Stage) root.getScene().getWindow()).setTitle("Simulátor - Nový obvod");
+        currentFile = null;
         board.clearChange();
     }
 
@@ -253,6 +255,23 @@ public class BreadboardController implements Initializable {
         }
 
         if (file != null) {
+            if (!saveAs && currentFile != null && currentFile.getName().equals(file.getName())) {
+                //opytanie sa ci chce naozaj prepisat subor
+                Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+                alert.setTitle("Potvrdenie");
+                alert.setHeaderText("Naozaj si prajete prepísať súbor " + file.getName() + "?");
+
+                ButtonType btnTypeYes = new ButtonType("Áno");
+                ButtonType btnTypeNo = new ButtonType("Nie");
+
+                alert.getButtonTypes().clear();
+                alert.getButtonTypes().addAll(btnTypeYes, btnTypeNo);
+
+                Optional<ButtonType> result = alert.showAndWait();
+
+                if (result.isPresent() && result.get() == btnTypeNo) return false;
+            }
+
             if (board.save(file)) {
                 board.clearChange();
                 ((Stage) root.getScene().getWindow()).setTitle("Simulátor - " + file.getName());
