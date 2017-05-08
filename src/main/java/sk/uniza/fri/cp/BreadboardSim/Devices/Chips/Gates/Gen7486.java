@@ -1,5 +1,6 @@
 package sk.uniza.fri.cp.BreadboardSim.Devices.Chips.Gates;
 
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import sk.uniza.fri.cp.BreadboardSim.Board.Board;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Chips.Chip;
@@ -13,7 +14,7 @@ import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.Pin;
 public class Gen7486 extends Chip {
 
     private static final String NAME = "7486";
-    private static final String DESCRIPTION = "QUADRUPLE 2-INPUT EXCLUSIVE-OR GATES";
+    private static final String SHORT_DESCRIPTION = "4x 2-vstupový XOR";
     private static final int PINS_COUNT = 14;
     private static final int _1A = 1;
     private static final int _1B = 2;
@@ -91,8 +92,9 @@ public class Gen7486 extends Chip {
         return NAME;
     }
 
-    public String getStringDescription() {
-        return DESCRIPTION;
+    @Override
+    public String getShortStringDescription() {
+        return SHORT_DESCRIPTION;
     }
 
     public Pane getImage() {

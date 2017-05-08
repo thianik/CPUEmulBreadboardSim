@@ -2,9 +2,7 @@ package sk.uniza.fri.cp.BreadboardSim.Devices.Chips;
 
 import javafx.scene.layout.Pane;
 import sk.uniza.fri.cp.BreadboardSim.Board.Board;
-import sk.uniza.fri.cp.BreadboardSim.Components.BusInterface;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.*;
-import sk.uniza.fri.cp.BreadboardSim.Socket.Potential;
 
 import java.util.Arrays;
 
@@ -14,7 +12,7 @@ import java.util.Arrays;
 public class U6264B extends Chip {
 
     private static final String NAME = "U6264B";
-    private static final String DESCRIPTION = "8kb pamäť";
+    private static final String SHORT_DESCRIPTION = "8kb pamäť";
     private static final int PINS_COUNT = 28;
     private static final int _NC = 1;
     private static final int _A12 = 2;
@@ -153,14 +151,14 @@ public class U6264B extends Chip {
         registerPin(_DQ5, new InputOutputPin(this, "DQ5"));
         registerPin(_DQ6, new InputOutputPin(this, "DQ6"));
         registerPin(_DQ7, new InputOutputPin(this, "DQ7"));
-        registerPin(_E1_, new InputPin(this, "E1_ (CE1_)"));
+        registerPin(_E1_, new InputPin(this, "E1_")); // (CE1_)
         registerPin(_A10, new InputPin(this, "A10"));
-        registerPin(_G_, new InputPin(this, "G_ (OE_)"));
+        registerPin(_G_, new InputPin(this, "G_")); //(OE_)
         registerPin(_A11, new InputPin(this, "A11"));
         registerPin(_A9, new InputPin(this, "A9"));
         registerPin(_A8, new InputPin(this, "A8"));
-        registerPin(_E2, new InputPin(this, "E2 (CE2)"));
-        registerPin(_W_, new InputPin(this, "W_ (WE_)"));
+        registerPin(_E2, new InputPin(this, "E2")); // (CE2)
+        registerPin(_W_, new InputPin(this, "W_")); // (WE_)
         registerPin(_VCC, new InputPin(this, "VCC"));
     }
 
@@ -193,8 +191,9 @@ public class U6264B extends Chip {
         return NAME;
     }
 
-    public String getStringDescription() {
-        return DESCRIPTION;
+    @Override
+    public String getShortStringDescription() {
+        return SHORT_DESCRIPTION;
     }
 
     public Pane getImage() {

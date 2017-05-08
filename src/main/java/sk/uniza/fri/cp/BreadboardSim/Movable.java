@@ -2,6 +2,7 @@ package sk.uniza.fri.cp.BreadboardSim;
 
 
 import javafx.event.EventHandler;
+import javafx.geometry.Bounds;
 import javafx.geometry.Point2D;
 import javafx.scene.Cursor;
 import javafx.scene.input.MouseEvent;
@@ -45,8 +46,10 @@ public abstract class Movable extends HighlightGroup {
 			//ak nebol nastaveny offset, zrejme nejde o kliknutie na objekt a tahanie ale vytvorenie noveho objektu
 			//ten chceme chitit v strede
 			if(nodeOffsetX == -1){
-                nodeOffsetX = getBoundsInParent().getWidth() / 2 * board.getAppliedScale();
-                nodeOffsetY = getBoundsInParent().getHeight() / 2 * board.getAppliedScale();
+                Point2D layout = getParent().sceneToLocal(event.getSceneX(), event.getSceneY());
+                Bounds boundsInParent = getBoundsInParent();
+                nodeOffsetX = event.getSceneX() - (layout.getX() - boundsInParent.getWidth() / 2.0 - boundsInParent.getMinX()) * board.getAppliedScale();
+                nodeOffsetY = event.getSceneY() - (layout.getY() - boundsInParent.getHeight() / 2.0 - boundsInParent.getMinY()) * board.getAppliedScale();
             }
 
 			GridSystem grid = board.getGrid();

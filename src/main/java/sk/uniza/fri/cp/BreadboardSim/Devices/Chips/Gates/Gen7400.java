@@ -1,9 +1,10 @@
 package sk.uniza.fri.cp.BreadboardSim.Devices.Chips.Gates;
 
-import javafx.scene.Group;
+import javafx.geometry.Pos;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
-import javafx.scene.text.Font;
-import javafx.scene.text.Text;
 import sk.uniza.fri.cp.BreadboardSim.Board.Board;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Chips.Chip;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.InputPin;
@@ -16,7 +17,8 @@ import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.Pin;
 public class Gen7400 extends Chip {
 
     private static final String NAME = "7400";
-    private static final String DESCRIPTION = "QUADRUPLE 2-INPUT POSITIVE-NAND GATES";
+    private static final String SHORT_DESCRIPTION = "4x 2-vstupový NAND";
+    private static final String WEB_LINK = "http://pd.uniza.sk/cp/7400.pdf";
     private static final int PINS_COUNT = 14;
     private static final int _1A = 1;
     private static final int _1B = 2;
@@ -93,8 +95,9 @@ public class Gen7400 extends Chip {
         return NAME;
     }
 
-    public String getStringDescription() {
-        return DESCRIPTION;
+    @Override
+    public String getShortStringDescription() {
+        return SHORT_DESCRIPTION;
     }
 
     public Pane getImage(){

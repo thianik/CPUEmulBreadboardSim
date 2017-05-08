@@ -30,6 +30,9 @@ import java.util.concurrent.Semaphore;
 public class CPU extends Thread {
     public static final Logger LOGGER = LogManager.getLogger("MainLogger");
 
+    //logovanie casov instrukcii
+    private static Logger timesLogger;
+
     private final OutputStream console; //vystupny stream pre vypis znakov na terminal
     private Program program; //zavedeny program s instrukciami a konstantami programu
 
@@ -72,6 +75,10 @@ public class CPU extends Thread {
 
     /** Zbernica */
     private final Bus bus;
+
+    public static void startTimesDebug() {
+        timesLogger = LogManager.getLogger("times_CPU");
+    }
 
     /**
      * Konštruktor prijíma OutputStream, na ktorý sa vypisujú znaky pomocou inštrukcie SCALL a zbernicu pomocou
@@ -181,7 +188,9 @@ public class CPU extends Thread {
                     }
                     f_int_level_old = it;
 
-                    //System.out.println(nextInstruction.getType().name() + "\t ns: " + (endInstExeTime - startInstExeTime) + "\t kontrola IT: " + (System.nanoTime() - endInstExeTime));
+                    if (timesLogger != null)
+                        timesLogger.info("{} \t ns: {} \t kontrola IT: {}", nextInstruction.getType().name(), (endInstExeTime - startInstExeTime), (System.nanoTime() - endInstExeTime));
+//                        timesLogger.info(nextInstruction.getType().name() + "\t ns: " + (endInstExeTime - startInstExeTime) + "\t kontrola IT: " + (System.nanoTime() - endInstExeTime));
 
                 } catch (Exception e ) {
                     //ak doslo k vynimke
@@ -1042,7 +1051,7 @@ public class CPU extends Thread {
     private void waitForSteadySimulation(enumInstructionsSet inst, boolean showConsoleMsg) {
         if (bus.isUsbConnected()) return;
         try {
-            if (!bus.waitForSteadyState()) {
+            if (!bus.waitForSteadyState() && isExecuting) {
                 //data nie su nastavene (simulator nebezi alebo nie je 5 sekund na nastavenie dat dostacujucich)
                 if (System.currentTimeMillis() - lastErrorMsgPrint > 2000) {
                     console.write(

@@ -1,6 +1,5 @@
 package sk.uniza.fri.cp.BreadboardSim.Devices.Chips;
 
-import javafx.application.Platform;
 import javafx.scene.layout.Pane;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -8,9 +7,6 @@ import sk.uniza.fri.cp.BreadboardSim.Board.Board;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.InputPin;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.OutputPin;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.Pin;
-import sk.uniza.fri.cp.Bus.Bus;
-
-import java.util.Arrays;
 
 /**
  * Created by Moris on 13.4.2017.
@@ -19,7 +15,7 @@ public class SN74573 extends Chip {
     public static final Logger LOGGER = LogManager.getLogger("MainLogger");
 
     private static final String NAME = "SN74573";
-    private static final String DESCRIPTION = "8bit register";
+    private static final String SHORT_DESCRIPTION = "8-bit register";
     private static final int PINS_COUNT = 20;
     private static final int _OE_ = 1;
     private static final int _1D = 2;
@@ -145,8 +141,9 @@ public class SN74573 extends Chip {
         return NAME;
     }
 
-    public String getStringDescription() {
-        return DESCRIPTION;
+    @Override
+    public String getShortStringDescription() {
+        return SHORT_DESCRIPTION;
     }
 
     public Pane getImage() {

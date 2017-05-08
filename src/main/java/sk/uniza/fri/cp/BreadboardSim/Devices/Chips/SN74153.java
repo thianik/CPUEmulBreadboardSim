@@ -12,7 +12,7 @@ import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.Pin;
 public class SN74153 extends Chip {
 
     private static final String NAME = "SN74153";
-    private static final String DESCRIPTION = "DUAL 1-OF-4 DATA SELECTORS/MULTIPLEXERS";
+    private static final String SHORT_DESCRIPTION = "2x 1 zo 4 multiplexor";
     private static final int PINS_COUNT = 16;
     private static final int _1G_ = 1;
     private static final int _B = 2;
@@ -108,9 +108,11 @@ public class SN74153 extends Chip {
         return NAME;
     }
 
-    public String getStringDescription() {
-        return DESCRIPTION;
+    @Override
+    public String getShortStringDescription() {
+        return SHORT_DESCRIPTION;
     }
+
 
     public Pane getImage() {
         return generateItemImage(NAME, PINS_COUNT);

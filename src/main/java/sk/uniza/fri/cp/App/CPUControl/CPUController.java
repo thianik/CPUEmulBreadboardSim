@@ -30,6 +30,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
+import javafx.scene.input.KeyCombination;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.BorderPane;
@@ -371,6 +372,14 @@ public class CPUController implements Initializable {
             btnPause.getScene().getAccelerators().put(new KeyCodeCombination(KeyCode.F9), ()->btnPause.fire());
             btnReset.getScene().getAccelerators().put(new KeyCodeCombination(KeyCode.F12), ()->btnReset.fire());
             btnStop.getScene().getAccelerators().put(new KeyCodeCombination(KeyCode.F10), ()->btnStop.fire());
+
+            btnStop.getScene().getAccelerators().put(new KeyCodeCombination(KeyCode.D, KeyCombination.CONTROL_DOWN, KeyCombination.ALT_DOWN), () -> {
+                CPU.startTimesDebug();
+                Notifications.create()
+                        .title("DEBUG")
+                        .text("Logovanie zapnuté")
+                        .showWarning();
+            });
         });
 
         //Stavovy riadok - GUI Update
@@ -1052,7 +1061,13 @@ public class CPUController implements Initializable {
         //ak cpu bezi
         if(this.cpu != null && this.cpu.isAlive()){
             if (this.program.hasIOInstruction() && !Bus.getBus().isUsbConnected()) {
-                breadboardController.powerOn();
+                if (!breadboardController.powerOn())
+                    //ak bola simulacia vypnuta, pockaj chvilu na zahriatie
+                    try {
+                        Thread.sleep(100);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
             }
 
             this.cos_cpu.setUnused();

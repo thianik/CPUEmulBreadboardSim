@@ -4,9 +4,14 @@ package sk.uniza.fri.cp.BreadboardSim.Wire;
 import javafx.event.Event;
 import javafx.event.EventHandler;
 import javafx.geometry.Bounds;
+import javafx.geometry.Pos;
 import javafx.scene.Group;
+import javafx.scene.control.ColorPicker;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.Pane;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Line;
 import javafx.scene.shape.Rectangle;
@@ -50,7 +55,7 @@ public class Wire extends HighlightGroup {
     private EventHandler<MouseEvent> onMouseDragDetected = new EventHandler<MouseEvent>() {
         @Override
         public void handle(MouseEvent event) {
-            if (event.isPrimaryButtonDown() && event.isControlDown() && event.getTarget() instanceof WireSegment) {
+            if (event.isPrimaryButtonDown() && (event.isControlDown() || event.getClickCount() == 2) && event.getTarget() instanceof WireSegment) {
                 WireSegment segmentToSplit = ((WireSegment) event.getTarget());
                 createdJoint = splitSegment(segmentToSplit);
                 event.consume();
@@ -74,6 +79,18 @@ public class Wire extends HighlightGroup {
     };
 
     private EventHandler<MouseEvent> onMouseReleased = event -> createdJoint = null;
+
+    private EventHandler<MouseEvent> onMouseEntered = event -> {
+        if (!this.isSelected()) {
+            this.highlightSegments(0.7);
+        }
+    };
+
+    private EventHandler<MouseEvent> onMouseExited = event -> {
+        if (!this.isSelected()) {
+            this.unhighlighSegments();
+        }
+    };
 
 	/**
 	 * 
@@ -154,6 +171,10 @@ public class Wire extends HighlightGroup {
     public void changeColor(Color newColor) {
         this.color = newColor;
         this.segments.forEach(wireSegment -> wireSegment.setColor(this.color));
+        for (WireEnd end : this.ends) {
+            end.setDefaultColor();
+        }
+        if (this.isSelected()) this.highlightSegments(1);
     }
 
     public Color getColor() {
@@ -252,6 +273,8 @@ public class Wire extends HighlightGroup {
         this.addEventHandler(MouseEvent.DRAG_DETECTED, onMouseDragDetected);
         this.addEventHandler(MouseEvent.MOUSE_DRAGGED, onMouseDragged);
         this.addEventHandler(MouseEvent.MOUSE_RELEASED, onMouseReleased);
+        this.addEventHandler(MouseEvent.MOUSE_ENTERED, onMouseEntered);
+        this.addEventHandler(MouseEvent.MOUSE_EXITED, onMouseExited);
     }
 
     //posuvanie jointov spojenia
@@ -338,7 +361,7 @@ public class Wire extends HighlightGroup {
 
         if (!this.isSelectable()) return;
 
-        this.highlightSegments();
+        this.highlightSegments(1);
     }
 
     @Override
@@ -350,10 +373,8 @@ public class Wire extends HighlightGroup {
 
     private ArrayList<Shape> selectionShapes = new ArrayList<>();
 
-    private void highlightSegments() {
-
-        double offset = 1;
-        this.selectionShapes.clear();
+    private void highlightSegments(double opacity) {
+        this.unhighlighSegments();
 
         this.segments.forEach(segment -> {
 
@@ -365,7 +386,7 @@ public class Wire extends HighlightGroup {
             newLine.setStrokeWidth(1.5);
             newLine.setStroke(this.getColor().invert());
             newLine.setStrokeLineCap(StrokeLineCap.ROUND);
-            newLine.setOpacity(0.8);
+            newLine.setOpacity(opacity);
             newLine.setMouseTransparent(true);
 
             this.selectionShapes.add(newLine);
@@ -377,5 +398,21 @@ public class Wire extends HighlightGroup {
     private void unhighlighSegments() {
         this.getChildren().removeAll(this.selectionShapes);
         this.selectionShapes.clear();
+    }
+
+    @Override
+    public Pane getDescription() {
+        Pane cached = super.getDescription();
+        if (cached == null) {
+            VBox wrapper = new VBox();
+            wrapper.setAlignment(Pos.CENTER);
+
+            ColorPicker colorPicker = new ColorPicker(getColor());
+            colorPicker.setOnAction(event -> this.changeColor(colorPicker.getValue()));
+
+            wrapper.getChildren().add(colorPicker);
+
+            return wrapper;
+        } else return cached;
     }
 }

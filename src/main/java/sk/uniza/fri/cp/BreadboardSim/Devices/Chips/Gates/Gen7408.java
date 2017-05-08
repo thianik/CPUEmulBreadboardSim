@@ -1,5 +1,6 @@
 package sk.uniza.fri.cp.BreadboardSim.Devices.Chips.Gates;
 
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import sk.uniza.fri.cp.BreadboardSim.Board.Board;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Chips.Chip;
@@ -13,8 +14,7 @@ import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.Pin;
 public class Gen7408 extends Chip {
 
     private static final String NAME = "7408";
-    private static final String DESCRIPTION = "High-Speed CMOS Logic\n" +
-            "Quad 2-Input AND Gate";
+    private static final String SHORT_DESCRIPTION = "4x 2-vstupový AND";
     private static final int PINS_COUNT = 14;
     private static final int _1A = 1;
     private static final int _1B = 2;
@@ -92,8 +92,8 @@ public class Gen7408 extends Chip {
     }
 
     @Override
-    public String getStringDescription() {
-        return DESCRIPTION;
+    public String getShortStringDescription() {
+        return SHORT_DESCRIPTION;
     }
 
     public Pane getImage() {

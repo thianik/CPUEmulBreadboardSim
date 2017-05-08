@@ -14,6 +14,7 @@ import javafx.scene.shape.Rectangle;
 import sk.uniza.fri.cp.BreadboardSim.Components.Component;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Chips.Chip;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Device;
+import sun.security.krb5.internal.crypto.Des;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -27,7 +28,7 @@ import java.util.LinkedList;
 public class ItemPicker extends VBox {
 
 	private ScrollPane contentPane;
-	private ScrollPane descriptionPane;
+    private DescriptionPane descriptionPane;
 
 	private FlowPane devicesPane;
 	private FlowPane componentsPane;
@@ -72,11 +73,11 @@ public class ItemPicker extends VBox {
 
 		item.addEventFilter(MouseEvent.DRAG_DETECTED, event -> 	item.startFullDrag() );
 		item.addEventFilter(MouseEvent.MOUSE_CLICKED, event -> {
-			if(this.descriptionPane != null) this.descriptionPane.setContent(item.getDescription());
-		});
+            if (this.descriptionPane != null) this.descriptionPane.setDescription(item);
+        });
 	}
 
-	public void setPanelForDescription(ScrollPane descriptionPane){
-		this.descriptionPane = descriptionPane;
+    public void setPanelForDescription(DescriptionPane descriptionPane) {
+        this.descriptionPane = descriptionPane;
 	}
 }

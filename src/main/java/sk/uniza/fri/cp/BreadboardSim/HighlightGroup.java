@@ -15,8 +15,9 @@ import sk.uniza.fri.cp.BreadboardSim.Board.Board;
  */
 public abstract class HighlightGroup extends Group implements Selectable {
 
-
-	private boolean isSelectable;
+    AnchorPane cachedDescription;
+    private boolean isSelectable;
+    private boolean isSelected;
 
 	public HighlightGroup(){
 	    this.isSelectable = true;
@@ -62,23 +63,24 @@ public abstract class HighlightGroup extends Group implements Selectable {
 
 
 	public Pane getDescription(){
-		return new Pane(new Label("No description \n" + this.getClass().getSimpleName()));
-	}
+        if (this.cachedDescription != null) return this.cachedDescription;
+        return null;
+    }
 
     @Override
 	public void select(){
-
-	}
+        this.isSelected = true;
+    }
 
 	@Override
 	public void deselect(){
-
-	}
+        this.isSelected = false;
+    }
 
 	@Override
 	public void delete(){
-
-	}
+        this.isSelected = false;
+    }
 
     @Override
     public boolean isSelectable() {
@@ -88,5 +90,9 @@ public abstract class HighlightGroup extends Group implements Selectable {
     @Override
     public void setSelectable(boolean newValue) {
         this.isSelectable = newValue;
+    }
+
+    public boolean isSelected() {
+        return this.isSelected;
     }
 }

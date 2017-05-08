@@ -13,7 +13,7 @@ import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.Pin;
 public class Gen7402 extends Chip{
 
     private static final String NAME = "7402";
-    private static final String DESCRIPTION = "QUADRUPLE 2-INPUT POSITIVE-NOR GATES";
+    private static final String SHORT_DESCRIPTION = "4x 2-vstupový NOR";
     private static final int PINS_COUNT = 14;
     private static final int _1Y = 1;
     private static final int _1A = 2;
@@ -91,8 +91,8 @@ public class Gen7402 extends Chip{
     }
 
     @Override
-    public String getStringDescription() {
-        return DESCRIPTION;
+    public String getShortStringDescription() {
+        return SHORT_DESCRIPTION;
     }
 
     public Pane getImage(){

@@ -12,7 +12,7 @@ import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.Pin;
 public class SN74148 extends Chip {
 
     private static final String NAME = "SN74148";
-    private static final String DESCRIPTION = "8-LINE TO 3-LINE PRIORITY ENCODER";
+    private static final String SHORT_DESCRIPTION = "Prioritný kóder z 8 na 3";
     private static final int PINS_COUNT = 16;
     private static final int _4 = 1;
     private static final int _5 = 2;
@@ -133,9 +133,11 @@ public class SN74148 extends Chip {
         return NAME;
     }
 
-    public String getStringDescription() {
-        return DESCRIPTION;
+    @Override
+    public String getShortStringDescription() {
+        return SHORT_DESCRIPTION;
     }
+
 
     public Pane getImage() {
         return generateItemImage(NAME, PINS_COUNT);

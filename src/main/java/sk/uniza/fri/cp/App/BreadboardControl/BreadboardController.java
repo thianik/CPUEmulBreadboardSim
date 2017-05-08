@@ -43,9 +43,11 @@ public class BreadboardController implements Initializable {
     @FXML private ColorPicker wireColorPicker;
     @FXML private SplitPane toolsSplitPane;
     private ItemPicker newItemPicker;
-    private ScrollPane descriptionPane;
+    private DescriptionPane descriptionPane;
 
     @FXML private Label lbCoordinates;
+    @FXML
+    private Label lbZoom;
 
     @FXML
     private ToggleSwitch tsPower;
@@ -58,9 +60,7 @@ public class BreadboardController implements Initializable {
         this.wireColorPicker.setValue(Wire.getDefaultColor());
         this.wireColorPicker.setOnAction(event -> Wire.setDefaultColor(wireColorPicker.getValue()));
 
-        this.descriptionPane = new ScrollPane();
-        this.descriptionPane.setFitToHeight(true);
-        this.descriptionPane.setFitToWidth(true);
+        this.descriptionPane = new DescriptionPane();
 
         this.newItemPicker = new ItemPicker();
         this.newItemPicker.setPanelForDescription(this.descriptionPane);
@@ -71,12 +71,17 @@ public class BreadboardController implements Initializable {
         board = new Board(2000, 2000, 10);
         board.setDescriptionPane(this.descriptionPane);
         board.setOnMouseMoved(event -> {
-            double offsetX = board.getViewportBounds().getMinX();
-            double offsetY = board.getViewportBounds().getMinY();
-            Point2D cursorPoint = board.sceneToLocal(event.getSceneX(), event.getSceneY());
-            Point2D gridPoint = board.getGrid().getBox(cursorPoint.getX() - offsetX, cursorPoint.getY() - offsetY);
+            Point2D gridPoint = board.getMousePositionOnGrid(event);
             lbCoordinates.setText(((int) gridPoint.getX()) + "x" + ((int) gridPoint.getY()));
         });
+
+        board.zoomScaleProperty().addListener(new ChangeListener<Number>() {
+            @Override
+            public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
+                lbZoom.setText(((int) (newValue.doubleValue() * 100)) + "%");
+            }
+        });
+
 
         //ak sa zmeni stav simulacie, zmen aj tlacitko spustania simulacie
         board.simRunningProperty().addListener((observable, oldValue, newValue) -> {
@@ -108,8 +113,12 @@ public class BreadboardController implements Initializable {
         this.board.deleteSelect();
     }
 
-    public void powerOn() {
+    public boolean powerOn() {
+        if (this.board.isSimulationRunning()) {
+            return true;
+        }
         this.board.powerOn();
+        return false;
     }
 
     private void registerItems(){

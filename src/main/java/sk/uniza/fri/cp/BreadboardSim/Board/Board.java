@@ -3,6 +3,7 @@ package sk.uniza.fri.cp.BreadboardSim.Board;
 
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
+import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
@@ -21,10 +22,9 @@ import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import org.jdom2.*;
 import org.jdom2.input.SAXBuilder;
-import org.jdom2.output.Format;
 import org.jdom2.output.XMLOutputter;
-import org.jdom2.util.IteratorIterable;
 import sk.uniza.fri.cp.BreadboardSim.Components.*;
+import sk.uniza.fri.cp.BreadboardSim.DescriptionPane;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Chips.*;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Chips.Gates.*;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Device;
@@ -43,7 +43,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Plocha s breadboardmi ku ktorym su pripajane komponenty
@@ -63,11 +62,9 @@ public class Board extends ScrollPane {
 	private BoardLayersManager layersManager;
     private boolean hasChanged = false;
 
-	private ObservableValue<Point2D> cursorPosition;
-
 	private Item addingItem;
 
-	private ScrollPane descriptionPane;
+    private DescriptionPane descriptionPane;
 
 	//pomocne funkcie
 	public static Text getLabelText(String text, int size){
@@ -80,10 +77,15 @@ public class Board extends ScrollPane {
 	}
 
     private double SCALE_DELTA = 1.1;
-    private double SCALE_TOTAL = 1;
+    //private double scale_total = 1;
+    private SimpleDoubleProperty scale_total = new SimpleDoubleProperty(1);
 
     public double getAppliedScale() {
-        return SCALE_TOTAL;
+        return scale_total.getValue();
+    }
+
+    public SimpleDoubleProperty zoomScaleProperty() {
+        return scale_total;
     }
 
     public Board(double width, double height, int gridSizePx) {
@@ -95,9 +97,6 @@ public class Board extends ScrollPane {
         this.gridSystem = new GridSystem(gridSizePx);
         Pane gridBackground = gridSystem.generateBackground(this.widthPx, this.heightPx, Color.WHITESMOKE, Color.GRAY);
 		this.layersManager = new BoardLayersManager(gridBackground);
-
-		this.cursorPosition = new SimpleObjectProperty<>();
-
 
         this.setPannable(false);
 
@@ -116,33 +115,8 @@ public class Board extends ScrollPane {
 
         this.hasChanged = false;
 
-//        this.setFitToWidth(true);
-//        this.setFitToHeight(true);
 
-        //ZOOM
-//        this.addEventFilter(ScrollEvent.ANY, e -> {
-//            e.consume();
-//            Node content = this.getContent();
-//
-//            if (e.getDeltaY() == 0) {
-//                return;
-//            }
-//            double scaleFactor
-//                    = (e.getDeltaY() > 0)
-//                    ? SCALE_DELTA
-//                    : 1 / SCALE_DELTA;
-//
-//            if (scaleFactor * SCALE_TOTAL >= 0.5) {
-//                content.setScaleX(this.getContent().getScaleX() * scaleFactor);
-//                content.setScaleY(this.getContent().getScaleY() * scaleFactor);
-//                SCALE_TOTAL *= scaleFactor;
-//
-//            }
-//        });
-
-//
-
-
+        //ZOOM credit: http://stackoverflow.com/questions/16680295/javafx-correct-scaling
         final Group contentGroup = this.layersManager.getLayers();
         final StackPane zoomPane = new StackPane(contentGroup);
         final Group scrollContent = new Group(zoomPane);
@@ -169,21 +143,24 @@ public class Board extends ScrollPane {
             double scaleFactor = (event.getDeltaY() > 0) ? SCALE_DELTA
                     : 1 / SCALE_DELTA;
 
-            // amount of scrolling in each direction in scrollContent coordinate
-            // units
-            Point2D scrollOffset = figureScrollOffset(scrollContent, this);
+            if (scaleFactor * scale_total.get() >= 0.3 && scaleFactor * scale_total.get() <= 3) {
+                // amount of scrolling in each direction in scrollContent coordinate
+                // units
+                Point2D scrollOffset = figureScrollOffset(scrollContent, this);
 
-            contentGroup.setScaleX(contentGroup.getScaleX() * scaleFactor);
-            contentGroup.setScaleY(contentGroup.getScaleY() * scaleFactor);
+                contentGroup.setScaleX(contentGroup.getScaleX() * scaleFactor);
+                contentGroup.setScaleY(contentGroup.getScaleY() * scaleFactor);
 
-            SCALE_TOTAL *= scaleFactor;
+                scale_total.setValue(scale_total.doubleValue() * scaleFactor);
 
-            // move viewport so that old center remains in the center after the
-            // scaling
-            repositionScroller(scrollContent, this, scaleFactor, scrollOffset);
+
+                // move viewport so that old center remains in the center after the
+                // scaling
+                repositionScroller(scrollContent, this, scaleFactor, scrollOffset);
+            }
         });
 
-// Panning via drag....
+        // Panning via drag....
         final ObjectProperty<Point2D> lastMouseCoordinates = new SimpleObjectProperty<Point2D>();
         scrollContent.setOnMousePressed(new EventHandler<MouseEvent>() {
             @Override
@@ -211,6 +188,7 @@ public class Board extends ScrollPane {
         });
 
 
+
         this.addEventHandler(MouseDragEvent.MOUSE_DRAG_ENTERED, event -> {
                 hasChanged = true;
                 if(addingItem == null && event.getGestureSource() instanceof Item){
@@ -221,9 +199,9 @@ public class Board extends ScrollPane {
 						addingItem = item.getClass().getConstructor(Board.class).newInstance(board);
 						addItem(addingItem);
                         Point2D point = this.getContent().sceneToLocal(event.getSceneX(), event.getSceneY());
-                        Event.fireEvent(addingItem, new MouseEvent(MouseEvent.MOUSE_DRAGGED, event.getX(), event.getY(),
-								event.getScreenX(), event.getScreenY(), MouseButton.PRIMARY, 1, true,
-								true, true, true, true, true,
+                        Event.fireEvent(addingItem, new MouseEvent(MouseEvent.MOUSE_DRAGGED, event.getSceneX(), event.getSceneY(),
+                                event.getScreenX(), event.getScreenY(), MouseButton.PRIMARY, 1, true,
+                                true, true, true, true, true,
 								true, true, true, true, null));
 
 					} catch (InstantiationException e) {
@@ -241,32 +219,31 @@ public class Board extends ScrollPane {
 			}
         );
 
-
         this.addEventFilter(MouseDragEvent.MOUSE_DRAG_OVER, event -> {
             if(addingItem != null){
                     Point2D point = this.getContent().sceneToLocal(event.getSceneX(), event.getSceneY());
-                    Event.fireEvent(addingItem, new MouseEvent(MouseEvent.MOUSE_DRAGGED, point.getX() * SCALE_TOTAL, point.getY() * SCALE_TOTAL,
-                            point.getX(), point.getY(), MouseButton.PRIMARY, 1, true,
+                Event.fireEvent(addingItem, new MouseEvent(MouseEvent.MOUSE_DRAGGED, event.getSceneX(), event.getSceneY(),
+                        event.getScreenX(), event.getScreenY(), MouseButton.PRIMARY, 1, true,
                             true, true, true, true, true,
 							true, true, true, true, null));
 				}
 			}
         );
 
-        this.addEventHandler(MouseDragEvent.MOUSE_DRAG_RELEASED, event -> {
+        this.addEventFilter(MouseDragEvent.MOUSE_DRAG_RELEASED, event -> {
             if(addingItem != null){
                     Point2D point = this.getContent().sceneToLocal(event.getSceneX(), event.getSceneY());
-                Event.fireEvent(addingItem, new MouseEvent(MouseEvent.MOUSE_RELEASED, event.getX(), event.getY(),
-							event.getScreenX(), event.getScreenY(), MouseButton.PRIMARY, 1, true,
-							true, true, true, true, true,
+                Event.fireEvent(addingItem, new MouseEvent(MouseEvent.MOUSE_RELEASED, event.getSceneX(), event.getSceneY(),
+                        event.getScreenX(), event.getScreenY(), MouseButton.PRIMARY, 1, true,
+                        true, true, true, true, true,
 							true, true, true, true, null));
 					addingItem = null;
 				}
 			}
         );
 
-		this.addEventFilter(MouseDragEvent.MOUSE_DRAG_EXITED, new EventHandler<MouseDragEvent>() {
-			@Override
+        this.addEventHandler(MouseDragEvent.MOUSE_DRAG_EXITED, new EventHandler<MouseDragEvent>() {
+            @Override
 			public void handle(MouseDragEvent event) {
 				if(addingItem != null) {
                     addingItem.delete();
@@ -350,8 +327,8 @@ public class Board extends ScrollPane {
         return layersManager.getLayer("background").getLocalToSceneTransform().getTy();
     }
 
-	public void setDescriptionPane(ScrollPane descriptionPane){
-		this.descriptionPane = descriptionPane;
+    public void setDescriptionPane(DescriptionPane descriptionPane) {
+        this.descriptionPane = descriptionPane;
 	}
 
 	/**
@@ -366,7 +343,7 @@ public class Board extends ScrollPane {
 
 		//ak je toto jediný vybraný item, ukáž informácie o ňom
 		if(selected.size() == 0)
-			 this.descriptionPane.setContent(item.getDescription());
+            this.descriptionPane.setDescription(item);
 
 		if(!selected.contains(item)) {
 			item.select();
@@ -390,8 +367,8 @@ public class Board extends ScrollPane {
 	public void clearSelect(){
 		selected.forEach(item -> item.deselect());
 		selected.clear();
-		this.descriptionPane.setContent(null);
-	}
+        this.descriptionPane.clear();
+    }
 
 	public void deleteSelect(){
 		selected.forEach(item -> item.delete());
@@ -500,6 +477,11 @@ public class Board extends ScrollPane {
 	public void addEvent(BoardEvent event){
 		simulator.addEvent(event);
         //if(!isSimulationRunning()) System.out.println("pridavanie eventu aj ked simulacia nebezi");
+    }
+
+    public Point2D getMousePositionOnGrid(MouseEvent event) {
+        Point2D local = layersManager.getLayer("background").sceneToLocal(event.getSceneX(), event.getSceneY());
+        return gridSystem.getBox(local.getX(), local.getY(), getAppliedScale());
     }
 
 

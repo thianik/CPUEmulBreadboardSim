@@ -334,6 +334,7 @@ public abstract class Device extends Item {
         super.delete();
 
         this.disconnectAllPins();
+        unhighlightConnectibleSockets();
     }
 
 

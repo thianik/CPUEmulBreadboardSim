@@ -1,5 +1,6 @@
 package sk.uniza.fri.cp.BreadboardSim.Devices.Chips;
 
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import sk.uniza.fri.cp.BreadboardSim.Board.Board;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.InputPin;
@@ -12,7 +13,7 @@ import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.Pin;
 public class SN74151 extends Chip {
 
     private static final String NAME = "SN74151";
-    private static final String DESCRIPTION = "8-LINE TO 1-LINE DATA MULTIPLEXEROR";
+    private static final String SHORT_DESCRIPTION = "8 na 1 multiplexor";
     private static final int PINS_COUNT = 16;
     private static final int _D3 = 1;
     private static final int _D2 = 2;
@@ -111,8 +112,9 @@ public class SN74151 extends Chip {
         return NAME;
     }
 
-    public String getStringDescription() {
-        return DESCRIPTION;
+    @Override
+    public String getShortStringDescription() {
+        return SHORT_DESCRIPTION;
     }
 
     public Pane getImage() {

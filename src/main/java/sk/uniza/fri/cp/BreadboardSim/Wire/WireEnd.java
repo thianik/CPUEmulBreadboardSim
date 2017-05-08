@@ -32,6 +32,9 @@ public class WireEnd extends Joint {
 
     private static long time = 0;
     private static long count = 0;
+
+    private boolean moved;
+
     private ChangeListener<Transform> socketPositionChangeListener = (observable, oldValue, newValue) -> {
         long startTime = System.nanoTime();
         if(lastPosX == -1){
@@ -71,6 +74,8 @@ public class WireEnd extends Joint {
         this.addEventFilter(MouseEvent.DRAG_DETECTED, event -> {
             startFullDrag();
 
+            this.moved = true;
+
             if (this.getSocket() != null)
                 this.disconnectSocket();
 
@@ -80,6 +85,11 @@ public class WireEnd extends Joint {
         this.addEventFilter(MouseEvent.MOUSE_RELEASED, event -> {
             getWire().setMouseTransparent(false);
             getWire().setOpacity(1);
+
+            if (!this.moved)
+                getBoard().addSelect(getWire());
+
+            this.moved = false;
 
             event.consume();
         });

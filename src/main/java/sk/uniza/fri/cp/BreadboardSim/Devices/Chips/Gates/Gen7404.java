@@ -1,5 +1,6 @@
 package sk.uniza.fri.cp.BreadboardSim.Devices.Chips.Gates;
 
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import sk.uniza.fri.cp.BreadboardSim.Board.Board;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Chips.Chip;
@@ -13,7 +14,7 @@ import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.Pin;
 public class Gen7404 extends Chip {
 
     private static final String NAME = "7404";
-    private static final String DESCRIPTION = "HEX INVENTERS";
+    private static final String SHORT_DESCRIPTION = "6x negácia";
     private static final int PINS_COUNT = 14;
     private static final int _1A = 1;
     private static final int _1Y = 2;
@@ -95,8 +96,8 @@ public class Gen7404 extends Chip {
     }
 
     @Override
-    public String getStringDescription() {
-        return DESCRIPTION;
+    public String getShortStringDescription() {
+        return SHORT_DESCRIPTION;
     }
 
     public Pane getImage() {

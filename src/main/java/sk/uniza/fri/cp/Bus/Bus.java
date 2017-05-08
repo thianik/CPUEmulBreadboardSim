@@ -242,7 +242,7 @@ public class Bus{
     public void dataInSteadyState() {
 //      LOGGER.debug("STEADY STATE IN");
 //      QUEUELOGGER.debug("STEADY STATE BEFORE RELEASE");
-        dataSemaphore.release();
+        dataSemaphore.release(20);
 //      QUEUELOGGER.debug("STEADY STATE AFTER RELEASE");
 //      LOGGER.debug("STEADY STATE OUT");
     }

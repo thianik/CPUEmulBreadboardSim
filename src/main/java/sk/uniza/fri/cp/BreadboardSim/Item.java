@@ -18,11 +18,10 @@ import sk.uniza.fri.cp.BreadboardSim.Board.Board;
  */
 public abstract class Item extends Movable {
 
+    AnchorPane cachedDescription;
 
 	public Item(Board board){
 		super(board);
-
-
 	}
 
 	public Item(Board board, int gridPosX, int gridPosY){
@@ -56,8 +55,11 @@ public abstract class Item extends Movable {
 	 * @return Panel s popisom
 	 */
     public AnchorPane getDescription() {
-        Label text = new Label("Description ... " + this.getClass().getSimpleName());
-		text.setFont(Font.font(10));
-        return new AnchorPane(text);
+        if (this.cachedDescription != null) return cachedDescription;
+        return null;
+    }
+
+    protected void cacheDescription(AnchorPane descriptionPane) {
+        this.cachedDescription = descriptionPane;
     }
 }

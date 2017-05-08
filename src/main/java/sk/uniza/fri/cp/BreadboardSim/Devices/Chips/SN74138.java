@@ -14,7 +14,7 @@ import java.util.Arrays;
 public class SN74138 extends Chip {
 
     private static final String NAME = "SN74138";
-    private static final String DESCRIPTION = "3-LINE TO 8-LINE DECODERS/DEMULTIPLEXERS";
+    private static final String SHORT_DESCRIPTION = "Dekóder z 3 na 8";
     private static final int PINS_COUNT = 16;
     private static final int _A = 1;
     private static final int _B = 2;
@@ -116,8 +116,9 @@ public class SN74138 extends Chip {
         return NAME;
     }
 
-    public String getStringDescription() {
-        return DESCRIPTION;
+    @Override
+    public String getShortStringDescription() {
+        return SHORT_DESCRIPTION;
     }
 
     public Pane getImage() {

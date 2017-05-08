@@ -1,5 +1,6 @@
 package sk.uniza.fri.cp.BreadboardSim.Devices.Chips.Gates;
 
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import sk.uniza.fri.cp.BreadboardSim.Board.Board;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Chips.Chip;
@@ -13,7 +14,7 @@ import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.Pin;
 public class Gen7410 extends Chip {
 
     private static final String NAME = "7410";
-    private static final String DESCRIPTION = "TRIPLE 3-INPUT POSITIVE-NAND GATES";
+    private static final String SHORT_DESCRIPTION = "3x 3-vstupový NAND";
     private static final int PINS_COUNT = 14;
     private static final int _1A = 1;
     private static final int _1B = 2;
@@ -89,8 +90,8 @@ public class Gen7410 extends Chip {
     }
 
     @Override
-    public String getStringDescription() {
-        return DESCRIPTION;
+    public String getShortStringDescription() {
+        return SHORT_DESCRIPTION;
     }
 
     public Pane getImage() {

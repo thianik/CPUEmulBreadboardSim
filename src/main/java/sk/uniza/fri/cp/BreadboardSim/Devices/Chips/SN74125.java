@@ -1,5 +1,6 @@
 package sk.uniza.fri.cp.BreadboardSim.Devices.Chips;
 
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import sk.uniza.fri.cp.BreadboardSim.Board.Board;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.InputPin;
@@ -12,7 +13,7 @@ import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.Pin;
 public class SN74125 extends Chip {
 
     private static final String NAME = "SN74125";
-    private static final String DESCRIPTION = "QUADRUPLE BUS BUFFERS WITH 3-STATE OUTPUTS";
+    private static final String SHORT_DESCRIPTION = "4x Bus buffer s 3-stavovými výstupmi";
     private static final int PINS_COUNT = 14;
     private static final int _1G_ = 1;
     private static final int _1A = 2;
@@ -93,8 +94,9 @@ public class SN74125 extends Chip {
         return NAME;
     }
 
-    public String getStringDescription() {
-        return DESCRIPTION;
+    @Override
+    public String getShortStringDescription() {
+        return SHORT_DESCRIPTION;
     }
 
     public Pane getImage() {

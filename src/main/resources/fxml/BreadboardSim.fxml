@@ -78,7 +78,11 @@
       </SplitPane>
       <HBox maxHeight="20.0" minHeight="20.0" prefHeight="20.0">
          <children>
-            <HBox alignment="CENTER_LEFT" prefHeight="100.0" prefWidth="200.0" />
+             <HBox alignment="CENTER_LEFT" prefHeight="100.0" prefWidth="200.0">
+                 <children>
+                     <Label fx:id="lbZoom" text="100%"/>
+                 </children>
+             </HBox>
             <Region prefHeight="200.0" prefWidth="200.0" HBox.hgrow="ALWAYS" />
             <HBox alignment="CENTER_RIGHT" prefHeight="100.0" prefWidth="200.0">
                <children>

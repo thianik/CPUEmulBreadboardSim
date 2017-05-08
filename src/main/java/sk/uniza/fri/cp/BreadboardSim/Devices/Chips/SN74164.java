@@ -12,7 +12,7 @@ import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.Pin;
 public class SN74164 extends Chip {
 
     private static final String NAME = "SN74164";
-    private static final String DESCRIPTION = "8-BIT PARRALEL-OUT SERIAL SHIFT REGISTERS";
+    private static final String SHORT_DESCRIPTION = "8-bit serial shift register";
     private static final int PINS_COUNT = 14;
     private static final int _A = 1;
     private static final int _B = 2;
@@ -106,8 +106,9 @@ public class SN74164 extends Chip {
         return NAME;
     }
 
-    public String getStringDescription() {
-        return DESCRIPTION;
+    @Override
+    public String getShortStringDescription() {
+        return SHORT_DESCRIPTION;
     }
 
     public Pane getImage() {

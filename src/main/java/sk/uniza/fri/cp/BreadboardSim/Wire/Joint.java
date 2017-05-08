@@ -3,6 +3,7 @@ package sk.uniza.fri.cp.BreadboardSim.Wire;
 
 import javafx.application.Platform;
 import javafx.scene.Group;
+import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Rectangle;
@@ -54,7 +55,18 @@ public class Joint extends Movable {
         Group graphic = generateJointGraphic(radius);
 
 		this.getChildren().addAll(boundingBox, graphic);
-	}
+
+        this.setOnMouseDragged(event -> {
+            getBoard().addSelect(getWire());
+            getWire().select();
+        });
+
+        this.setOnMouseClicked(event -> {
+            if (event.getClickCount() == 2) {
+                this.delete();
+            } else getBoard().addSelect(getWire());
+        });
+    }
 
 	/**
 	 * Pripojenie jointu na segment. Ak nie je pripojeny ani jeden segment, hodi ho ako primarny,
@@ -139,4 +151,8 @@ public class Joint extends Movable {
 		return graphics;
 	}
 
+    @Override
+    public Pane getDescription() {
+        return getWire().getDescription();
+    }
 }
