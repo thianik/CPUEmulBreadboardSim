@@ -273,8 +273,8 @@ public class Potential {
 		return !this.shortCircuit;
 	}
 
-	public SocketType getType(){
-		return this.type;
+    public synchronized SocketType getType() {
+        return this.type;
 	}
 
 	public synchronized void setType(SocketType newType){

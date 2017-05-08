@@ -321,7 +321,7 @@ public class NumKeys extends Component {
             this.columnPos = columnPos;
 
             Socket innerSocket = new Socket(row.getComponent());
-            Potential innerPotential = new Potential(innerSocket, this.row);
+            new Potential(innerSocket, this.row);
             innerSocket.connect(this.rowInputPin);
 
 			GridSystem grid = getBoard().getGrid();

@@ -655,7 +655,10 @@ public class SchemeLoader {
                 int endY = Integer.parseInt(br.readLine());
                 String colorRGB = br.readLine();
 
-                Color wireColor = decodeOldColor(Integer.parseInt(colorRGB));
+                Color wireColor = Color.BLACK;
+
+                if (colorRGB != null)
+                    wireColor = decodeOldColor(Integer.parseInt(colorRGB));
 
                 //vytvorenie kablika, konce nie su nikam pripojene
                 Wire wire = new Wire(board);

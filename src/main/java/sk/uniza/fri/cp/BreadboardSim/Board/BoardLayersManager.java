@@ -3,7 +3,6 @@ package sk.uniza.fri.cp.BreadboardSim.Board;
 
 import javafx.scene.Group;
 import javafx.scene.layout.Pane;
-import javafx.scene.layout.StackPane;
 import sk.uniza.fri.cp.BreadboardSim.Components.Component;
 import sk.uniza.fri.cp.BreadboardSim.SchoolBreadboard;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Device;
@@ -51,10 +50,6 @@ public class BoardLayersManager {
         this.devicesLayer.setMinHeight(this.backgroundLayer.getBoundsInParent().getHeight());
 
 		this.layers = new Group(backgroundLayer, componentsLayer, devicesLayer, wiresLayer);
-
-//		componentsLayer.setManaged(false);
-//		devicesLayer.setManaged(false);
-//		wiresLayer.setManaged(false);
 
 		this.componentsLayer.setPickOnBounds(false);
 		this.devicesLayer.setPickOnBounds(false);
@@ -191,19 +186,8 @@ public class BoardLayersManager {
         new ArrayList<>(this.devices).forEach(Device::delete);
 
         //cistenie komponentov
-        //SchoolBreadboard schoolBreadboard = SchoolBreadboard.getSchoolBreadboard(null);
-        //this.componentsLayer.getChildren().retainAll(schoolBreadboard);
-        //this.components.retainAll(schoolBreadboard.getComponents());
-//        ArrayList<Component> componentsToDelete = new ArrayList<>(this.components);
-        //componentsToDelete.removeAll(schoolBreadboard.getComponents());
-//        componentsToDelete.forEach(Component::delete);
-
         new ArrayList<>(this.schoolBreadboards).forEach(SchoolBreadboard::delete);
         List<Component> toRetain = this.schoolBreadboards.get(0).getComponents();
         new ArrayList<>(this.components).stream().filter(component -> !toRetain.contains(component)).forEach(Component::delete);
-//        new ArrayList<>(this.components).forEach(Component::delete);
-
-
-
     }
 }

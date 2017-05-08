@@ -45,29 +45,102 @@ import java.util.LinkedList;
 import java.util.List;
 
 /**
- * Plocha s breadboardmi ku ktorym su pripajane komponenty
- * @author Moris
+ * Plocha simulátora. Na začiatku obsahuje jednu vývojovú dosku.
+ *
+ * @author Tomáš Hianik
  * @version 1.0
  * @created 17-mar-2017 16:16:34
  */
 public class Board extends ScrollPane {
 
-//	private int widthGrid;
-//	private int heightGrid;
-	private double widthPx;
-	private double heightPx;
-	private ArrayList<Selectable> selected;
-	private BoardSimulator simulator;
-	private GridSystem gridSystem;
-	private BoardLayersManager layersManager;
-    private boolean hasChanged = false;
+    //rozmery v pixeloch
+    private double widthPx;
+    private double heightPx;
 
-	private Item addingItem;
+    //zakladne objeky
+    private final BoardSimulator simulator;
+    private final GridSystem gridSystem;
+    private final BoardLayersManager layersManager;
+    private DescriptionPane descriptionPane; //odkaz na panel s popisom
 
-    private DescriptionPane descriptionPane;
+    private ArrayList<Selectable> selected; //vybrané objekty na ploche
+    private Item addingItem; //pridávaný item z itempickera
 
-	//pomocne funkcie
-	public static Text getLabelText(String text, int size){
+    private boolean hasChanged = false; //udiala sa zmena na ploche od posledného uloženia?
+
+    //zoom
+    private double SCALE_DELTA = 1.1;
+    private final SimpleDoubleProperty scale_total = new SimpleDoubleProperty(1);
+
+    //EVENTY
+    //pridávanie nového itemu
+    private final EventHandler<MouseDragEvent> onMouseDragEnteredHandle = event -> {
+        hasChanged = true;
+        if (addingItem == null && event.getGestureSource() instanceof Item) {
+            Item item = ((Item) event.getGestureSource());
+            Board board = ((Board) event.getSource());
+
+            try {
+                addingItem = item.getClass().getConstructor(Board.class).newInstance(board);
+                addItem(addingItem);
+                Point2D point = this.getContent().sceneToLocal(event.getSceneX(), event.getSceneY());
+                Event.fireEvent(addingItem, new MouseEvent(MouseEvent.MOUSE_DRAGGED, event.getSceneX(), event.getSceneY(),
+                        event.getScreenX(), event.getScreenY(), MouseButton.PRIMARY, 1, true,
+                        true, true, true, true, true,
+                        true, true, true, true, null));
+
+            } catch (InstantiationException e) {
+                e.printStackTrace();
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            } catch (InvocationTargetException e) {
+                e.printStackTrace();
+            } catch (NoSuchMethodException e) {
+                e.printStackTrace();
+            }
+
+
+        }
+    };
+    //pohybovanie s pridávaným itemom
+    private final EventHandler<MouseDragEvent> onMouseDragOverHandle = event -> {
+        if (addingItem != null) {
+            Point2D point = this.getContent().sceneToLocal(event.getSceneX(), event.getSceneY());
+            Event.fireEvent(addingItem, new MouseEvent(MouseEvent.MOUSE_DRAGGED, event.getSceneX(), event.getSceneY(),
+                    event.getScreenX(), event.getScreenY(), MouseButton.PRIMARY, 1, true,
+                    true, true, true, true, true,
+                    true, true, true, true, null));
+        }
+    };
+    //ukončenie pridávania nového itemu
+    private final EventHandler<MouseDragEvent> onMouseDragReleasedHandle = event -> {
+        if (addingItem != null) {
+            Point2D point = this.getContent().sceneToLocal(event.getSceneX(), event.getSceneY());
+            Event.fireEvent(addingItem, new MouseEvent(MouseEvent.MOUSE_RELEASED, event.getSceneX(), event.getSceneY(),
+                    event.getScreenX(), event.getScreenY(), MouseButton.PRIMARY, 1, true,
+                    true, true, true, true, true,
+                    true, true, true, true, null));
+            addingItem = null;
+        }
+    };
+    //keď myš opustí plochu s vytváraným objektom, znič ho
+    private final EventHandler<MouseDragEvent> onMouseDragExitedHandle = event -> {
+        if (addingItem != null) {
+            addingItem.delete();
+            addingItem = null;
+        }
+
+        event.consume();
+    };
+
+    /**
+     * Vytvára text použitý na popis častí vývojovej dosky.
+     *
+     * @param text Obsah textu.
+     * @param size Veľkosť písma.
+     * @return Vytovrená nová inštancia textu s nastavenými parametrami pre css formátovanie.
+     */
+    public static Text getLabelText(String text, int size){
 		Text out = new Text(text);
 		out.setFont(Font.font(size));
 		out.setId("breadboardLabel");
@@ -76,18 +149,13 @@ public class Board extends ScrollPane {
 		return out;
 	}
 
-    private double SCALE_DELTA = 1.1;
-    //private double scale_total = 1;
-    private SimpleDoubleProperty scale_total = new SimpleDoubleProperty(1);
-
-    public double getAppliedScale() {
-        return scale_total.getValue();
-    }
-
-    public SimpleDoubleProperty zoomScaleProperty() {
-        return scale_total;
-    }
-
+    /**
+     * Plocha simulátora.
+     *
+     * @param width      Šírka v pixeloch.
+     * @param height     Výška v pixeloch.
+     * @param gridSizePx Rozmer strany štvorčeka na ploche v pixeloch.
+     */
     public Board(double width, double height, int gridSizePx) {
         //inicializacia atributov
 		this.widthPx = width;
@@ -98,31 +166,36 @@ public class Board extends ScrollPane {
         Pane gridBackground = gridSystem.generateBackground(this.widthPx, this.heightPx, Color.WHITESMOKE, Color.GRAY);
 		this.layersManager = new BoardLayersManager(gridBackground);
 
-        this.setPannable(false);
+        //vytvorenie prvej vývojovej dosky a jej umiestnenie do stredu plochy
+        SchoolBreadboard sb = new SchoolBreadboard(this);
+        this.addItem(sb);
+        sb.moveTo((int) (width / gridSizePx / 2 - sb.getGridWidth() / 2), (int) (height / gridSizePx / 2 - sb.getGridHeight() / 2));
+        this.hasChanged = false;
 
+
+        //EVENTY
+        //po kliknuti primarnym tlacidlom na volnu plochu zrus vyber
         gridBackground.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
             if (event.getButton().name().equalsIgnoreCase("PRIMARY"))
                 clearSelect();
         });
 
-        // Let the ScrollPane.viewRect only pan on middle button.
-        //znefunkcni pridavanie objektov
-//        this.getContent().addEventHandler(MouseEvent.ANY, event -> {
-//            if (event.getButton() != MouseButton.MIDDLE) event.consume();
-//        });
-
-		//sandbox
-        SchoolBreadboard sb = new SchoolBreadboard(this);
-        this.addItem(sb);
-        sb.moveTo((int) (width / gridSizePx / 2 - sb.getGridWidth() / 2), (int) (height / gridSizePx / 2 - sb.getGridHeight() / 2));
-
-        this.hasChanged = false;
+        this.addEventHandler(MouseDragEvent.MOUSE_DRAG_ENTERED, onMouseDragEnteredHandle);
+        this.addEventFilter(MouseDragEvent.MOUSE_DRAG_OVER, onMouseDragOverHandle);
+        this.addEventFilter(MouseDragEvent.MOUSE_DRAG_RELEASED, onMouseDragReleasedHandle);
+        this.addEventHandler(MouseDragEvent.MOUSE_DRAG_EXITED, onMouseDragExitedHandle);
 
 
-        //ZOOM credit: http://stackoverflow.com/questions/16680295/javafx-correct-scaling
+        //ZOOM
+        //credit: http://stackoverflow.com/questions/16680295/javafx-correct-scaling
+
+        //novy zoom nema rad pannable, implementuje vlastne
+        this.setPannable(false);
+
         final Group contentGroup = this.layersManager.getLayers();
         final StackPane zoomPane = new StackPane(contentGroup);
         final Group scrollContent = new Group(zoomPane);
+
         this.setContent(scrollContent);
 
         this.viewportBoundsProperty().addListener(new ChangeListener<Bounds>() {
@@ -133,22 +206,16 @@ public class Board extends ScrollPane {
             }
         });
 
-        this.setPrefViewportHeight(200);
-        this.setPrefViewportHeight(200);
-
         zoomPane.setOnScroll(event -> {
             event.consume();
+            if (event.getDeltaY() == 0) return;
 
-            if (event.getDeltaY() == 0) {
-                return;
-            }
-
-            double scaleFactor = (event.getDeltaY() > 0) ? SCALE_DELTA
+            double scaleFactor = (event.getDeltaY() > 0)
+                    ? SCALE_DELTA
                     : 1 / SCALE_DELTA;
 
             if (scaleFactor * scale_total.get() >= 0.3 && scaleFactor * scale_total.get() <= 3) {
-                // amount of scrolling in each direction in scrollContent coordinate
-                // units
+                // amount of scrolling in each direction in scrollContent coordinate units
                 Point2D scrollOffset = figureScrollOffset(scrollContent, this);
 
                 contentGroup.setScaleX(contentGroup.getScaleX() * scaleFactor);
@@ -156,190 +223,140 @@ public class Board extends ScrollPane {
 
                 scale_total.setValue(scale_total.doubleValue() * scaleFactor);
 
-
-                // move viewport so that old center remains in the center after the
-                // scaling
+                // move viewport so that old center remains in the center after the scaling
                 repositionScroller(scrollContent, this, scaleFactor, scrollOffset);
             }
         });
 
         // Panning via drag....
-        final ObjectProperty<Point2D> lastMouseCoordinates = new SimpleObjectProperty<Point2D>();
-        scrollContent.setOnMousePressed(new EventHandler<MouseEvent>() {
-            @Override
-            public void handle(MouseEvent event) {
-                lastMouseCoordinates.set(new Point2D(event.getX(), event.getY()));
-            }
-        });
+        final ObjectProperty<Point2D> lastMouseCoordinates = new SimpleObjectProperty<>();
+        scrollContent.setOnMousePressed(event ->
+                lastMouseCoordinates.set(new Point2D(event.getX(), event.getY())));
 
         ScrollPane scroller = this;
-        scrollContent.setOnMouseDragged(new EventHandler<MouseEvent>() {
-            @Override
-            public void handle(MouseEvent event) {
-                double deltaX = event.getX() - lastMouseCoordinates.get().getX();
-                double extraWidth = scrollContent.getLayoutBounds().getWidth() - scroller.getViewportBounds().getWidth();
-                double deltaH = deltaX * (scroller.getHmax() - scroller.getHmin()) / extraWidth;
-                double desiredH = scroller.getHvalue() - deltaH;
-                scroller.setHvalue(Math.max(0, Math.min(scroller.getHmax(), desiredH)));
+        scrollContent.setOnMouseDragged(event -> {
+            double deltaX = event.getX() - lastMouseCoordinates.get().getX();
+            double extraWidth = scrollContent.getLayoutBounds().getWidth() - scroller.getViewportBounds().getWidth();
+            double deltaH = deltaX * (scroller.getHmax() - scroller.getHmin()) / extraWidth;
+            double desiredH = scroller.getHvalue() - deltaH;
+            scroller.setHvalue(Math.max(0, Math.min(scroller.getHmax(), desiredH)));
 
-                double deltaY = event.getY() - lastMouseCoordinates.get().getY();
-                double extraHeight = scrollContent.getLayoutBounds().getHeight() - scroller.getViewportBounds().getHeight();
-                double deltaV = deltaY * (scroller.getHmax() - scroller.getHmin()) / extraHeight;
-                double desiredV = scroller.getVvalue() - deltaV;
-                scroller.setVvalue(Math.max(0, Math.min(scroller.getVmax(), desiredV)));
-            }
+            double deltaY = event.getY() - lastMouseCoordinates.get().getY();
+            double extraHeight = scrollContent.getLayoutBounds().getHeight() - scroller.getViewportBounds().getHeight();
+            double deltaV = deltaY * (scroller.getHmax() - scroller.getHmin()) / extraHeight;
+            double desiredV = scroller.getVvalue() - deltaV;
+            scroller.setVvalue(Math.max(0, Math.min(scroller.getVmax(), desiredV)));
         });
-
-
-
-        this.addEventHandler(MouseDragEvent.MOUSE_DRAG_ENTERED, event -> {
-                hasChanged = true;
-                if(addingItem == null && event.getGestureSource() instanceof Item){
-					Item item = ((Item) event.getGestureSource());
-					Board board = ((Board) event.getSource());
-
-					try {
-						addingItem = item.getClass().getConstructor(Board.class).newInstance(board);
-						addItem(addingItem);
-                        Point2D point = this.getContent().sceneToLocal(event.getSceneX(), event.getSceneY());
-                        Event.fireEvent(addingItem, new MouseEvent(MouseEvent.MOUSE_DRAGGED, event.getSceneX(), event.getSceneY(),
-                                event.getScreenX(), event.getScreenY(), MouseButton.PRIMARY, 1, true,
-                                true, true, true, true, true,
-                                true, true, true, true, null));
-
-					} catch (InstantiationException e) {
-						e.printStackTrace();
-					} catch (IllegalAccessException e) {
-						e.printStackTrace();
-					} catch (InvocationTargetException e) {
-						e.printStackTrace();
-					} catch (NoSuchMethodException e) {
-						e.printStackTrace();
-					}
-
-
-				}
-			}
-        );
-
-        this.addEventFilter(MouseDragEvent.MOUSE_DRAG_OVER, event -> {
-            if(addingItem != null){
-                    Point2D point = this.getContent().sceneToLocal(event.getSceneX(), event.getSceneY());
-                Event.fireEvent(addingItem, new MouseEvent(MouseEvent.MOUSE_DRAGGED, event.getSceneX(), event.getSceneY(),
-                        event.getScreenX(), event.getScreenY(), MouseButton.PRIMARY, 1, true,
-                            true, true, true, true, true,
-							true, true, true, true, null));
-				}
-			}
-        );
-
-        this.addEventFilter(MouseDragEvent.MOUSE_DRAG_RELEASED, event -> {
-            if(addingItem != null){
-                    Point2D point = this.getContent().sceneToLocal(event.getSceneX(), event.getSceneY());
-                Event.fireEvent(addingItem, new MouseEvent(MouseEvent.MOUSE_RELEASED, event.getSceneX(), event.getSceneY(),
-                        event.getScreenX(), event.getScreenY(), MouseButton.PRIMARY, 1, true,
-                        true, true, true, true, true,
-                        true, true, true, true, null));
-					addingItem = null;
-				}
-			}
-        );
-
-        this.addEventHandler(MouseDragEvent.MOUSE_DRAG_EXITED, new EventHandler<MouseDragEvent>() {
-            @Override
-            public void handle(MouseDragEvent event) {
-				if(addingItem != null) {
-                    addingItem.delete();
-                    addingItem = null;
-				}
-
-				event.consume();
-			}
-		});
-
-	}
-
-
-    private Point2D figureScrollOffset(Node scrollContent, ScrollPane scroller) {
-        double extraWidth = scrollContent.getLayoutBounds().getWidth() - scroller.getViewportBounds().getWidth();
-        double hScrollProportion = (scroller.getHvalue() - scroller.getHmin()) / (scroller.getHmax() - scroller.getHmin());
-        double scrollXOffset = hScrollProportion * Math.max(0, extraWidth);
-        double extraHeight = scrollContent.getLayoutBounds().getHeight() - scroller.getViewportBounds().getHeight();
-        double vScrollProportion = (scroller.getVvalue() - scroller.getVmin()) / (scroller.getVmax() - scroller.getVmin());
-        double scrollYOffset = vScrollProportion * Math.max(0, extraHeight);
-        return new Point2D(scrollXOffset, scrollYOffset);
     }
-
-    private void repositionScroller(Node scrollContent, ScrollPane scroller, double scaleFactor, Point2D scrollOffset) {
-        double scrollXOffset = scrollOffset.getX();
-        double scrollYOffset = scrollOffset.getY();
-        double extraWidth = scrollContent.getLayoutBounds().getWidth() - scroller.getViewportBounds().getWidth();
-        if (extraWidth > 0) {
-            double halfWidth = scroller.getViewportBounds().getWidth() / 2;
-            double newScrollXOffset = (scaleFactor - 1) * halfWidth + scaleFactor * scrollXOffset;
-            scroller.setHvalue(scroller.getHmin() + newScrollXOffset * (scroller.getHmax() - scroller.getHmin()) / extraWidth);
-        } else {
-            scroller.setHvalue(scroller.getHmin());
-        }
-        double extraHeight = scrollContent.getLayoutBounds().getHeight() - scroller.getViewportBounds().getHeight();
-        if (extraHeight > 0) {
-            double halfHeight = scroller.getViewportBounds().getHeight() / 2;
-            double newScrollYOffset = (scaleFactor - 1) * halfHeight + scaleFactor * scrollYOffset;
-            scroller.setVvalue(scroller.getVmin() + newScrollYOffset * (scroller.getVmax() - scroller.getVmin()) / extraHeight);
-        } else {
-            scroller.setHvalue(scroller.getHmin());
-        }
-    }
-
 
     /**
-     * Vracia informaciu o zmene od nastavenia mark.
+     * Vráti aktuálne použité priblíženie.
      *
-     * @return
+     * @return Faktor priblíženia <0.3 - 3>.
+     */
+    public double getAppliedScale() {
+        return scale_total.getValue();
+    }
+
+    /**
+     * Property aktuálne použitého faktoru priblíženia.
+     *
+     * @return Property objekt s faktorom priblíženia.
+     */
+    public SimpleDoubleProperty zoomScaleProperty() {
+        return scale_total;
+    }
+
+    /**
+     * Vracia informaciu o zmene na ploche od zavolania clearChange().
+     *
+     * @return Nastala zmena na ploche?
      */
     public boolean hasChanged() {
         return hasChanged;
     }
 
+    /**
+     * Zrušenie príznaku zmeny, napr. pri uložení.
+     */
     public void clearChange() {
         this.hasChanged = false;
     }
 
-	public GridSystem getGrid(){
-		return gridSystem;
-	}
-
-	public double getWidthPx(){
-	    return this.widthPx;
+    /**
+     * Vráti použitý systém mriežkovania.
+     * Dá sa použiť na nastavenie veľkostí podľa rozmerov mriežky.
+     *
+     * @return Použitý sustém mriežkovania.
+     */
+    public GridSystem getGrid(){
+        return gridSystem;
     }
 
+    /**
+     * Šírka plochy v pixeloch.
+     *
+     * @return Šírka plochy.
+     */
+    public double getWidthPx(){
+        return this.widthPx;
+    }
+
+    /**
+     * Výška plochy v pixeloch.
+     *
+     * @return Výška plochy.
+     */
     public double getHeightPx(){
         return this.heightPx;
     }
 
-    //test
+    /**
+     * Prepočítanie súradníc zo scnény na súradnice na ploche podľa pozadia - mriežky.
+     *
+     * @param sceneX X-ová súradnica zo scény.
+     * @param sceneY Y-ová súradnica zo scény.
+     * @return Súradnice na ploche.
+     */
     public Point2D sceneToBoard(double sceneX, double sceneY) {
         return layersManager.getLayer("background").sceneToLocal(sceneX, sceneY);
     }
 
+    /**
+     * Skytá plocha na x-ovej osy.
+     *
+     * @return Šírka skrytej plochy vľavo.
+     */
     public double getOriginSceneOffsetX(){
         return layersManager.getLayer("background").getLocalToSceneTransform().getTx();
     }
 
+    /**
+     * Skytá plocha na y-ovej osy.
+     *
+     * @return Výška skrytej plochy hore.
+     */
     public double getOriginSceneOffsetY(){
         return layersManager.getLayer("background").getLocalToSceneTransform().getTy();
     }
 
+    /**
+     * Nastaví odkaz na panel s popisom, na ktorom sa vudú zobrazovať informácie o objektoch po ich výbere.
+     *
+     * @param descriptionPane Odkaz na panel s popisom.
+     */
     public void setDescriptionPane(DescriptionPane descriptionPane) {
         this.descriptionPane = descriptionPane;
     }
 
 	/**
 	 * Pridá položku do akutálneho výberu.
-	 * 
+     * Pri výbere jediného itemu sa zobrazí jeho popis na panely s popisom.
+     * Ak je vybraných viacero itemov, neobrazuje sa popis.
+     *
 	 * @param item Nová položka
-	 * @return
-	 */
+     * @return True ak bola pridaná, false inak.
+     */
 	public boolean addSelect(Selectable item){
 		if(((Group) item).getParent() instanceof SchoolBreadboard)
 			item = (SchoolBreadboard) ((Group) item).getParent();
@@ -360,83 +377,159 @@ public class Board extends ScrollPane {
 	 * Odoberie položku z aktuálneho výberu
 	 * 
 	 * @param item Položka na odobratie
-	 * @return
-	 */
-	public boolean removeSelect(Selectable item){
-		item.deselect();
-		return selected.remove(item);
-	}
+     * @return True ak sa ju podarilo odobrať, false inak.
+     */
+    public boolean removeSelect(Selectable item){
+        item.deselect();
+        return selected.remove(item);
+    }
 
-	public void clearSelect(){
-		selected.forEach(item -> item.deselect());
-		selected.clear();
+    /**
+     * Vyčistí výber objektov.
+     */
+    public void clearSelect(){
+        selected.forEach(item -> item.deselect());
+        selected.clear();
         this.descriptionPane.clear();
     }
 
-	public void deleteSelect(){
-		selected.forEach(item -> item.delete());
-	}
+    /**
+     * Odobratie vybraných objektov z plochy.
+     */
+    public void deleteSelect(){
+        selected.forEach(item -> item.delete());
+    }
 
 	/**
 	 * Pridá položku na plochu. Podla typu ju zaradí do odpovedajúcej vrstvy.
-	 * Možné položky
-	 * 
+     *
 	 * @param item Nová položka na ploche.
-	 * @return
-	 */
-	public boolean addItem(Object item) {
+     * @return True ak bola pridaná, false inak.
+     */
+    public boolean addItem(Object item) {
         hasChanged = true;
         return layersManager.add(item);
     }
 
+    /**
+     * Odobratie položky z plochy.
+     *
+     * @param item Položka na odobratie.
+     * @return True ak sa ju podarilo odobrať, false inak.
+     */
     public boolean removeItem(Object item) {
         hasChanged = true;
         return layersManager.remove(item);
     }
 
+    /**
+     * Vyčistenie plochy. Ostane iba prvá vývojová doska.
+     */
     public void clearBoard() {
         this.layersManager.clear();
     }
 
-	public void powerOn(){
+    /**
+     * Zapnutie simulácie.
+     * Zozbiera zo všetkých pridaných komponentov PowerSocket-y pre inicializáciu po spustení simulácie.
+     */
+    public void powerOn(){
         if (!simulator.runningProperty().getValue()) {
             List<PowerSocket> powerSockets = new LinkedList<>();
 
-            layersManager.getComponents().forEach(component -> {
-                powerSockets.addAll(component.getPowerSockets());
-            });
+            layersManager.getComponents().forEach(component ->
+                    powerSockets.addAll(component.getPowerSockets()));
 
             simulator.start(powerSockets);
         }
     }
 
-	public void powerOff(){
-		simulator.stop();
-	}
+    /**
+     * Vypnutie simulácie.
+     */
+    public void powerOff(){
+        simulator.stop();
+    }
 
-	public boolean isSimulationRunning(){ return simRunningProperty().getValue(); }
+    /**
+     * Beží simulácia?
+     * @return True ak beží, false inak.
+     */
+    public boolean isSimulationRunning(){ return simRunningProperty().getValue();
+    }
 
+    /**
+     * Property objekt behu simulácie.
+     *
+     * @return Property - true ak simulácia beží, false inak.
+     */
     public ReadOnlyBooleanProperty simRunningProperty(){
         return simulator.runningProperty();
     }
 
+    /**
+     * Vrátia odkaz na simulátor.
+     * @return
+     */
     public BoardSimulator getSimulator() {
-        return this.simulator;}
+        return this.simulator;
+    }
 
-	/*
-	DETEKCIA KOLIZII -> PIN - SOKET
+    /**
+     * Pridanie udalosti do simulácie.
+     *
+     * @param event Nová udalosť.
+     */
+    public void addEvent(BoardEvent event){
+        simulator.addEvent(event);
+    }
+
+    /**
+     * Pozícia kurzoru nad plochou.
+     *
+     * @param event Event vygenerovaný pohybom kurzoru.
+     * @return Súradnice miesta, nad ktorým sa kurzor nachádza.
+     */
+    public Point2D getMousePositionOnGrid(MouseEvent event) {
+        Point2D local = layersManager.getLayer("background").sceneToLocal(event.getSceneX(), event.getSceneY());
+        return gridSystem.getBox(local.getX(), local.getY(), getAppliedScale());
+    }
+
+    /**
+     * Uloženie zapojenia do súboru.
+     *
+     * @param file Súbor, do ktorého sa má zapojenie uložiť.
+     * @return True, ak sa ukladanie podarilo, false inak.
+     */
+    public boolean save(File file) {
+        return SchemeLoader.save(file, layersManager);
+    }
+
+    /**
+     * Načítanie zapojenia zo súboru.
+     *
+     * @param file Súbor s uloženým zapojením.
+     * @return True, ak sa podarilo načítať súbor, false inak.
+     */
+    public boolean load(File file) {
+        return SchemeLoader.load(file, layersManager);
+    }
+
+    /*
+    DETEKCIA KOLIZII -> PIN - SOKET
 	 */
 
-	/**
-	 * Kontroluje prienik bounds vsetkych komponentov na ploche a daneho zariadenia.
-	 * @param device Zariadenie, pre ktore sa ma kontrolovat prienik
-	 * @return List komponentov s ktorymi je v prieniku. Ak nie je v prieniku so ziadnym komponentom, vracia null;
-	 */
-	public List<Component> checkForCollisionWithComponent(Device device){
-		List<Component> components = null;
+    /**
+     * Kontroluje prienik bounds všetkých komponentov na ploche a daného zariadenia.
+     *
+     * @param device Zariadenie, pre ktoré sa má kontrolovať prienik
+     * @return List komponentov s ktorými je v prieniku. Ak nie je v prieniku so žiadnym komponentom, vracia null.
+     */
+    public List<Component> checkForCollisionWithComponent(Device device) {
+        List<Component> components = null;
 
-		//skontroluj vsetky komponenty, ci sa s nimi zariadenie prekryva
-		for (Component component : layersManager.getComponents()) {
+        //skontroluj vsetky komponenty, ci sa s nimi zariadenie prekryva
+        for (Component component : layersManager.getComponents()) {
             if (component.localToScene(component.getBoundsInLocal())
                     .intersects(device.localToScene(device.getBoundsInLocal()))) {
                 //ak zoznam neexistuje, vytvor ho
@@ -444,9 +537,9 @@ public class Board extends ScrollPane {
                     components = new LinkedList<>();
                 //ak ano, pridaj ho do zoznamu na zaciatok -> od najvrchnejsich k spodnym
 
-				components.add(0,component);
-			}
-		}
+                components.add(0, component);
+            }
+        }
 
         if (components != null && components.size() > 1) {
             //ak bolo najdenych viacero komponentov
@@ -460,38 +553,60 @@ public class Board extends ScrollPane {
             }
         }
 
-		return components;
-	}
+        return components;
+    }
 
-	public Socket checkForCollisionWithSocket(Component component, Pin pin){
-        //board.layersManager.getComponents().get(0).getSockets().get(0).localToScene(board.layersManager.getComponents().get(0).getSockets().get(0).getBoundsInLocal())
+    /**
+     * Kontrola na prienik pinu so soketom.
+     *
+     * @param component Komponent, na ktorom sa majú hľadať sokety.
+     * @param pin       Pin, s ktorým sa má hľdať prienik.
+     * @return Soket pod pinom, null ak taký neexistuje.
+     */
+    public Socket checkForCollisionWithSocket(Component component, Pin pin) {
         for (Socket socket : component.getSockets()) {
-            if(socket.localToScene(socket.getBoundsInLocal()).intersects(pin.localToScene(pin.getBoundsInLocal())))
-				return socket;
-		}
+            if (socket.localToScene(socket.getBoundsInLocal()).intersects(pin.localToScene(pin.getBoundsInLocal())))
+                return socket;
+        }
 
-		return null;
-	}
-
-	/**
-	 * 
-	 * @param event
-	 */
-	public void addEvent(BoardEvent event){
-		simulator.addEvent(event);
-        //if(!isSimulationRunning()) System.out.println("pridavanie eventu aj ked simulacia nebezi");
+        return null;
     }
 
-    public Point2D getMousePositionOnGrid(MouseEvent event) {
-        Point2D local = layersManager.getLayer("background").sceneToLocal(event.getSceneX(), event.getSceneY());
-        return gridSystem.getBox(local.getX(), local.getY(), getAppliedScale());
+
+    /**
+     * ZOOM
+     */
+    private Point2D figureScrollOffset(Node scrollContent, ScrollPane scroller) {
+        double extraWidth = scrollContent.getLayoutBounds().getWidth() - scroller.getViewportBounds().getWidth();
+        double hScrollProportion = (scroller.getHvalue() - scroller.getHmin()) / (scroller.getHmax() - scroller.getHmin());
+        double scrollXOffset = hScrollProportion * Math.max(0, extraWidth);
+        double extraHeight = scrollContent.getLayoutBounds().getHeight() - scroller.getViewportBounds().getHeight();
+        double vScrollProportion = (scroller.getVvalue() - scroller.getVmin()) / (scroller.getVmax() - scroller.getVmin());
+        double scrollYOffset = vScrollProportion * Math.max(0, extraHeight);
+        return new Point2D(scrollXOffset, scrollYOffset);
     }
 
-    public boolean save(File file) {
-        return SchemeLoader.save(file, layersManager);
-    }
-
-    public boolean load(File file) {
-        return SchemeLoader.load(file, layersManager);
+    /**
+     * ZOOM
+     */
+    private void repositionScroller(Node scrollContent, ScrollPane scroller, double scaleFactor, Point2D scrollOffset) {
+        double scrollXOffset = scrollOffset.getX();
+        double scrollYOffset = scrollOffset.getY();
+        double extraWidth = scrollContent.getLayoutBounds().getWidth() - scroller.getViewportBounds().getWidth();
+        if (extraWidth > 0) {
+            double halfWidth = scroller.getViewportBounds().getWidth() / 2;
+            double newScrollXOffset = (scaleFactor - 1) * halfWidth + scaleFactor * scrollXOffset;
+            scroller.setHvalue(scroller.getHmin() + newScrollXOffset * (scroller.getHmax() - scroller.getHmin()) / extraWidth);
+        } else {
+            scroller.setHvalue(scroller.getHmin());
+        }
+        double extraHeight = scrollContent.getLayoutBounds().getHeight() - scroller.getViewportBounds().getHeight();
+        if (extraHeight > 0) {
+            double halfHeight = scroller.getViewportBounds().getHeight() / 2;
+            double newScrollYOffset = (scaleFactor - 1) * halfHeight + scaleFactor * scrollYOffset;
+            scroller.setVvalue(scroller.getVmin() + newScrollYOffset * (scroller.getVmax() - scroller.getVmin()) / extraHeight);
+        } else {
+            scroller.setHvalue(scroller.getHmin());
+        }
     }
 }

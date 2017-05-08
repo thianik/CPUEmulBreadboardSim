@@ -69,7 +69,8 @@ public class BusInterface extends Component {
                 Thread runLater = new Thread(new Runnable() {
                     @Override
                     public void run() {
-                        while (!getBoard().getSimulator().inSteadyState()) {
+                        while (true) {
+                            if (!(!getBoard().getSimulator().inSteadyState())) break;
                         }
                         ;
 

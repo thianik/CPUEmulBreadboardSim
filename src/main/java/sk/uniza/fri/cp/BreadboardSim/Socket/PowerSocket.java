@@ -14,6 +14,8 @@ public class PowerSocket extends Socket {
         super(component);
         this.setType(SocketType.OUT);
         this.value = connectedValue;
+
+        if (component.getBoard().isSimulationRunning()) this.powerUp();
     }
 
     public void powerUp(){

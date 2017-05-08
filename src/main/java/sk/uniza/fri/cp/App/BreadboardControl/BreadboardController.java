@@ -1,10 +1,7 @@
 package sk.uniza.fri.cp.App.BreadboardControl;
 
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.geometry.Bounds;
 import javafx.geometry.Point2D;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
@@ -25,78 +22,55 @@ import java.util.Optional;
 import java.util.ResourceBundle;
 
 /**
- * Created by Moris on 4.3.2017.
+ * Kontrolér okna simulátora.
+ *
+ * @author Tomáš Hianik
+ * @version 1.0
+ * @created 4.3.2017
  */
 
 public class BreadboardController implements Initializable {
 
-    //@FXML private BorderPane sceneRoot;
-    //@FXML private HBox hbPicker;
-
-    //súbor
-    private File currentFile;
+    private File currentFile; //otvorený súbor
+    private Board board;
 
     @FXML private VBox root;
     @FXML private AnchorPane boardPane;
 
+    //panel s nastrojmi
+    @FXML
+    private ToggleSwitch tsPower;
+
+    //pravy panel
     @FXML private VBox toolsBox;
     @FXML private ColorPicker wireColorPicker;
     @FXML private SplitPane toolsSplitPane;
-    private ItemPicker newItemPicker;
-    private DescriptionPane descriptionPane;
 
+    //stavovy riadok
     @FXML private Label lbCoordinates;
     @FXML
     private Label lbZoom;
 
-    @FXML
-    private ToggleSwitch tsPower;
-
-    private Board board;
-
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         //tool box -> napravo - colorPicker, itemPicker, description
+        //vyber farby
         this.wireColorPicker.setValue(Wire.getDefaultColor());
-        this.wireColorPicker.setOnAction(event -> Wire.setDefaultColor(wireColorPicker.getValue()));
+        this.wireColorPicker.setOnAction(event -> Wire.setDefaultColor(this.wireColorPicker.getValue()));
 
-        this.descriptionPane = new DescriptionPane();
+        //panel s popisom
+        DescriptionPane descriptionPane = new DescriptionPane();
 
-        this.newItemPicker = new ItemPicker();
-        this.newItemPicker.setPanelForDescription(this.descriptionPane);
-        registerItems();
+        //vyber objektov
+        ItemPicker newItemPicker = new ItemPicker();
+        newItemPicker.setPanelForDescription(descriptionPane);
+        registerItems(newItemPicker);
 
-        toolsSplitPane.getItems().addAll(this.newItemPicker, this.descriptionPane);
+        this.toolsSplitPane.getItems().addAll(newItemPicker, descriptionPane);
 
-        board = new Board(2000, 2000, 10);
-        board.setDescriptionPane(this.descriptionPane);
-        board.setOnMouseMoved(event -> {
-            Point2D gridPoint = board.getMousePositionOnGrid(event);
-            lbCoordinates.setText(((int) gridPoint.getX()) + "x" + ((int) gridPoint.getY()));
-        });
-
-        board.zoomScaleProperty().addListener(new ChangeListener<Number>() {
-            @Override
-            public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
-                lbZoom.setText(((int) (newValue.doubleValue() * 100)) + "%");
-            }
-        });
-
-
-        //ak sa zmeni stav simulacie, zmen aj tlacitko spustania simulacie
-        board.simRunningProperty().addListener((observable, oldValue, newValue) -> {
-            if (newValue != this.tsPower.isSelected()) {
-                this.tsPower.setSelected(newValue);
-            }
-        });
-
-        this.tsPower.selectedProperty().addListener((observable, oldValue, newValue) -> {
-            if (newValue)
-                board.powerOn();
-            else
-                board.powerOff();
-        });
-
+        //PLOCHA SIMULATORA
+        this.board = new Board(2000, 2000, 10);
+        this.board.setDescriptionPane(descriptionPane);
         this.boardPane.getChildren().add(board);
 
         AnchorPane.setTopAnchor(this.board, 0.0);
@@ -105,67 +79,105 @@ public class BreadboardController implements Initializable {
         AnchorPane.setLeftAnchor(this.board, 0.0);
         this.board.setHvalue(0.5);
         this.board.setVvalue(0.5);
-//        this.board.setHbarPolicy(ScrollPane.ScrollBarPolicy.ALWAYS);
-//        this.board.setVbarPolicy(ScrollPane.ScrollBarPolicy.ALWAYS);
+
+        //PANEL S NASTOJMI
+        //ak sa zmeni stav simulacie, zmen aj tlacitko spustania simulacie
+        this.board.simRunningProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue != this.tsPower.isSelected())
+                this.tsPower.setSelected(newValue);
+        });
+
+        this.tsPower.selectedProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue)
+                this.board.powerOn();
+            else
+                this.board.powerOff();
+        });
+
+        //STAVOVY RIADOK
+        //pozicia kurzora
+        this.board.setOnMouseMoved(event -> {
+            Point2D gridPoint = this.board.getMousePositionOnGrid(event);
+            lbCoordinates.setText(((int) gridPoint.getX()) + "x" + ((int) gridPoint.getY()));
+        });
+
+        //aktualne priblizenie
+        this.board.zoomScaleProperty().addListener((observable, oldValue, newValue) ->
+                this.lbZoom.setText(((int) (newValue.doubleValue() * 100)) + "%"));
     }
 
+    /**
+     * Volanie zmazania vybraných objektov na ploche simulátora.
+     */
     public void callDelete(){
         this.board.deleteSelect();
     }
 
+    /**
+     * Spustenie simulácie.
+     *
+     * @return Predchádzajúci stav simulácie. True - bežala, false - nebola spustená.
+     */
     public boolean powerOn() {
-        if (this.board.isSimulationRunning()) {
-            return true;
-        }
+        if (this.board.isSimulationRunning()) return true;
+
         this.board.powerOn();
         return false;
     }
 
-    private void registerItems(){
-        this.newItemPicker.registerItem(new Gen7400());
-        this.newItemPicker.registerItem(new Gen7402());
-        this.newItemPicker.registerItem(new Gen7404());
-        this.newItemPicker.registerItem(new Gen7408());
-        this.newItemPicker.registerItem(new Gen7410());
-        this.newItemPicker.registerItem(new Gen7430());
-        this.newItemPicker.registerItem(new Gen7432());
-        this.newItemPicker.registerItem(new Gen7486());
-        this.newItemPicker.registerItem(new SN74125());
-        this.newItemPicker.registerItem(new SN74138());
-        this.newItemPicker.registerItem(new SN74148());
-        this.newItemPicker.registerItem(new SN74151());
-        this.newItemPicker.registerItem(new SN74153());
-        this.newItemPicker.registerItem(new SN74164());
-        this.newItemPicker.registerItem(new SN74573());
-        this.newItemPicker.registerItem(new U6264B());
+    /**
+     * Registrovanie dostupných objektov, ktoré je možné pridať na plochu.
+     *
+     * @param newItemPicker ItemPicker v ktorom sa objekty zobrazia.
+     */
+    private void registerItems(ItemPicker newItemPicker) {
+        //zariadenia
+        newItemPicker.registerItem(new Gen7400());
+        newItemPicker.registerItem(new Gen7402());
+        newItemPicker.registerItem(new Gen7404());
+        newItemPicker.registerItem(new Gen7408());
+        newItemPicker.registerItem(new Gen7410());
+        newItemPicker.registerItem(new Gen7430());
+        newItemPicker.registerItem(new Gen7432());
+        newItemPicker.registerItem(new Gen7486());
+        newItemPicker.registerItem(new SN74125());
+        newItemPicker.registerItem(new SN74138());
+        newItemPicker.registerItem(new SN74148());
+        newItemPicker.registerItem(new SN74151());
+        newItemPicker.registerItem(new SN74153());
+        newItemPicker.registerItem(new SN74164());
+        newItemPicker.registerItem(new SN74573());
+        newItemPicker.registerItem(new U6264B());
 
-        this.newItemPicker.registerItem(new SchoolBreadboard());
-        this.newItemPicker.registerItem(new Breadboard());
-        this.newItemPicker.registerItem(new HexSegment());
-        this.newItemPicker.registerItem(new NumKeys());
-        this.newItemPicker.registerItem(new Probe());
-
+        //komponenty
+        newItemPicker.registerItem(new SchoolBreadboard());
+        newItemPicker.registerItem(new Breadboard());
+        newItemPicker.registerItem(new HexSegment());
+        newItemPicker.registerItem(new NumKeys());
+        newItemPicker.registerItem(new Probe());
     }
 
-    @FXML
-    private void handlePowerAction(){
-        System.out.println("power");
-        if (board.isSimulationRunning())
-            board.powerOff();
-        else
-            board.powerOn();
-    }
+    //TLAČIDLÁ V NÁSTOJOVEJ LIŠTE
 
+    /**
+     * Reakcia na sltačenie tlačidla pre uloženie zapojenia do súboru.
+     */
     @FXML
     private void handleSaveAction() {
         saveCircuit(false);
     }
 
+    /**
+     * Reakcia na sltačenie tlačidla pre uloženie zapojenia do iného súboru.
+     */
     @FXML
     private void handleSaveAsAction() {
         saveCircuit(true);
     }
 
+    /**
+     * Reakcia na sltačenie tlačidla pre načítanie zapojenia zo súboru
+     */
     @FXML
     private void handleLoadAction() {
         if (!continueIfUnsavedFile()) return;
@@ -191,6 +203,9 @@ public class BreadboardController implements Initializable {
         }
     }
 
+    /**
+     * Vyčistenie plochy.
+     */
     @FXML
     private void handleClearBoardAction() {
         if (!continueIfUnsavedFile()) return;
@@ -238,6 +253,12 @@ public class BreadboardController implements Initializable {
         return true;
     }
 
+    /**
+     * Uloženie do súboru.
+     *
+     * @param saveAs Uložiť ako?
+     * @return True ak sa podarilo uložiť zapojenie do súboru, false inak.
+     */
     private boolean saveCircuit(boolean saveAs) {
         File file = saveAs ? null : currentFile;
 
