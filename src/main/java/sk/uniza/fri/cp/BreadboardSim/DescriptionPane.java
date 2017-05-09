@@ -1,18 +1,17 @@
 package sk.uniza.fri.cp.BreadboardSim;
 
-
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
 import javafx.geometry.Pos;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 
 /**
- * Created by Moris on 7.5.2017.
+ * Panel s popisom objektu.
+ *
+ * @author Tomáš Hianik
+ * @created 7.5.2017
  */
 public class DescriptionPane extends ScrollPane {
 
@@ -24,6 +23,9 @@ public class DescriptionPane extends ScrollPane {
     private boolean locked = false;
     private boolean center = false;
 
+    /**
+     * Panel na ktorom sa zobrazuje popis vybraného objektu.
+     */
     public DescriptionPane() {
         this.stackPane = new StackPane();
         this.lockImageView = new ImageView();
@@ -79,6 +81,11 @@ public class DescriptionPane extends ScrollPane {
         });
     }
 
+    /**
+     * Nastavenie popisu podľa objektu. Ak je plocha uzamknutá, nemení sa zobrazenie.
+     *
+     * @param item Objekt, ktorého popis sa má zobraziť.
+     */
     public void setDescription(Selectable item) {
         if (!this.locked && item.getDescription() != null) {
             this.stackPane.getChildren().set(0, item.getDescription());
@@ -87,6 +94,9 @@ public class DescriptionPane extends ScrollPane {
         }
     }
 
+    /**
+     * Vyčistenie plochy.
+     */
     public void clear() {
         if (!this.locked)
             this.stackPane.getChildren().set(0, new Pane());

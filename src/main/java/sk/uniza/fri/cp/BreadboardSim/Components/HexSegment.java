@@ -16,7 +16,9 @@ import sk.uniza.fri.cp.BreadboardSim.Socket.Socket;
 
 
 /**
- * @author Moris
+ * Komponent 7-segmentového displeja.
+ *
+ * @author Tomáš Hianik
  * @version 1.0
  * @created 17-mar-2017 16:16:34
  */
@@ -36,26 +38,34 @@ public class HexSegment extends Component{
 	private Rectangle background;
 
 	private enum SegmentType {
-		HORIZONTAL, VERTICAL, DOT;
-	}
+        HORIZONTAL, VERTICAL, DOT
+    }
 
+    /**
+     * Konštruktor pre itemPicker.
+     */
     public HexSegment() {
     }
 
-	public HexSegment(Board board){
+    /**
+     * Vytvorenie objektu 7-segmentového displeja.
+     *
+     * @param board Plocha simulátora.
+     */
+    public HexSegment(Board board){
         super(board);
         this.instance = this;
 
-		GridSystem grid = board.getGrid();
+        GridSystem grid = board.getGrid();
 
         this.gridWidth = grid.getSizeX() * 8;
         this.gridHeight = grid.getSizeY() * 16;
 
         this.background = new Rectangle(this.gridWidth, this.gridHeight, SchoolBreadboard.BACKGROUND_COLOR);
 
-		this.inputSockets = new Socket[8];
-		Group inputSocketsGroup = generateInputSockets();
-		inputSocketsGroup.setLayoutX(grid.getSizeX());
+        this.inputSockets = new Socket[8];
+        Group inputSocketsGroup = generateInputSockets();
+        inputSocketsGroup.setLayoutX(grid.getSizeX());
         inputSocketsGroup.setLayoutY(grid.getSizeY());
 
         //vyvod na uzemnenie segmentov
@@ -68,15 +78,15 @@ public class HexSegment extends Component{
         this.commonGndSocketGroup.setLayoutX(grid.getSizeX() * 5);
         this.commonGndSocketGroup.setLayoutY(grid.getSizeY() * 8);
 
-		this.segments = new OneSegment[8];
-		Group segmentsGroup = generateSegments();
-		segmentsGroup.setLayoutX(- segments[0].getThicknessCoef());
-		segmentsGroup.setLayoutY(grid.getSizeY() * 9);
+        this.segments = new OneSegment[8];
+        Group segmentsGroup = generateSegments();
+        segmentsGroup.setLayoutX(- segments[0].getThicknessCoef());
+        segmentsGroup.setLayoutY(grid.getSizeY() * 9);
 
-		//pripojenie segmentov ku katode, anodu maju spolocnu
-		for (int i = 0; i < 8; i++) {
-			this.segments[i].connect(this.inputSockets[i]);
-		}
+        //pripojenie segmentov ku katode, anodu maju spolocnu
+        for (int i = 0; i < 8; i++) {
+            this.segments[i].connect(this.inputSockets[i]);
+        }
 
         this.getChildren().addAll(background, inputSocketsGroup, segmentsGroup, commonGndSocketGroup);
 
@@ -85,17 +95,13 @@ public class HexSegment extends Component{
         this.addSocket(commonGndSocket);
     }
 
-    public void hideBackground(boolean hide) {
-        if (hide)
-            this.background.setOpacity(0);
-        else
-            this.background.setOpacity(1);
-
-        this.background.setMouseTransparent(hide);
+    void hideBackground() {
+        this.background.setOpacity(0);
+        this.background.setMouseTransparent(true);
     }
 
-	public Group getCommonGndSocketGroup(){
-	    return commonGndSocketGroup;
+    Group getCommonGndSocketGroup() {
+        return commonGndSocketGroup;
     }
 
 	private Group generateInputSockets(){
@@ -165,7 +171,15 @@ public class HexSegment extends Component{
 		return segmentsGroup;
 	}
 
-	private class OneSegment extends Region{
+    @Override
+    public void delete() {
+        super.delete();
+        for (OneSegment segment : segments) {
+            segment.delete();
+        }
+    }
+
+    private class OneSegment extends Region {
 
         private static final int GRID_LENGTH = 2;
 
@@ -177,6 +191,7 @@ public class HexSegment extends Component{
 		private boolean inverted;
 
 		private Socket innerGndSocket;
+        Potential innerPotential;
 
 		OneSegment(SegmentType type){
 			this.type = type;
@@ -204,7 +219,9 @@ public class HexSegment extends Component{
         }
 
 		void connect(Socket input){
-            input.connect(this.LED.getCathode());
+            Socket innerSocket = new Socket(input.getComponent());
+            innerPotential = new Potential(innerSocket, input);
+            innerSocket.connect(this.LED.getCathode());
             this.innerGndSocket.connect(this.LED.getAnode());
         }
 
@@ -227,6 +244,9 @@ public class HexSegment extends Component{
 
 		double getThicknessCoef(){ return thicknessCoef; }
 
+        void delete() {
+            this.innerPotential.delete();
+        }
 
 	}
 }

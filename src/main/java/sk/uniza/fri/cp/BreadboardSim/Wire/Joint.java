@@ -12,20 +12,19 @@ import sk.uniza.fri.cp.BreadboardSim.Board.GridSystem;
 import sk.uniza.fri.cp.BreadboardSim.Movable;
 
 /**
- * spajac casti kablikov
- * layoutX a layoutY su stredom
+ * Spájač častí káblikov.
+ * Hodnoty layoutX a layoutY sú jeho stredom.
  *
- * Na indexe 0 wireSegments je vždy segment. Aj pri odstránení
- *
- * @author Moris
+ * @author Tomáš Hianik
  * @version 1.0
- * @created 17-mar-2017 16:16:35
+ * @created 17.3.2017
  */
 public class Joint extends Movable {
 
     private static final Color DEFAULT_COLOR = Color.DARKGRAY;
 
-	protected WireSegment[] wireSegments; //segmenty ktore spaja
+    //Na indexe 0 wireSegments je vždy segment. Aj pri odstránení
+    WireSegment[] wireSegments; //segmenty ktore spaja
 
 	private Wire wire;
     private Circle joint;
@@ -33,12 +32,13 @@ public class Joint extends Movable {
 	private Rectangle boundingBox;
 	private double radius;
 
-	/**
-	 * Spojovník častí káblikov.
-	 *
-	 *
-	 */
-	public Joint(Board board, Wire wire){
+    /**
+     * Spájač častí káblikov.
+     *
+     * @param board Plocha simulátora.
+     * @param wire  Káblik, na ktorom je umiestnený.
+     */
+    public Joint(Board board, Wire wire){
 		super(board);
 		this.wire = wire;
 
@@ -68,19 +68,27 @@ public class Joint extends Movable {
         });
     }
 
-	/**
-	 * Pripojenie jointu na segment. Ak nie je pripojeny ani jeden segment, hodi ho ako primarny,
-	 * inak ako sekundarny segment.
-	 */
-	public void connectWireSegment(WireSegment segment){
+    /**
+     * Pripojenie jointu na segment. Ak nie je pripojený ani jeden segment, hodí ho ako primárny,
+     * inak ako sekundárny segment.
+     *
+     * @param segment Segment káblika.
+     */
+    public void connectWireSegment(WireSegment segment){
 		if(this.wireSegments[0] == null)
 			this.wireSegments[0] = segment;
 		else
 			this.wireSegments[1] = segment;
 	}
 
-	public boolean removeWireSegment(WireSegment segment){
-		if(wireSegments[0] == segment) {
+    /**
+     * Odstránenie segmentu ktorý spája.
+     *
+     * @param segment Segment na odstránenie.
+     * @return True ak taký segment poznal a bol odstránený, inak false.
+     */
+    boolean removeWireSegment(WireSegment segment){
+        if(wireSegments[0] == segment) {
 			wireSegments[0] = wireSegments[1];
 			wireSegments[1] = null;
 		}
@@ -91,19 +99,29 @@ public class Joint extends Movable {
 		return true;
 	}
 
-	public Wire getWire(){
-		return this.wire;
+    /**
+     * Vráti káblik na ktorom je zlom umiestnený.
+     *
+     * @return Káblik ku ktorému patrí.
+     */
+    public Wire getWire(){
+        return this.wire;
+    }
+
+    WireSegment getPrimaryWireSegment(){
+        return this.wireSegments[0];
 	}
 
-	public WireSegment getPrimaryWireSegment(){
-		return this.wireSegments[0];
+    WireSegment getSecondaryWireSegment(){
+        return this.wireSegments[1];
 	}
 
-	public WireSegment getSecondaryWireSegment(){
-		return this.wireSegments[1];
-	}
-
-	public void setColor(Color color){
+    /**
+     * Zmena farby.
+     *
+     * @param color Nová farba.
+     */
+    public void setColor(Color color){
         if (Platform.isFxApplicationThread()) {
             this.colorizer.setFill(color);
             this.colorizer.setOpacity(1);
@@ -115,6 +133,9 @@ public class Joint extends Movable {
         }
     }
 
+    /**
+     * Nastavenie pôvodnej farby.
+     */
     public void setDefaultColor(){
         if (Platform.isFxApplicationThread()) {
             this.colorizer.setOpacity(0);
@@ -123,12 +144,18 @@ public class Joint extends Movable {
         }
     }
 
-    public void incRadius() {
+    /**
+     * Zväčšenie grafického rádiusu zlomu.
+     */
+    void incRadius() {
         radius *= 1.2;
         this.joint.setRadius(radius);
     }
 
-    public void decRadius() {
+    /**
+     * Zmenšenie grafického rádiusu zlomu.
+     */
+    void decRadius() {
         radius *= 1.2;
         this.joint.setRadius(radius);
     }

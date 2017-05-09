@@ -1,13 +1,7 @@
 package sk.uniza.fri.cp.BreadboardSim.Wire;
 
 
-import javafx.beans.InvalidationListener;
-import javafx.beans.Observable;
 import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
-import javafx.event.EventDispatcher;
-import javafx.geometry.Bounds;
-import javafx.geometry.Point2D;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.paint.Color;
 import javafx.scene.transform.Transform;
@@ -16,14 +10,13 @@ import sk.uniza.fri.cp.BreadboardSim.Board.BoardEvent;
 import sk.uniza.fri.cp.BreadboardSim.Socket.Socket;
 
 /**
- * pozna socket aby sa vedel podla neho premiestnovat - nabindovat pozicie
- * @author Moris
+ * Koniec káblika, rozširuje Joint. Na rozdiel od Joint-u môže byť pripojený k soketu.
+ *
+ * @author Tomáš Hianik
  * @version 1.0
- * @created 17-mar-2017 16:16:36
+ * @created 17.3.2017
  */
 public class WireEnd extends Joint {
-
-    private static final Color CONNECTED_COLOR = Color.DARKGREEN;
 
 	private Socket socket;
 
@@ -32,6 +25,7 @@ public class WireEnd extends Joint {
 
     private boolean moved;
 
+    //pri zmene pozicie soketu sa posunie aj koniec
     private ChangeListener<Transform> socketPositionChangeListener = (observable, oldValue, newValue) -> {
         if(lastPosX == -1){
             lastPosX = getLayoutX();
@@ -47,16 +41,12 @@ public class WireEnd extends Joint {
         lastPosY = getLayoutY();
     };
 
-	public WireEnd(Board board, Wire wire){
-		super(board, wire);
+    WireEnd(Board board, Wire wire) {
+        super(board, wire);
 
 		this.addEventFilter(MouseEvent.MOUSE_PRESSED, event -> {
 			getWire().setMouseTransparent(true);
 			getWire().setOpacity(0.5);
-
-            //board.addSelect(this);
-
-//			event.consume();
         });
 
         this.addEventFilter(MouseEvent.DRAG_DETECTED, event -> {
@@ -67,7 +57,7 @@ public class WireEnd extends Joint {
             if (this.getSocket() != null)
                 this.disconnectSocket();
 
-            //event.consume();
+            this.setDefaultColor();
         });
 
         this.addEventFilter(MouseEvent.MOUSE_RELEASED, event -> {
@@ -85,37 +75,53 @@ public class WireEnd extends Joint {
         this.incRadius();
     }
 
-	@Override
-	public void connectWireSegment(WireSegment segment) {
-		this.wireSegments[0] = segment;
-	}
-
+    /**
+     * Kontrola, či je koniec pripojený k soketu.
+     *
+     * @return True ak je koniec pripojený k soketu, false inak.
+     */
     public boolean isConnected() {
         return this.socket != null;
     }
 
-	public void connectSocket(Socket socket){
-		if(this.socket == null) {
-			this.socket = socket;
-			this.socket.connect(this);
-//            this.socket.getItem().localToParentTransformProperty().addListener(socketPositionChangeListener);
-// TODO localToScene ma udajne vacsie naroky, no vola sa az po localToParent. lisener potrebuje akt. hodnotu lTS
-            this.socket.getItem().localToSceneTransformProperty().addListener(socketPositionChangeListener);
-            setLayoutX(socket.getBoardX() / getBoard().getAppliedScale());
-            setLayoutY(socket.getBoardY() / getBoard().getAppliedScale());
+    /**
+     * Pripojenie konca kábliku k soketu.
+     * Ak bol predtým niekde pripojený, najprv sa odpojí. Ak sa nepodarí pripojiť, sfarbí sa na červeno.
+     *
+     * @param socket Soket, ku ktorému sa má pripojiť.
+     */
+    public void connectSocket(Socket socket){
+        if(this.socket == null) {
+            if (socket != null && socket.connect(this)) {
+                this.socket = socket;
 
-            lastPosX = getLayoutX();
-            lastPosY = getLayoutY();
+                this.socket.getItem().localToSceneTransformProperty().addListener(socketPositionChangeListener);
+                setLayoutX(socket.getBoardX() / getBoard().getAppliedScale());
+                setLayoutY(socket.getBoardY() / getBoard().getAppliedScale());
 
-            this.setColor(this.getWire().getColor().brighter());
+                lastPosX = getLayoutX();
+                lastPosY = getLayoutY();
 
-            this.getWire().updatePotential();
+                this.setColor(this.getWire().getColor().brighter());
 
-		} else {
-			disconnectSocket();
-			connectSocket(socket);
-		}
-	}
+                this.getWire().updatePotential();
+            } else {
+                this.setColor(Color.RED);
+            }
+        } else {
+            disconnectSocket();
+            connectSocket(socket);
+        }
+    }
+
+    /**
+     * Vráti soket, ku ktorému je koniec pripojený.
+     *
+     * @return Soket, ku ktorému je koniec pripojený.
+     */
+    public Socket getSocket() {
+        return socket;
+    }
 
     @Override
     public void setDefaultColor() {
@@ -123,11 +129,23 @@ public class WireEnd extends Joint {
         else super.setDefaultColor();
     }
 
-    public void disconnectSocket() {
+    @Override
+    public void connectWireSegment(WireSegment segment) {
+        this.wireSegments[0] = segment;
+    }
+
+    @Override
+    public void delete() {
+        super.delete();
+        this.getWire().delete();
+    }
+
+    /**
+     * Odpojenie konca zo soketu.
+     */
+    protected void disconnectSocket() {
         if(this.socket == null) return;
 		Socket socketToUpdate = this.socket;
-
-//        this.socket.getItem().localToParentTransformProperty().removeListener(socketPositionChangeListener);
         this.socket.getItem().localToSceneTransformProperty().removeListener(socketPositionChangeListener);
         this.socket.disconnect();
 		this.socket = null;
@@ -139,14 +157,4 @@ public class WireEnd extends Joint {
 		if(getBoard().simRunningProperty().getValue())
 			getBoard().addEvent(new BoardEvent(socketToUpdate));
 	}
-
-	public Socket getSocket(){
-		return socket;
-	}
-
-    @Override
-    public void delete() {
-        super.delete();
-        this.getWire().delete();
-    }
 }

@@ -32,16 +32,13 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * Pripojenie na zbernice - address, data, control
- * @author Moris
+ * Komponent pre pripojenie na zbernice - adresnú, dátovú, kontrolnú.
+ *
+ * @author Tomáš Hianik
  * @version 1.0
  * @created 17-mar-2017 16:16:34
  */
 public class BusInterface extends Component {
-    public static final Logger LOGGER = LogManager.getLogger("MainLogger");
-    public static final Logger QUEUELOGGER = LogManager.getLogger("QueueLogger");
-    public static int DEBUG_DATA = 0;
-
     private static final Color ADDRESS_LED_ON = Color.RED;
     private static final Color ADDRESS_LED_OFF = Color.DARKRED;
     private static final Color DATA_LED_ON = Color.LIME;
@@ -53,14 +50,13 @@ public class BusInterface extends Component {
     private DataBusCommunicator[] dataBusCommunicators = new DataBusCommunicator[8];
     private ControlBusCommunicator[] controlBusCommunicators = new ControlBusCommunicator[9];
 
-	private Bus bus;
+    private Socket[] addressSockets;
+    private Socket[] dataSockets;
+    private Socket[] controlSockets;
 
-	private Rectangle background;
+    private Bus bus;
 
-	private Socket[] addressSockets;
-	private Socket[] dataSockets;
-	private Socket[] controlSockets;
-
+    //zapnutie / vypnutie svetielok pri zmene stavu simulacie
     private final ChangeListener<Boolean> onSimulationStateChange = new ChangeListener<Boolean>() {
         @Override
         public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {
@@ -69,10 +65,7 @@ public class BusInterface extends Component {
                 Thread runLater = new Thread(new Runnable() {
                     @Override
                     public void run() {
-                        while (true) {
-                            if (!(!getBoard().getSimulator().inSteadyState())) break;
-                        }
-                        ;
+                        Bus.getBus().waitForSteadyState();
 
                         AddressBusCommunicator.setAddress(bus.getAddressBus());
                         DataBusCommunicator.setData(bus.getDataBus());
@@ -103,6 +96,7 @@ public class BusInterface extends Component {
             }
         }
     };
+    //rekcie na zmeny casti zbernice
     private final ChangeListener<Number> onAddressBusChange = new ChangeListener<Number>() {
         @Override
         public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
@@ -144,7 +138,6 @@ public class BusInterface extends Component {
                 Bus.getBus().waitForSteadyState(); // koli skratu
 
                 //zapis
-//                LOGGER.debug("ControlChange SET TO WRITE");
                 for (int i = 0; i < 8; i++)
                     dataBusCommunicators[i].update();
 
@@ -154,7 +147,6 @@ public class BusInterface extends Component {
             //MR/IR/IA
             if ((newValue.intValue() & 0xB0) != 0xB0 && !lastReadStateOn) {
                 //citanie
-//                LOGGER.debug("ControlChange SET TO READ");
                 Bus.getBus().waitForSteadyState(); // koli skratu
 
                 for (int i = 0; i < 8; i++)
@@ -162,14 +154,12 @@ public class BusInterface extends Component {
 
                 lastReadStateOn = true;
             } else if (lastReadStateOn) {
-//                LOGGER.debug("ControlChange UNSET TO READ");
                 for (int i = 0; i < 8; i++)
                     ((DataBusCommunicator) dataBusCommunicators[i]).setToRead(false);
 
                 lastReadStateOn = false;
             }
 
-//            LOGGER.debug("ControlChange UPDATE CONTROL BUS COMMUNICATORS");
             for (int i = 4; i < 9; i++) { //iba pre vystupne signaly
                 controlBusCommunicators[i].update();
             }
@@ -177,7 +167,6 @@ public class BusInterface extends Component {
             if ((newValue.intValue() & 0x140) == 0x140 && lastWriteStateOn) {
                 Bus.getBus().waitForSteadyState(); // koli skratu
 
-//                LOGGER.debug("ControlChange UNSET TO WRITE");
                 DataBusCommunicator.setToWrite(false);
                 for (int i = 0; i < 8; i++) {
                     dataBusCommunicators[i].update();
@@ -190,6 +179,11 @@ public class BusInterface extends Component {
         }
     };
 
+    /**
+     * Vytvorenie pripojenia na zbernicu.
+     *
+     * @param board Plocha simulatora, na ktoru bude objekt pridany.
+     */
     public BusInterface(Board board) {
         super(board);
         this.bus = Bus.getBus();
@@ -199,7 +193,7 @@ public class BusInterface extends Component {
 
         this.gridWidth = grid.getSizeX() * 66; //68
         this.gridHeight = grid.getSizeY() * 5;
-        background = new Rectangle(this.gridWidth, this.gridHeight, SchoolBreadboard.BACKGROUND_COLOR);
+        Rectangle background = new Rectangle(this.gridWidth, this.gridHeight, SchoolBreadboard.BACKGROUND_COLOR);
 
         //GND
         Group leftGndSockets = SocketsFactory.getHorizontalPower(this, 2, Potential.Value.LOW, getPowerSockets());
@@ -226,10 +220,6 @@ public class BusInterface extends Component {
         //zvysna sa pridavaju pocas vytvarania v getnerateInterface
 
         registerListeners();
-    }
-
-	public void setBackgroundColor(Color newColor){
-	    background.setFill(newColor);
     }
 
     @Override
@@ -273,143 +263,146 @@ public class BusInterface extends Component {
         this.bus.controlBusProperty().removeListener(onControlBusChange);
     }
 
-	private void generateInterface(){
-		GridSystem grid = getBoard().getGrid();
-		Text name;
+    /**
+     * Generovanie grafiky komponentu
+     */
+    private void generateInterface(){
+        GridSystem grid = getBoard().getGrid();
+        Text name;
 
-		//ADRESNA ZBERNICA
-		addressSockets = new Socket[16];
+        //ADRESNA ZBERNICA
+        addressSockets = new Socket[16];
 
-		Group addressInterface = new Group();
-		addressInterface.setLayoutX(grid.getSizeX() * 15);
-		addressInterface.setLayoutY(grid.getSizeY() * 4);
+        Group addressInterface = new Group();
+        addressInterface.setLayoutX(grid.getSizeX() * 15);
+        addressInterface.setLayoutY(grid.getSizeY() * 4);
 
-		//generovanie soketov, komunikatorov a oznaceni soketov
-		for (int i = 0; i < 16; i++) {
-			double centerX = grid.getSizeX() * (16-i);
+        //generovanie soketov, komunikatorov a oznaceni soketov
+        for (int i = 0; i < 16; i++) {
+            double centerX = grid.getSizeX() * (16-i);
 
-			//soket
+            //soket
             Socket socket = new Socket(this);
             socket.setLayoutX(centerX);
-			addressSockets[i] = socket;
+            addressSockets[i] = socket;
 
-			//komunikator so zbernicou
+            //komunikator so zbernicou
             AddressBusCommunicator communicator = new AddressBusCommunicator(getBoard(), addressSockets[i], i);
             communicator.setLayoutX(centerX);
-			communicator.setLayoutY(-grid.getSizeY());
-			addressBusCommunicators[i] = communicator;
+            communicator.setLayoutY(-grid.getSizeY());
+            addressBusCommunicators[i] = communicator;
 
-			//oznacenie
-			Text label = Board.getLabelText(String.valueOf(i), grid.getSizeMin());
-			label.setLayoutX(centerX - label.getBoundsInLocal().getWidth()/2.0);
-			label.setLayoutY(-grid.getSizeY()*2);
+            //oznacenie
+            Text label = Board.getLabelText(String.valueOf(i), grid.getSizeMin());
+            label.setLayoutX(centerX - label.getBoundsInLocal().getWidth()/2.0);
+            label.setLayoutY(-grid.getSizeY()*2);
 
-			addressInterface.getChildren().addAll(socket, communicator, label);
-		}
+            addressInterface.getChildren().addAll(socket, communicator, label);
+        }
 
-		//ozancenie
-		name = Board.getLabelText("AB", grid.getSizeMin());
-		name.setLayoutX(-grid.getSizeX() * 3);
-		addressInterface.getChildren().add(name);
+        //ozancenie
+        name = Board.getLabelText("AB", grid.getSizeMin());
+        name.setLayoutX(-grid.getSizeX() * 3);
+        addressInterface.getChildren().add(name);
 
 
-		//DATOVA ZBERNICA
+        //DATOVA ZBERNICA
         dataSockets = new Socket[8];
         Group dataInterface = new Group();
-		dataInterface.setLayoutX(grid.getSizeX() * 36);
-		dataInterface.setLayoutY(grid.getSizeY() * 4);
+        dataInterface.setLayoutX(grid.getSizeX() * 36);
+        dataInterface.setLayoutY(grid.getSizeY() * 4);
 
-		//generovanie soketov, komunikatorov a oznaceni soketov
-		for (int i = 0; i < 8; i++) {
-			double centerX = grid.getSizeX() * (8-i);
+        //generovanie soketov, komunikatorov a oznaceni soketov
+        for (int i = 0; i < 8; i++) {
+            double centerX = grid.getSizeX() * (8-i);
 
-			//soket
+            //soket
             Socket socket = new Socket(this);
             socket.setLayoutX(centerX);
-			dataSockets[i] = socket;
+            dataSockets[i] = socket;
 
-			//komunikator so zbernicou
+            //komunikator so zbernicou
             DataBusCommunicator communicator = new DataBusCommunicator(getBoard(), dataSockets[i], i);
             communicator.setLayoutX(centerX);
-			communicator.setLayoutY(-grid.getSizeY());
-			dataBusCommunicators[i] = communicator;
+            communicator.setLayoutY(-grid.getSizeY());
+            dataBusCommunicators[i] = communicator;
 
-			//oznacenie
-			Text label = Board.getLabelText(String.valueOf(i), grid.getSizeMin());
-			label.setLayoutX(centerX - label.getBoundsInLocal().getWidth()/2.0);
-			label.setLayoutY(-grid.getSizeY()*2);
+            //oznacenie
+            Text label = Board.getLabelText(String.valueOf(i), grid.getSizeMin());
+            label.setLayoutX(centerX - label.getBoundsInLocal().getWidth()/2.0);
+            label.setLayoutY(-grid.getSizeY()*2);
 
-			dataInterface.getChildren().addAll(socket, communicator, label);
-		}
+            dataInterface.getChildren().addAll(socket, communicator, label);
+        }
 
-		//ozancenie
-		name = Board.getLabelText("DB", grid.getSizeMin());
-		name.setLayoutX(-grid.getSizeX() * 3);
-		dataInterface.getChildren().add(name);
+        //ozancenie
+        name = Board.getLabelText("DB", grid.getSizeMin());
+        name.setLayoutX(-grid.getSizeX() * 3);
+        dataInterface.getChildren().add(name);
 
-		//RIADIACA ZBERNICA
-		controlSockets = new Socket[9];
-		Group controlInterface = new Group();
-		controlInterface.setLayoutX(grid.getSizeX() * 45);
-		controlInterface.setLayoutY(grid.getSizeY() * 4);
+        //RIADIACA ZBERNICA
+        controlSockets = new Socket[9];
+        Group controlInterface = new Group();
+        controlInterface.setLayoutX(grid.getSizeX() * 45);
+        controlInterface.setLayoutY(grid.getSizeY() * 4);
 
-		//generovanie soketov, komunikatorov a oznaceni soketov
-		for (int i = 0; i < 9; i++) {
-			double centerX = grid.getSizeX() * (9-i);
+        //generovanie soketov, komunikatorov a oznaceni soketov
+        for (int i = 0; i < 9; i++) {
+            double centerX = grid.getSizeX() * (9-i);
 
-			//soket
+            //soket
             Socket socket = new Socket(this);
             socket.setLayoutX(centerX);
-			controlSockets[i] = socket;
+            controlSockets[i] = socket;
 
-			//komunikator so zbernicou
+            //komunikator so zbernicou
             ControlBusCommunicator communicator = new ControlBusCommunicator(getBoard(), controlSockets[i], i);
             communicator.setLayoutX(centerX);
-			communicator.setLayoutY(-grid.getSizeY());
-			controlBusCommunicators[i] = communicator;
+            communicator.setLayoutY(-grid.getSizeY());
+            controlBusCommunicators[i] = communicator;
 
-			//oznacenie
-			String lb = "";
-			switch (i){
-				case 0:	lb = "BA";
-					break;
-				case 1:	lb = "BQ";
-					break;
-				case 2:	lb = "RY";
-					break;
-				case 3:	lb = "IT";
-					break;
-				case 4:	lb = "IA";
-					break;
-				case 5:	lb = "IR";
-					break;
-				case 6:	lb = "IW";
-					break;
-				case 7:	lb = "MR";
-					break;
-				case 8:	lb = "MW";
-					break;
-			}
-			Text label = Board.getLabelText(lb, grid.getSizeMin());
-			label.setLayoutX(centerX - label.getBoundsInLocal().getWidth() / 2.0);
-			label.setLayoutY(-2*grid.getSizeY());
+            //oznacenie
+            String lb = "";
+            switch (i){
+                case 0:	lb = "BA";
+                    break;
+                case 1:	lb = "BQ";
+                    break;
+                case 2:	lb = "RY";
+                    break;
+                case 3:	lb = "IT";
+                    break;
+                case 4:	lb = "IA";
+                    break;
+                case 5:	lb = "IR";
+                    break;
+                case 6:	lb = "IW";
+                    break;
+                case 7:	lb = "MR";
+                    break;
+                case 8:	lb = "MW";
+                    break;
+            }
+            Text label = Board.getLabelText(lb, grid.getSizeMin());
+            label.setLayoutX(centerX - label.getBoundsInLocal().getWidth() / 2.0);
+            label.setLayoutY(-2*grid.getSizeY());
 
-			if(i % 2 != 0) label.setLayoutY(-3*grid.getSizeY());	//posunutie oznacenia hore
+            if(i % 2 != 0) label.setLayoutY(-3*grid.getSizeY());	//posunutie oznacenia hore
 
-			//negovacia ciarka nad oznacenim
-			if(i >= 4) {
-				Line negLogic = new Line(label.getLayoutX(),
+            //negovacia ciarka nad oznacenim
+            if(i >= 4) {
+                Line negLogic = new Line(label.getLayoutX(),
                         label.getLayoutY() - grid.getSizeX() + 2,
                         label.getLayoutX() + label.getBoundsInLocal().getWidth(),
                         label.getLayoutY() - grid.getSizeX() + 2);
-				negLogic.setId("breadboardLabel");
-				controlInterface.getChildren().add(negLogic);
-			}
+                negLogic.setId("breadboardLabel");
+                controlInterface.getChildren().add(negLogic);
+            }
 
-			controlInterface.getChildren().addAll(socket, communicator, label);
-		}
+            controlInterface.getChildren().addAll(socket, communicator, label);
+        }
 
-		this.getChildren().addAll(addressInterface, dataInterface, controlInterface);
+        this.getChildren().addAll(addressInterface, dataInterface, controlInterface);
         //registracia soketov
         this.addAllSockets(addressSockets);
         this.addAllSockets(dataSockets);
@@ -418,11 +411,13 @@ public class BusInterface extends Component {
 
 
     /**
+     * Zariadenie komunikujuce so zbernicou.
+     *
      * vysvetlenie prepojenia
-     * /* [COMMON_PIN} -> [COMMON_SOCKET] ~ [1. InterfaceSocket]
-     * /*                                 ~ [2. InterfaceSocket] ...
-     * /* -> pripojenie pinu k soketu
-     * /* ~  potenciál
+     * [COMMON_PIN} -> [COMMON_SOCKET] ~ [1. InterfaceSocket]
+     *                                 ~ [2. InterfaceSocket] ...
+     * -> pripojenie pinu k soketu
+     * ~  potenciál
      */
     private abstract static class BusCommunicator extends Device{
 
@@ -608,6 +603,7 @@ public class BusInterface extends Component {
         @Override
         public void reset() {
             this.pin.getSocket().setPotential(Potential.Value.NC);
+            turnIndicatorOff();
         }
     }
 
@@ -686,10 +682,8 @@ public class BusInterface extends Component {
                 //zapis zo zbernice do externej pamate na zaklade
                 if ((data & 1 << this.getByteNr()) != 0) {
                     this.setHigh();
-//                    LOGGER.debug("BUSINTERFACE WRITE Nastavovane data na interface: " + data + "\t bit: " + getByteNr() + " HIGH");
                 } else {
                     this.setLow();
-//                    LOGGER.debug("BUSINTERFACE WRITE Nastavovane data na interface: " + data + "\t bit: " + getByteNr() + " LOW");
                 }
 
             } else if (read) {
@@ -698,15 +692,10 @@ public class BusInterface extends Component {
                 if (this.isHigh(this.getPin())) {
                     //ak je na pine jednotka
                     Bus.getBus().setDataBus((byte) (data |= (1 << this.getByteNr())));
-//                    LOGGER.debug("BUSINTERFACE READ Zapisane data na zbernicu: " + data + " \t bit: " + getByteNr() + " HIGH");
                 } else if (this.isLow(this.getPin())) {
                     //ak nie tak sa predpoklada ze je tam nula (aj ked je nepripojeny, lebo CPU je odpojene)
                     Bus.getBus().setDataBus((byte) (data &= ~(1 << this.getByteNr())));
-//                    LOGGER.debug("BUSINTERFACE READ Zapisane data na zbernicu: " + data + " \t bit: " + getByteNr() + " LOW");
                 }
-//                else {
-//                    LOGGER.debug("BUSINTERFACE READ Zapisane rovnake data na zbernicu lebo je NC pri citani: " + data + " \t bit: " + getByteNr() + " HIGH");
-//                }
 
             } else {
                 //ANI ZAPIS ANI CITANIE -> TO DIVNE SPRAVANIE Z POVODNEHO SIMULATORA
@@ -779,17 +768,14 @@ public class BusInterface extends Component {
         public void update() {
             Bus.getBus().dataIsChanging();
             if ((controls & 1 << this.getByteNr()) != 0) {
-//                LOGGER.debug("ControlBus nastavenie priznaku " + getByteNr() + " HIGH");
                 this.setHigh();
             } else {
-//                LOGGER.debug("ControlBus nastavenie priznaku " + getByteNr() + " LOW");
                 this.setLow();
             }
         }
 
 		@Override
 		public void simulate() {
-
 			//simulujeme zapis na zbernicu ak sa jedna o vstupny signal
             switch (this.getByteNr()) {
                 case 2:

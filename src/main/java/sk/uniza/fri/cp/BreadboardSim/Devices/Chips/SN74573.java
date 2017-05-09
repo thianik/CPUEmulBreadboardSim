@@ -9,11 +9,13 @@ import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.OutputPin;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.Pin;
 
 /**
- * Created by Moris on 13.4.2017.
+ * Obvod 74573
+ * 8-bit register
+ *
+ * @author Tomáš Hianik
+ * @created 13.4.2017.
  */
 public class SN74573 extends Chip {
-    public static final Logger LOGGER = LogManager.getLogger("MainLogger");
-
     private static final String NAME = "SN74573";
     private static final String SHORT_DESCRIPTION = "8-bit register";
     private static final int PINS_COUNT = 20;
@@ -60,28 +62,17 @@ public class SN74573 extends Chip {
                 this.savedData[i] = this.isHigh(inputs[i]);
                 data += this.savedData[i] ? 1 << (7 - i) : 0;
             }
-
-//            LOGGER.debug("74573 Zapisane data na chip: " + data);
         }
 
         if (this.isHigh(_OE_)) {
             for (int i = 0; i < 8; i++) {
                 this.setPin(outputs[i], Pin.PinState.HIGH_IMPEDANCE);
             }
-
-//            LOGGER.debug("74573 Odpojenie -> HiZ ");
-
         } else if (this.isLow(_OE_)) {
-            //debug
-            int data = 0;
-
             //povoleny vystup
             for (int i = 0; i < 8; i++) {
                 this.setPin(outputs[i], savedData[i] ? Pin.PinState.HIGH : Pin.PinState.LOW);
-                data += this.savedData[i] ? 1 << (7 - i) : 0;
             }
-
-//            LOGGER.debug("74573 Nastavene data chipom: " + data);
         }
 
     }
@@ -134,7 +125,6 @@ public class SN74573 extends Chip {
             this.savedData[i] = false;
         }
     }
-
 
     @Override
     public String getName() {

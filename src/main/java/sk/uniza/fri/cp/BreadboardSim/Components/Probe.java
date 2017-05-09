@@ -12,7 +12,10 @@ import sk.uniza.fri.cp.BreadboardSim.Socket.Potential;
 import sk.uniza.fri.cp.BreadboardSim.Socket.Socket;
 
 /**
- * Created by Moris on 22.3.2017.
+ * Skúšač napätia v obvode.
+ *
+ * @author Tomáš Hianik
+ * @created 22.3.2017.
  */
 public class Probe extends Component {
 
@@ -21,14 +24,19 @@ public class Probe extends Component {
     private static final double RADIUS_COEF = 0.4;
 
     private Rectangle background;
-    private Socket inputSocket;
-    private Socket gndSocket;
-    private Circle emitter;
-    private LED led;
+    private Potential innerPotential;
 
+    /**
+     * Konštruktor pre itemPicker.
+     */
     public Probe() {
     }
 
+    /**
+     * Konštruktor pre vytvorenie objektu určeného pre plochu siumlátora.
+     *
+     * @param board Plocha simulátora
+     */
     public Probe(Board board) {
         super(board);
 
@@ -37,35 +45,47 @@ public class Probe extends Component {
         this.background = new Rectangle(grid.getSizeX() * 5, grid.getSizeY() * 4, SchoolBreadboard.BACKGROUND_COLOR);
 
         //sokety
-        this.inputSocket = new Socket(this);
-        this.inputSocket.setLayoutX(grid.getSizeX());
-        this.inputSocket.setLayoutY(grid.getSizeY());
+        Socket inputSocket = new Socket(this);
+        inputSocket.setLayoutX(grid.getSizeX());
+        inputSocket.setLayoutY(grid.getSizeY());
 
         //vnutorny soket na uzemnenie LEDky
-        this.gndSocket = new Socket(this, Potential.Value.LOW);
+        Socket gndSocket = new Socket(this, Potential.Value.LOW);
 
-        this.emitter = new Circle(grid.getSizeMin() * RADIUS_COEF, PROBE_OFF_COLOR);
-        this.led = new LED(board, this.emitter, PROBE_ON_COLOR);
-        this.led.setLayoutX(grid.getSizeX() * 3);
-        this.led.setLayoutY(grid.getSizeY());
-        this.led.makeImmovable();
+        Circle emitter = new Circle(grid.getSizeMin() * RADIUS_COEF, PROBE_OFF_COLOR);
+        LED led = new LED(board, emitter, PROBE_ON_COLOR);
+        led.setLayoutX(grid.getSizeX() * 3);
+        led.setLayoutY(grid.getSizeY());
+        led.makeImmovable();
 
         Text probeText = Board.getLabelText("PROBE", grid.getSizeMin());
         probeText.setLayoutX(grid.getSizeX() * 3 - probeText.getBoundsInParent().getWidth() / 2); //centrovanie pod LEDku
         probeText.setLayoutY(grid.getSizeY() + probeText.getBoundsInParent().getHeight());
 
-        this.inputSocket.connect(this.led.getAnode());
-        this.inputSocket.lockPin();
-        this.gndSocket.connect(this.led.getCathode());
+        //vytvorenie vnútorného soketu
+        Socket innerSocket = new Socket(this);
+        innerSocket.connect(led.getAnode());
+        this.innerPotential = new Potential(innerSocket, inputSocket);
 
-        this.getChildren().addAll(this.background, this.inputSocket, this.led, probeText);
-        this.addSocket(this.inputSocket);
+        gndSocket.connect(led.getCathode());
+
+        this.getChildren().addAll(this.background, inputSocket, led, probeText);
+        this.addSocket(inputSocket);
     }
 
+    /**
+     * Odstránenie pozadia z komponentu.
+     */
     public void removeBackground() {
         if (this.background != null) {
             this.getChildren().removeAll(this.background);
             this.background = null;
         }
+    }
+
+    @Override
+    public void delete() {
+        super.delete();
+        this.innerPotential.delete();
     }
 }

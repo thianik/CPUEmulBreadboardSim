@@ -8,7 +8,11 @@ import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.OutputPin;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.Pin;
 
 /**
- * Created by Moris on 31.3.2017.
+ * Obvod 7402
+ * 4x 2-vstupový NOR
+ *
+ * @author Tomáš Hianik
+ * @created 31.3.2017.
  */
 public class Gen7402 extends Chip{
 

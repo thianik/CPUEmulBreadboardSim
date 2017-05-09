@@ -3,19 +3,15 @@ package sk.uniza.fri.cp.BreadboardSim.Wire;
 
 import javafx.event.Event;
 import javafx.event.EventHandler;
-import javafx.geometry.Bounds;
 import javafx.geometry.Pos;
 import javafx.scene.Group;
 import javafx.scene.control.ColorPicker;
-import javafx.scene.effect.Bloom;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
-import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Line;
-import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.Shape;
 import javafx.scene.shape.StrokeLineCap;
 import sk.uniza.fri.cp.BreadboardSim.Board.Board;
@@ -30,9 +26,13 @@ import java.util.LinkedList;
 import java.util.List;
 
 /**
- * @author Moris
+ * Káblik spájajúci sokety. Vytvára medzi nimi potenciál.
+ * Umožňuje meniť farbu alebo vytvárať zlomy.
+ * Nové kábliky majú po vytvorení farbu, ktorá je nastavená ako defaultná (statická prem.).
+ *
+ * @author Tomáš Hianik
  * @version 1.0
- * @created 17-mar-2017 16:16:36
+ * @created 17.3.2017
  */
 public class Wire extends HighlightGroup {
 
@@ -52,35 +52,29 @@ public class Wire extends HighlightGroup {
 	private Joint createdJoint;
 
     //EVENTY
-    //pri zacati tahania vytvori novy
-    private EventHandler<MouseEvent> onMouseDragDetected = new EventHandler<MouseEvent>() {
-        @Override
-        public void handle(MouseEvent event) {
-            if (event.isPrimaryButtonDown() && (event.isControlDown() || event.getClickCount() == 2) && event.getTarget() instanceof WireSegment) {
-                WireSegment segmentToSplit = ((WireSegment) event.getTarget());
-                createdJoint = splitSegment(segmentToSplit);
-                event.consume();
-            }
+    //pri zacati tahania a stlacenom CTRL vytvori novy zlom
+    private EventHandler<MouseEvent> onMouseDragDetected = event -> {
+        if (event.isPrimaryButtonDown() && (event.isControlDown() || event.getClickCount() == 2) && event.getTarget() instanceof WireSegment) {
+            WireSegment segmentToSplit = ((WireSegment) event.getTarget());
+            createdJoint = splitSegment(segmentToSplit);
+            event.consume();
         }
     };
-
-    private EventHandler<MouseEvent> onMouseDragged = new EventHandler<MouseEvent>() {
-        @Override
-        public void handle(MouseEvent event) {
-            if (event.isPrimaryButtonDown()) {
-                if (createdJoint != null) {
-                    Event.fireEvent(createdJoint, new MouseEvent(MouseEvent.MOUSE_DRAGGED, event.getSceneX(), event.getSceneY(),
-                            event.getScreenX(), event.getScreenY(), MouseButton.PRIMARY, 1, true,
-                            true, true, true, true, true,
-                            true, true, true, true, null));
-                }
-                event.consume();
+    //pohyb s novovytvorenym zlomom
+    private EventHandler<MouseEvent> onMouseDragged = event -> {
+        if (event.isPrimaryButtonDown()) {
+            if (createdJoint != null) {
+                Event.fireEvent(createdJoint, new MouseEvent(MouseEvent.MOUSE_DRAGGED, event.getSceneX(), event.getSceneY(),
+                        event.getScreenX(), event.getScreenY(), MouseButton.PRIMARY, 1, true,
+                        true, true, true, true, true,
+                        true, true, true, true, null));
             }
+            event.consume();
         }
     };
-
+    //ukoncenie vytvarania zlomu
     private EventHandler<MouseEvent> onMouseReleased = event -> createdJoint = null;
-
+    //zvyraznenie po prechode nad kablikom
     private EventHandler<MouseEvent> onMouseEntered = event -> {
         if (!this.isSelected()) {
             this.highlightSegments(0.7);
@@ -91,7 +85,7 @@ public class Wire extends HighlightGroup {
                 + brighter.getGreen() * 255 + ","
                 + brighter.getBlue() * 255 + "), 1, 1.0, 0, 0)");
     };
-
+    //zrusenie zvyraznenie po opusteni priestoru kablika
     private EventHandler<MouseEvent> onMouseExited = event -> {
         if (!this.isSelected()) {
             this.unhighlighSegments();
@@ -100,9 +94,11 @@ public class Wire extends HighlightGroup {
     };
 
 	/**
-	 * 
-	 * @param startSocket
-	 */
+     * Vytvorenie nového káblika.
+     * Po vytvorení je voľný koniec prístupný cez metódu catchFreeEnd().
+     *
+     * @param startSocket Soket, na ktorom sa začal káblik vytvárať. Hneď sa k nemu pripojí.
+     */
 	public Wire(Socket startSocket){
 		this.joints = new LinkedList<>();
 		this.segments = new LinkedList<>();
@@ -133,6 +129,12 @@ public class Wire extends HighlightGroup {
         this.registerEvents();
     }
 
+    /**
+     * Vytvorenie nového káblika na poche simulátora.
+     * Konce sú umiestnené na súradniciach [1,1] a [2,2] na mriežke.
+     *
+     * @param board Plocha simulátora.
+     */
     public Wire(Board board) {
         this.joints = new LinkedList<>();
         this.segments = new LinkedList<>();
@@ -163,18 +165,38 @@ public class Wire extends HighlightGroup {
         this.registerEvents();
     }
 
-	/**
-	 * 
-	 * @param defColor
-	 */
+    /**
+     * Vráti plochu simulátora, na ktorejje káblik umiestnený.
+     *
+     * @return Plocha simulátora.
+     */
+    public Board getBoard() {
+        return this.ends[0].getBoard();
+    }
+
+    /**
+     * Defaultná farba novovytvorených káblikov.
+     *
+     * @param defColor defaultná farba.
+     */
 	public static void setDefaultColor(Color defColor){
 		defaultColor = defColor;
 	}
 
-	public static Color getDefaultColor(){
-		return defaultColor;
-	}
+    /**
+     * Zísaknie defaultnej farby.
+     *
+     * @return Defaultná farba.
+     */
+    public static Color getDefaultColor(){
+        return defaultColor;
+    }
 
+    /**
+     * Zmena farby káblika a jeho segmentov.
+     *
+     * @param newColor Nová farba.
+     */
     public void changeColor(Color newColor) {
         this.color = newColor;
         this.segments.forEach(wireSegment -> wireSegment.setColor(this.color));
@@ -184,14 +206,29 @@ public class Wire extends HighlightGroup {
         if (this.isSelected()) this.highlightSegments(1);
     }
 
+    /**
+     * Vráti farbu káblika.
+     *
+     * @return Farba káblika.
+     */
     public Color getColor() {
         return this.color;
     }
 
+    /**
+     * Vráti konce káblika.
+     *
+     * @return Pole s koncami káblika.
+     */
     public WireEnd[] getEnds() {
         return ends;
     }
 
+    /**
+     * Vráti zlomy na kábliku.
+     *
+     * @return List so zlomami.
+     */
     public List<Joint> getJoints() {
         return joints;
     }
@@ -205,7 +242,6 @@ public class Wire extends HighlightGroup {
 	public WireEnd catchFreeEnd(){
 		return this.ends[1];
 	}
-
 
 	/**
 	 * Odstránenie spojovača na kábliku. Je možné odstraňovať iba vnútorné jointy, nie konce.
@@ -238,8 +274,26 @@ public class Wire extends HighlightGroup {
 		this.jointsGroup.getChildren().remove(joint);
 	}
 
-	public Joint splitSegment(WireSegment segment){
-		Joint newJoint = new Joint(getBoard(), this);
+    /**
+     * Kontrola, či sú oba konce káblika pripojené.
+     *
+     * @return True ak sú oba konce káblika pripojené k soketom, false inak.
+     */
+    public boolean areBothEndsConnected() {
+        return this.ends[0].isConnected() && this.ends[1].isConnected();
+    }
+
+    /**
+     * Rozpolenie posledného segmentu káblika. Vráti novovytvorený zlom.
+     *
+     * @return Nový zlom na kábliku.
+     */
+    public Joint splitLastSegment() {
+        return this.splitSegment(((LinkedList<WireSegment>) this.segments).getLast());
+    }
+
+    private Joint splitSegment(WireSegment segment) {
+        Joint newJoint = new Joint(getBoard(), this);
 
 		//konce rozdelujuceho segmentu
 		Joint firstJoint = segment.getStartJoint();
@@ -271,10 +325,6 @@ public class Wire extends HighlightGroup {
 
 		return newJoint;
 	}
-
-    public Joint splitLastSegment() {
-        return this.splitSegment(((LinkedList<WireSegment>) this.segments).getLast());
-    }
 
     private void registerEvents() {
         this.addEventHandler(MouseEvent.DRAG_DETECTED, onMouseDragDetected);
@@ -315,12 +365,8 @@ public class Wire extends HighlightGroup {
         this.lastMovingEnd = wireEnd;
     }
 
-	public Board getBoard(){
-		return this.ends[0].getBoard();
-	}
-
-	public void updatePotential(){
-		if(this.potential != null){
+    void updatePotential() {
+        if(this.potential != null){
 			this.potential.delete();
 			this.potential = null;
 		}
@@ -348,10 +394,6 @@ public class Wire extends HighlightGroup {
 				getBoard().addEvent(new BoardEvent(toUpdate));
 		}
 	}
-
-    public boolean areBotheEndsConnected() {
-        return this.ends[0].isConnected() && this.ends[1].isConnected();
-    }
 
 	@Override
 	public void delete() {
@@ -419,6 +461,7 @@ public class Wire extends HighlightGroup {
 
             wrapper.getChildren().add(colorPicker);
 
+            this.cacheDescription(wrapper);
             return wrapper;
         } else return cached;
     }

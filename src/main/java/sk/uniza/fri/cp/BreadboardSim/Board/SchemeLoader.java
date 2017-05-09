@@ -3,6 +3,7 @@ package sk.uniza.fri.cp.BreadboardSim.Board;
 import javafx.scene.paint.Color;
 import org.jdom2.Document;
 import org.jdom2.Element;
+import org.jdom2.JDOMException;
 import org.jdom2.input.SAXBuilder;
 import org.jdom2.output.Format;
 import org.jdom2.output.XMLOutputter;
@@ -18,21 +19,41 @@ import sk.uniza.fri.cp.BreadboardSim.Wire.Wire;
 import sk.uniza.fri.cp.BreadboardSim.Wire.WireEnd;
 
 import java.io.*;
+import java.lang.reflect.InvocationTargetException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 /**
- * Created by Moris on 8.5.2017.
+ * Statické metódy na načítavanie / ukladanie zapojení simulátora.
+ *
+ * @author Tomáš Hianik
+ * @created 8.5.2017
  */
-public class SchemeLoader {
+class SchemeLoader {
     private static final String VERSION = "1.1";
     private static final String COMPONENTS_PACKAGE = Component.class.getPackage().getName() + ".";
     private static final String DEVICES_PACKAGE = Device.class.getPackage().getName() + ".";
 
-    public static boolean save(File file, BoardLayersManager layersManager) {
+    /**
+     * Uloženie zapojenia podľa layerManager-a.
+     *
+     * @param file          Súbor, do ktorého sa má zapojenie uložiť.
+     * @param layersManager LayerManager s objektami na ploche, ktoré chceme uložiť.
+     * @return Výsledok operácie, true, ak bol súbor úspešne uložený, false inak.
+     */
+    static boolean save(File file, BoardLayersManager layersManager) {
         return saveSchx(file, layersManager);
     }
 
-    public static boolean load(File file, BoardLayersManager layersManager) {
+    /**
+     * Načítanie zapojenia zo súboru.
+     * Automaticky rozpoznáva príponu .sch a .schx.
+     *
+     * @param file          Súbor, z ktorého sa má zapojenie načítať.
+     * @param layersManager LayerManager, do ktorého sa majú objekty načítať.
+     * @return Výsledok operácie, true ak sa načítavanie podarilo, false inak.
+     */
+    static boolean load(File file, BoardLayersManager layersManager) {
         if (file.getName().substring(file.getName().lastIndexOf(".")).equalsIgnoreCase(".sch"))
             return loadSch(file, layersManager);
 
@@ -303,8 +324,11 @@ public class SchemeLoader {
         XMLOutputter xmlOutputter = new XMLOutputter();
         xmlOutputter.setFormat(Format.getPrettyFormat());
 
-        try {
-            xmlOutputter.output(jdomDoc, new FileWriter(schxFile));
+        try (BufferedWriter bw =
+                     new BufferedWriter(
+                             new OutputStreamWriter(
+                                     new FileOutputStream(schxFile), StandardCharsets.UTF_8))) {
+            xmlOutputter.output(jdomDoc, bw);
             return true;
         } catch (IOException e) {
             e.printStackTrace();
@@ -536,34 +560,23 @@ public class SchemeLoader {
                 }
             }
 
-        } catch (Exception e) {
+        } catch (JDOMException | IOException | InvocationTargetException
+                | InstantiationException | IllegalAccessException | ClassNotFoundException
+                | NoSuchMethodException e) {
             e.printStackTrace();
             return false;
         }
 
         return true;
-//         catch (JDOMException e) {
-//            e.printStackTrace();
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        } catch (InstantiationException e) {
-//            e.printStackTrace();
-//        } catch (InvocationTargetException e) {
-//            e.printStackTrace();
-//        } catch (NoSuchMethodException e) {
-//            e.printStackTrace();
-//        } catch (IllegalAccessException e) {
-//            e.printStackTrace();
-//        } catch (ClassNotFoundException e) {
-//            e.printStackTrace();
-//        }
 
     }
 
     private static boolean loadSch(File sch, BoardLayersManager layersManager) {
         Board board = layersManager.getComponents().get(0).getBoard();
 
-        try (BufferedReader br = new BufferedReader(new FileReader(sch))) {
+        try (BufferedReader br = new BufferedReader(
+                new InputStreamReader(
+                        new FileInputStream(sch), StandardCharsets.UTF_8))) {
             //vycistenie plochy
             layersManager.clear();
 
@@ -763,11 +776,13 @@ public class SchemeLoader {
                         case 12:
                             segmentIndex = 3;
                             break;
+                        default:
+                            break;
                     }
 
                     index = posY - 25;
 
-                    return ((HexSegmentsPanel) schoolBreadboard.getHexSegmentsPanel()).getSegment(segmentIndex).getSocket(index);
+                    return schoolBreadboard.getHexSegmentsPanel().getSegment(segmentIndex).getSocket(index);
 
                 } else if (posX == 15) {
                     //stlpec s vcc a gnd

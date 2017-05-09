@@ -1,6 +1,5 @@
 package sk.uniza.fri.cp.BreadboardSim.Devices.Chips;
 
-import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import sk.uniza.fri.cp.BreadboardSim.Board.Board;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.InputPin;
@@ -8,7 +7,11 @@ import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.OutputPin;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.Pin;
 
 /**
- * Created by Moris on 9.4.2017.
+ * Obvod 74125
+ * 4x Bus buffer s 3-stavovými výstupmi
+ *
+ * @author Tomáš Hianik
+ * @created 9.4.2017.
  */
 public class SN74125 extends Chip {
 

@@ -7,7 +7,11 @@ import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.*;
 import java.util.Arrays;
 
 /**
- * Created by Moris on 14.4.2017.
+ * Obvod U6264B
+ * 8kb pamäť
+ *
+ * @author Tomáš Hianik
+ * @created 14.4.2017.
  */
 public class U6264B extends Chip {
 
@@ -88,8 +92,6 @@ public class U6264B extends Chip {
                     this.setPin(dataPins[i], Pin.PinState.LOW);
                 }
             }
-
-//            System.out.println("U6264B Zapisala na BUSINTERFACE data: " + data + " \t\t" + Thread.currentThread().getName());
             return;
         }
 
@@ -97,11 +99,6 @@ public class U6264B extends Chip {
             //zapis do pamate
             byte data = decodeData();
             this.savedData[decodeAddress()] = data;
-
-//            if(data != BusInterface.DEBUG_DATA)
-//                System.out.println("CHYBA");
-
-//            System.out.println("U6264B Zapisala na CHIP data: " + data + " \t\t" + Thread.currentThread().getName());
 
             return;
         }

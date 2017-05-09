@@ -337,6 +337,8 @@ public class CPUController implements Initializable {
                                     .text("Nepodarilo sa pripojiť")
                                     .showWarning();
                             tsConnectBusUsb.selectedProperty().setValue(false);
+                        } else { //ak sa podarilo pripojit, odpoj simulaciu, ak bezi
+                            breadboardController.powerOff();
                         }
                     } else { //ak false - odpojenie
                         Bus.getBus().disconnectUSB();

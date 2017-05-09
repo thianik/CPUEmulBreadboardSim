@@ -5,9 +5,11 @@ import javafx.scene.paint.Paint;
 import javafx.scene.shape.Line;
 
 /**
- * @author Moris
+ * Segment káblika.
+ *
+ * @author Tomáš Hianik
  * @version 1.0
- * @created 17-mar-2017 16:16:36
+ * @created 17.3.2017
  */
 public class WireSegment extends Line {
 
@@ -15,8 +17,8 @@ public class WireSegment extends Line {
 	private Joint startJoint;
 	private Joint endJoint;
 
-	public WireSegment(Wire wire, Joint start, Joint end){
-		this.wire = wire;
+    WireSegment(Wire wire, Joint start, Joint end) {
+        this.wire = wire;
 		this.startJoint = start;
 		this.endJoint = end;
 
@@ -35,43 +37,40 @@ public class WireSegment extends Line {
         this.setOpacity(1);
     }
 
-	public Wire getWire(){return this.wire;}
+    /**
+     * Vráti káblik, ku ktorému patrí.
+     *
+     * @return Káblik ku ktorému patrí.
+     */
+    public Wire getWire(){return this.wire;}
 
-	public Joint getEndJoint(){
-		return endJoint;
-	}
-
-	public Joint getOtherJoint(Joint joint){
-		return startJoint == joint ? endJoint : startJoint;
-	}
-
-	/**
-	 * 
-	 * @param newVal
-	 */
-	public void setEndJoint(Joint newVal){
-		endJoint = newVal;
-	}
-
-	public Joint getStartJoint(){
-		return startJoint;
-	}
-
-	/**
-	 * 
-	 * @param newVal
-	 */
-	public void setStartJoint(Joint newVal){
-		startJoint = newVal;
-	}
-
-	/**
-	 * 
-	 * @param color
-	 */
-	public void setColor(Paint color){
+    /**
+     * Nastavenie farby segmentu.
+     *
+     * @param color Nová farba segmentu.
+     */
+    public void setColor(Paint color) {
         this.setFill(color);
         this.setStroke(color);
     }
 
+    Joint getEndJoint() {
+        return endJoint;
+	}
+
+    Joint getOtherJoint(Joint joint) {
+        return startJoint == joint ? endJoint : startJoint;
+	}
+
+    void setEndJoint(Joint newVal) {
+        endJoint = newVal;
+	}
+
+    Joint getStartJoint() {
+        return startJoint;
+	}
+
+    void setStartJoint(Joint newVal) {
+        startJoint = newVal;
+	}
 }

@@ -7,7 +7,11 @@ import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.OutputPin;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.Pin;
 
 /**
- * Created by Moris on 6.5.2017.
+ * Obvod 74153
+ * 2x 1 zo 4 multiplexor
+ *
+ * @author Tomáš Hianik
+ * @created 6.5.2017.
  */
 public class SN74153 extends Chip {
 

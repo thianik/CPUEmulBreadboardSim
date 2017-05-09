@@ -12,7 +12,9 @@ import java.util.LinkedList;
 import java.util.List;
 
 /**
- * @author Moris
+ * Komponent panela so 4x 7-segmentovými displejmi.
+ *
+ * @author Tomáš Hianik
  * @version 1.0
  * @created 17-mar-2017 16:16:34
  */
@@ -30,7 +32,7 @@ public class HexSegmentsPanel extends Component {
         for (int i = 0; i < 4; i++) {
             this.hexSegments[i] = new HexSegment(board);
             this.hexSegments[i].makeImmovable();
-            this.hexSegments[i].hideBackground(true);
+            this.hexSegments[i].hideBackground();
             this.hexSegments[i].setLayoutX(grid.getSizeX() * 5 * i);
 
             Group segmentGndGroup = this.hexSegments[i].getCommonGndSocketGroup();

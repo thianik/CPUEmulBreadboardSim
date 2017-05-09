@@ -1,6 +1,5 @@
 package sk.uniza.fri.cp.BreadboardSim.Board;
 
-
 import javafx.scene.Group;
 import javafx.scene.layout.Pane;
 import sk.uniza.fri.cp.BreadboardSim.Components.Component;
@@ -13,7 +12,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * @author Moris
+ * Správca vrstiev plochy simulátora.
+ * Obashuje 4 vrstvy od najnižšej - pozadie, komponenty, zariadenia, spojenia.
+ * Okrem vrstiev v podobe Pane panelov uchováva objekty v listoch.
+ *
+ * @author Tomáš Hianik
  * @version 1.0
  * @created 17-mar-2017 16:16:34
  */
@@ -30,11 +33,16 @@ public class BoardLayersManager {
 	private ArrayList<Device> devices;
 	private ArrayList<Wire> wires;
 
-    private int lastCompnentId = 0;
+    private int lastComponentId = 0;
     private int lastSchoolBreadboardId = 0;
 
-	public BoardLayersManager(Pane backgound){
-		//inicializacia atributov
+    /**
+     * Správca vrstiev plochy simulátora.
+     *
+     * @param backgound Panel s vygenerovaným pozadím.
+     */
+    BoardLayersManager(Pane backgound) {
+        //inicializacia atributov
 		this.backgroundLayer = backgound;
 		this.componentsLayer = new Pane();
 		this.devicesLayer = new Pane();
@@ -56,11 +64,14 @@ public class BoardLayersManager {
 		this.wiresLayer.setPickOnBounds(false);
 	}
 
-	public Group getLayers(){
-		return layers;
-	}
-
-	public boolean add(Object object){
+    /**
+     * Pridanie nového objektu na plochu.
+     * Podľa typu sa automaticky priradí do správnej vrstvy.
+     *
+     * @param object Objekt, ktorý sa má pridať na plochu.
+     * @return True, ak bol objekt pridaný, false inak.
+     */
+    public boolean add(Object object){
 		if(object instanceof Wire){
 			Wire wire = (Wire) object;
 			this.wiresLayer.getChildren().add(wire);
@@ -71,7 +82,7 @@ public class BoardLayersManager {
 		if(object instanceof Component){
 			Component component = (Component) object;
             if (component.getId() == null)
-                component.setId("c" + lastCompnentId++);
+                component.setId("c" + lastComponentId++);
             this.componentsLayer.getChildren().add(component);
             this.components.add(component);
             return true;
@@ -97,10 +108,10 @@ public class BoardLayersManager {
             for (Component schBComponent : schoolBreadboard.getComponents()) {
                 if (schBComponent.getId() == null)
                     //ak este nebolo ID nastavene prirad mu nove
-                    schBComponent.setId("c" + lastCompnentId++);
-                else if (Integer.parseInt(schoolBreadboard.getId().substring(2)) > lastCompnentId)
+                    schBComponent.setId("c" + lastComponentId++);
+                else if (Integer.parseInt(schoolBreadboard.getId().substring(2)) > lastComponentId)
                     //ak uz bolo ID nastavene (napr. pri nacitavani), zisti ci nie je vacsie ako posledne triedy
-                    lastCompnentId = Integer.parseInt(schoolBreadboard.getId().substring(2));
+                    lastComponentId = Integer.parseInt(schoolBreadboard.getId().substring(2));
 
                 this.components.add(schBComponent);
             }
@@ -110,31 +121,37 @@ public class BoardLayersManager {
 		return false;
 	}
 
-	public boolean remove(Object object){
-		if(object instanceof Wire){
-			Wire wire = (Wire) object;
-			this.wiresLayer.getChildren().remove(wire);
-			this.wires.remove(wire);
-			return true;
-		}
+    /**
+     * Odobratie objektu z plochy.
+     *
+     * @param object Objekt, ktorý sa má pridať na plochu.
+     * @return True, ak bol odobratý, false inak.
+     */
+    public boolean remove(Object object){
+        if(object instanceof Wire){
+            Wire wire = (Wire) object;
+            this.wiresLayer.getChildren().remove(wire);
+            this.wires.remove(wire);
+            return true;
+        }
 
-		if(object instanceof Joint){
-			((Joint) object).getWire().removeJoint( (Joint)object);
-		}
+        if(object instanceof Joint){
+            ((Joint) object).getWire().removeJoint( (Joint)object);
+        }
 
-		if(object instanceof Component){
-			Component component = (Component) object;
-			this.componentsLayer.getChildren().remove(component);
-			this.components.remove(component);
-			return true;
-		}
+        if(object instanceof Component){
+            Component component = (Component) object;
+            this.componentsLayer.getChildren().remove(component);
+            this.components.remove(component);
+            return true;
+        }
 
-		if(object instanceof Device){
-			Device device = (Device) object;
-			this.devicesLayer.getChildren().remove(device);
-			this.devices.remove(device);
-			return true;
-		}
+        if(object instanceof Device){
+            Device device = (Device) object;
+            this.devicesLayer.getChildren().remove(device);
+            this.devices.remove(device);
+            return true;
+        }
 
         if (object instanceof SchoolBreadboard) {
             SchoolBreadboard schoolBreadboard = (SchoolBreadboard) object;
@@ -144,11 +161,18 @@ public class BoardLayersManager {
             return true;
         }
 
-		return false;
-	}
+        return false;
+    }
 
-	public Pane getLayer(String name){
-		switch (name){
+    /**
+     * Vráti vstvu na základe jej názvu.
+     * Validné názvy - background, components, devices, wires.
+     *
+     * @param name Názov vrstvy.
+     * @return Panel reprezentujúci danú vrstvu.
+     */
+    Pane getLayer(String name) {
+        switch (name){
 			case "background": return backgroundLayer;
 			case "components": return componentsLayer;
 			case "devices": return devicesLayer;
@@ -158,27 +182,55 @@ public class BoardLayersManager {
 		return backgroundLayer;
 	}
 
-    public List<SchoolBreadboard> getSchoolBreadboards() {
+    /**
+     * Vráti skupinu panelov slúžiacich ako vrstvy plochy.
+     *
+     * @return Skupina vrstiev.
+     */
+    Group getLayers() {
+        return layers;
+    }
+
+    /**
+     * Vráti list s vývojovymi doskami na ploche.
+     *
+     * @return List s vývojovými doskami na ploche.
+     */
+    List<SchoolBreadboard> getSchoolBreadboards() {
         return new ArrayList<>(this.schoolBreadboards);
     }
 
-	public List<Component> getComponents(){
+    /**
+     * Vráti všetky komponenty na ploche. Medzi komponenty sa neráta vývojová doska, iba jej časti.
+     *
+     * @return List s komponentmi na ploche.
+     */
+    public List<Component> getComponents(){
         return new ArrayList<>(this.components);
     }
 
+    /**
+     * Vráti zariadenia na ploche.
+     *
+     * @return List so zariadeniami na ploche.
+     */
     public List<Device> getDevices() {
         return new ArrayList<>(this.devices);
     }
 
+    /**
+     * Vráti spojenia na ploche.
+     *
+     * @return List so spojeniami na ploche.
+     */
     public List<Wire> getWires() {
         return new ArrayList<>(this.wires);
     }
 
     /**
-     * Odstránenie objektov na ploche okrem SchoolBreadboard
+     * Odstránenie všetkých objektov na ploche, ktoré sú zmazateľné.
      */
     public void clear() {
-
         //cistenie kablikov
         new ArrayList<>(this.wires).forEach(Wire::delete);
 

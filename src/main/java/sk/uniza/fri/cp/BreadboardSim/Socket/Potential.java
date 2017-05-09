@@ -6,9 +6,12 @@ import sk.uniza.fri.cp.BreadboardSim.Devices.Device;
 import java.util.*;
 
 /**
- * @author Moris
+ * Potenciál medzi dvoma soketmi.
+ * Prepájanie soketov potenciálom vytvára strom spojení.
+ *
+ * @author Tomáš Hianik
  * @version 1.0
- * @created 17-mar-2017 16:16:35
+ * @created 17.3.2017 16:16:35
  */
 public class Potential {
 
@@ -23,14 +26,15 @@ public class Potential {
 	private SocketType type;
 
 	//skrat
-	private boolean shortCircuit; //nastal skrat na potenciali?
+    private boolean shortCircuit; //nastal skrat?
     private final LinkedList<Socket> shortedSockets;
 
 	/**
-	 * 
-	 * @param socket1
-	 * @param socket2
-	 */
+     *  Vytvorenie potenciálu medzi dvoma soketmi.
+     *
+     * @param socket1 Prvý soket.
+     * @param socket2 Druhý soket.
+     */
 	public Potential(Socket socket1, Socket socket2){
         this.shortedSockets = new LinkedList<>();
 
@@ -39,15 +43,12 @@ public class Potential {
 		this.update();
 	}
 
-	public Socket getSocket1(){
-		return this.socket1;
-	}
-
-	public Socket getSocket2(){
-		return this.socket2;
-	}
-
-	public synchronized Potential getPotential(){
+    /**
+     * Ak má potenciál potomka, vráti odkaz na neho, inak vráti seba.
+     *
+     * @return Výsledný potenciál v strome.
+     */
+    public synchronized Potential getPotential(){
 		if(child != null){
 			return child.getPotential();
 		}
@@ -55,11 +56,12 @@ public class Potential {
 		return this;
 	}
 
-	public ArrayList<Socket> getInputs(){
-		return null;
-	}
-
-    public void getConnectedSockets(List<Socket> listToFill) {
+    /**
+     * Naplní zoznam soketmi, ktoré sú v danom strome spojení prepojené.
+     *
+     * @param listToFill Zoznam, do ktorého sa pridávajú sokety.
+     */
+    void getConnectedSockets(List<Socket> listToFill) {
         if (this.parent1 == null && this.parent2 == null) {
             if (this.socket1 != null) listToFill.add(this.socket1);
             if (this.socket2 != null) listToFill.add(this.socket2);
@@ -69,89 +71,93 @@ public class Potential {
         }
     }
 
-    public void getDevicesWithInputs(Set<Device> listToFill) {
-        if(listToFill == null) return;
-
-		if (this.parent1 == null && this.parent2 == null) {
+    /**
+     * Naplní množinu zariadeniami, ktoré majú k stromu sopjení pripojené vstupy.
+     *
+     * @param setToFill Množina, do ktorej sa pridávajú zariadenia.
+     */
+    public void getDevicesWithInputs(Set<Device> setToFill) {
+        if (this.parent1 == null && this.parent2 == null) {
 			if (this.socket1 != null && (this.type == SocketType.IN || this.type == SocketType.IO)) {
-				listToFill.add(this.socket1.getDevice());
-			}
+                setToFill.add(this.socket1.getDevice());
+            }
 
 			if (this.socket2 != null &&  (this.type == SocketType.IN || this.type == SocketType.IO)) {
-				listToFill.add(this.socket2.getDevice());
-			}
+                setToFill.add(this.socket2.getDevice());
+            }
 		} else {
 			if (this.parent1 != null) {
-				this.parent1.getDevicesWithInputs(listToFill);
-			}
+                this.parent1.getDevicesWithInputs(setToFill);
+            }
+
 			if (this.parent2 != null) {
-				this.parent2.getDevicesWithInputs(listToFill);
-			}
+                this.parent2.getDevicesWithInputs(setToFill);
+            }
 		}
 	}
 
-	public synchronized void update(){
-		if (this.parent1 != null) {
-			this.parent1.child = null;
-		}
-		if (this.parent2 != null) {
-			this.parent2.child = null;
-		}
+    /**
+     * Aktualizácia potenciálu
+     */
+    public synchronized void update(){
+        if (this.parent1 != null) {
+            this.parent1.child = null;
+        }
+        if (this.parent2 != null) {
+            this.parent2.child = null;
+        }
 
-		if (this.socket1 != null) {
-			this.parent1 = this.socket1.getPotential();
-		}
-		if (this.socket2 != null) {
-			this.parent2 = this.socket2.getPotential();
-		}
+        if (this.socket1 != null) {
+            this.parent1 = this.socket1.getPotential();
+        }
+        if (this.socket2 != null) {
+            this.parent2 = this.socket2.getPotential();
+        }
 
-		if (this.parent1 == this) {
-			this.parent1 = null;
-		}
-		if (this.parent2 == this) {
-			this.parent2 = null;
-		}
+        if (this.parent1 == this) {
+            this.parent1 = null;
+        }
+        if (this.parent2 == this) {
+            this.parent2 = null;
+        }
 
-		//ak je jeden z predkov zoskratovany, je skratovany aj tento potencial
-		//this.shortCircuit = false;
+        if (this.parent1 != null) {
+            this.parent1.child = this;
+        }
+        if (this.parent2 != null) {
+            this.parent2.child = this;
+        }
 
-		if (this.parent1 != null) {
-			this.parent1.child = this;
-			//this.shortCircuit = this.parent1.shortCircuit;
-		}
-		if (this.parent2 != null) {
-			this.parent2.child = this;
-			//this.shortCircuit |= this.parent2.shortCircuit;
-		}
+        //odpojenie potomka pred aktualizaciou typu a hodnoty (aj na nom by sa volali)
+        Potential oldChild = this.child;
+        this.child = null;
 
-		//odpojenie potomka pred aktualizaciou typu a hodnoty (aj na nom by sa volali)
-		Potential oldChild = this.child;
-		this.child = null;
+        this.updateType();
 
-		this.updateType();
+        this.setValue(Value.NC);
 
-		this.setValue(Value.NC);
+        if (oldChild != null)
+            oldChild.update();
+    }
 
-		if (oldChild != null)
-			oldChild.update();
-	}
-
-	public synchronized Value getValue(){
-		return value;
-	}
+    /**
+     * Hodnota potenciálu.
+     *
+     * @return Hodnota tohoto potenciálu.
+     */
+    public synchronized Value getValue(){
+        return value;
+    }
 
 	/**
 	 * Nastavenie novej hodnoty potencálu.
 	 * Pri zmene hodnoty potenciálu sa berie do úvahy jeho typ, typ a hodnota predkov, ak nejakých má.
-	 * Kontroluje sa aj skrat pri spojeni dvoch rozdielnych vystupv.
-	 *
-	 * @param newVal Nova pozadovana hodnota potencialu
-	 * @return True - hodnota sa spravne aktualizovala / False - nastal skrat
+     * Kontroluje sa aj skrat pri spojeni dvoch rozdielnych výstupov.
+     *
+     * @param newVal Nová požadovaná hodnota potenciálu
+     * @return True - hodnota sa spravne aktualizovala / False - nastal skrat
 	 */
     public boolean setValue(Value newVal) {
-        // if (this.parent1 == null && this.parent2 == null && this.value == newVal)
-        //    return true;//TODO OVERIT CI TO neznicilo nejaku funkcnost
-
         //zistenie skratu na predkoch
 	    this.shortCircuit =
                 (this.parent1 != null && this.parent1.shortCircuit)
@@ -176,16 +182,8 @@ public class Potential {
 				//ani jeden z rodicov nie je napojeny -> neprebera ziadnu hodnotu
 				this.value = Value.NC;
 			}
-            /*else if (this.type == SocketType.OCO){
-                //ak je potencial typu otvoreny kolektor,
-				if(this.parent1.getValue() == Value.LOW || this.parent2.getValue() == Value.LOW){
-					this.value = Value.LOW;
-				} else {
-					this.value = Value.HIGH;
-				}
-			}*/
             else if (this.type == SocketType.IO || this.type == SocketType.TRI_OUT) {
-                //ak je potencial typu Input-Output -> aspon jeden z predkov je IO, mozno obaja //TODO pridane TRI_OUT, upravit komentare ak sa neodstrani
+                //ak je potencial typu Input-Output -> aspon jeden z predkov je IO, mozno obaja
                 if ((this.parent1.type == SocketType.IO || this.parent1.type == SocketType.TRI_OUT) &&
                         (this.parent2.type == SocketType.IO || this.parent2.type == SocketType.TRI_OUT)) {
                     //ak su obaja predkovia typu IO, moze dojst ku skratu ak obaja vysielaju rozne hodnoty
@@ -233,21 +231,6 @@ public class Potential {
                     //ak je iba druhy typu OUT, berie si jeho hodnotu
                     this.value = this.parent2.value;
                 }
-
-				/*if( (this.parent1.type == SocketType.OUT && this.parent2.type == SocketType.OUT)
-                        || this.parent1.type == SocketType.IO
-                        || this.parent2.type == SocketType.IO){
-					//ak su oba predkovia typu OUT -> moze dojst ku skratu pri roznych hodnotach napatia
-                    this.checkShortCircuit();
-				}
-				else if(this.parent1.type == SocketType.OUT){
-					//ak je iba prvy typu OUT, berie si jeho hodnotu
-					this.value = this.parent1.value;
-				}
-				else {
-					//ak je iba druhy typu OUT, berie si jeho hodnotu
-					this.value = this.parent2.value;
-				}*/
             }
 		} else if(this.parent1 != null){
 			this.value = this.parent1.getValue();
@@ -264,7 +247,6 @@ public class Potential {
             this.highlightShortCircuitSockets();
 
 
-
 		//ak ma potencial potomka, aktualizuj jeho hodnotu a vrat oznamenie o moznom skrate (false ak nastal)
 		if(this.child != null)
 			return this.child.setValue(this.value);
@@ -273,28 +255,43 @@ public class Potential {
 		return !this.shortCircuit;
 	}
 
+    /**
+     * Vráti typ potenciálu.
+     *
+     * @return Typ potenciálu.
+     */
     public synchronized SocketType getType() {
         return this.type;
-	}
+    }
 
-	public synchronized void setType(SocketType newType){
-		if (this.parent1 == null && this.parent2 == null) {
-			this.type = newType;
+    /**
+     * Nastaví typ potenciálu a aktualizuje strom.
+     *
+     * @param newType Nový typ potenciálu.
+     */
+    public synchronized void setType(SocketType newType){
+        if (this.parent1 == null && this.parent2 == null) {
+            this.type = newType;
 
-			if (this.child != null)
-				this.child.updateType();
-		} else {
-			this.updateType();
-		}
-	}
+            if (this.child != null)
+                this.child.updateType();
+        } else {
+            this.updateType();
+        }
+    }
 
-	public Potential getChild(){
-		return this.child;
-	}
+    /**
+     * Vráti potomka potenciálu.
+     *
+     * @return Potomok potenciálu.
+     */
+    public Potential getChild(){
+        return this.child;
+    }
 
     /**
      * Zrušenie potenciálu.
-     * Pri rušení potenciálu sa odpojí od svojich predkov
+     * Pri rušení potenciálu sa odpojí od svojich predkov a aktualizuje potomkov.
      */
     public void delete(){
         this.parent1.child = null;
@@ -414,9 +411,6 @@ public class Potential {
         this.shortCircuit = false;
     }
 
-
-
-    //TODO pri IO kontrolovat aj ci je to naozaj vystup alebo ci je v stave HiZ? alebo automaticky brat ze na nom moze dost ku skratu
     /**
      * Naplnenie listu predaneho parametrom soketmi, ktoré sa správajú ako výstup a môže na nich dôjsť ku skratu.
      *

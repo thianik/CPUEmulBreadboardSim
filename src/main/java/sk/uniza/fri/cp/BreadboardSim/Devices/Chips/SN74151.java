@@ -8,7 +8,11 @@ import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.OutputPin;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.Pin;
 
 /**
- * Created by Moris on 9.4.2017.
+ * Obvod 74151
+ * 8 na 1 multiplexor
+ *
+ * @author Tomáš Hianik
+ * @created 9.4.2017.
  */
 public class SN74151 extends Chip {
 

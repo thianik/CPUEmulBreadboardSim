@@ -7,7 +7,11 @@ import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.OutputPin;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.Pin;
 
 /**
- * Created by Moris on 6.5.2017.
+ * Obvod 74164
+ * 8-bit serial shift register
+ *
+ * @author Tomáš Hianik
+ * @created 6.5.2017.
  */
 public class SN74164 extends Chip {
 

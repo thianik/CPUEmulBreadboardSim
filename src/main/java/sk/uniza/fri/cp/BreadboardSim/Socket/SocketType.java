@@ -1,11 +1,10 @@
 package sk.uniza.fri.cp.BreadboardSim.Socket;
 
-
 /**
  * Vymenovanie možných typov soketov. Slúžia na určenie priority hodnoty potenciálu obvodu.
  *
  * @version 1.1
- * @created 17-mar-2017 16:16:36
+ * @created 17.3.2017 16:16:36
  */
 public enum SocketType {
 	OUT, //obyčaný výstup na najvyššiu prioritu pri určovaní hodnoty potenciálu
@@ -15,22 +14,5 @@ public enum SocketType {
                 TRI_OUT, //tri stavy - HIGH, LOW, HIGH IMPEDANCE
     IO, //soket, ktorý môže byť v jednom momente vstup alebo výstup
     IN, //vstup, nema na hodnotu potencialu vplyv
-	NC; //nepripojene, nema na hodnotu potencialu vplyv
-
-	/**
-     *
-     * @param st1
-	 * @param st2
-	 */
-	public static boolean isConflict(SocketType st1, SocketType st2){
-		return false;
-	}
-
-	/**
-     *
-     * @param other
-	 */
-	public boolean isConflict(SocketType other){
-		return false;
-	}
+    NC //nepripojene, nema na hodnotu potencialu vplyv
 }

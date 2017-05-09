@@ -1,15 +1,7 @@
 package sk.uniza.fri.cp.BreadboardSim;
 
-
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
-import javafx.event.Event;
-import javafx.geometry.Bounds;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
-import javafx.scene.shape.Shape;
-import javafx.scene.shape.StrokeLineCap;
-import javafx.scene.transform.Transform;
 import sk.uniza.fri.cp.BreadboardSim.Board.Board;
 import sk.uniza.fri.cp.BreadboardSim.Board.GridSystem;
 import sk.uniza.fri.cp.BreadboardSim.Components.*;
@@ -18,9 +10,11 @@ import java.util.LinkedList;
 import java.util.List;
 
 /**
- * @author Moris
+ * Objekt vývojovej dosky. Skladá sa z komponentov podľa predlohy fyzickej dosky.
+ *
+ * @author Tomáš Hianik
  * @version 1.0
- * @created 17-mar-2017 16:16:35
+ * @created 17.3.2017
  */
 public class SchoolBreadboard extends Item {
 
@@ -34,6 +28,9 @@ public class SchoolBreadboard extends Item {
     private NumKeys numKeys;
     private Probe probe;
 
+    /**
+     * Konštruktor pre itemPicker.
+     */
     public SchoolBreadboard() {
     }
 
@@ -80,24 +77,11 @@ public class SchoolBreadboard extends Item {
         this.getChildren().addAll(background, busInterface, breadboard, hexSegmentsPanel, probe, numKeys);
     }
 
-    public SchoolBreadboard(Board board, String idBusInterface, String idBreadboard,
-                            String idHexSegmentPanel, String idHS0, String idHS1, String idHS2, String idHS3,
-                            String idProbe, String idNumKeys) {
-        this(board);
-        this.busInterface.setId(idBusInterface);
-        this.breadboard.setId(idBreadboard);
-        this.hexSegmentsPanel.setId(idHexSegmentPanel);
-        int index = 0;
-        for (Component component : this.hexSegmentsPanel.getComponents()) {
-            switch (index) {
-                case 0:
-            }
-            index++;
-        }
-        this.numKeys.setId(idNumKeys);
-        this.probe.setId(idProbe);
-    }
-
+    /**
+     * Vytvorí a vráti zoznam komponentov dosky.
+     *
+     * @return Zoznam komponentov, ktoré doska obsahuje.
+     */
     public List<Component> getComponents() {
         List<Component> list = new LinkedList<>();
         list.add(this.busInterface);
@@ -128,10 +112,20 @@ public class SchoolBreadboard extends Item {
         return probe;
     }
 
+    /**
+     * Šírka dosky v mriežkových jednotkách.
+     *
+     * @return Šírka dosky.
+     */
     public int getGridWidth() {
         return GRID_WIDTH;
     }
 
+    /**
+     * Výška dosky v mriežkových jednotkách.
+     *
+     * @return Výška dosky.
+     */
     public int getGridHeight() {
         return GRID_HEIGHT;
     }

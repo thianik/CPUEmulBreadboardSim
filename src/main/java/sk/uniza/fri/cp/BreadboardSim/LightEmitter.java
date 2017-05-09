@@ -13,10 +13,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Je mozne ho riadit iba pomocou jednej simulacie z jedneho boardu!
- * potrebne mazanie cez delete
- * <p>
- * Created by Moris on 16.4.2017.
+ * Objekt "vyžarujúci svetlo".
+ *
+ * Je možné ho riadiť iba pomocou jednej simulácie z jedného boardu!
+ * Potrebné mazanie cez delete!
+ *
+ * @author Tomáš Hianik
+ * @created 16.4.2017
  */
 public class LightEmitter {
 
@@ -37,6 +40,15 @@ public class LightEmitter {
     private final int minUpdateDelayMs;
     private long lastUpdate = 0;
 
+    /**
+     * Vytvorenie nového emitora a pridanie medzi ostatné vytovrené.
+     *
+     * @param paBoard          Plocha simulátora podľa ktorej simulácie sa riadia všetky vytvorené emitory.
+     * @param shape            Tvar emitora.
+     * @param colorTurnedOn    Farba zapnutého emitora.
+     * @param colorTurnedOff   Farba vypnutého emitora.
+     * @param minUpdateDelayMs Minimálny interval obnovy.
+     */
     public LightEmitter(Board paBoard, Shape shape, Color colorTurnedOn, Color colorTurnedOff, int minUpdateDelayMs) {
         this.shape = shape;
         this.col_turnedOn = colorTurnedOn;
@@ -48,52 +60,70 @@ public class LightEmitter {
 
         if (board == null) {
             board = paBoard;
-            board.simRunningProperty().addListener(new ChangeListener<Boolean>() {
-                @Override
-                public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {
-                    if (newValue) {
-                        counter.set(-1);
+            board.simRunningProperty().addListener((observable, oldValue, newValue) -> {
+                if (newValue) {
+                    counter.set(-1);
 
-                        thread = new Thread(() -> {
-                            long count = 0;
-                            while (!Thread.currentThread().isInterrupted()) {
-                                count++;
-                                if (counter.getAndSet(count) == -1) {
-                                    updateUI(counter);
-                                }
+                    thread = new Thread(() -> {
+                        long count = 0;
+                        while (!Thread.currentThread().isInterrupted()) {
+                            count++;
+                            if (counter.getAndSet(count) == -1) {
+                                updateUI(counter);
                             }
+                        }
 
-                            counter.set(-1); //oznam o ukonceni
-                            updateUI(counter); //posledny update -> vypnutie
-                        });
+                        counter.set(-1); //oznam o ukonceni
+                        updateUI(counter); //posledny update -> vypnutie
+                    });
 
-                        thread.setDaemon(true);
-                        thread.start();
-                    } else {
-                        if (thread != null) thread.interrupt();
-                    }
+                    thread.setDaemon(true);
+                    thread.start();
+                } else {
+                    if (thread != null) thread.interrupt();
                 }
             });
         }
     }
 
+    /**
+     * Vytvorenie nového emitora a pridanie medzi ostatné vytovrené.
+     *
+     * @param paBoard Plocha simulátora podľa ktorej simulácie sa riadia všetky vytvorené emitory.
+     * @param shape Tvar emitora.
+     * @param colorTurnedOn Farba zapnutého emitora.
+     * @param colorTurnedOff Farba vypnutého emitora.
+     */
     public LightEmitter(Board paBoard, Shape shape, Color colorTurnedOn, Color colorTurnedOff) {
         this(paBoard, shape, colorTurnedOn, colorTurnedOff, 0);
     }
 
+    /**
+     * Zapnutie emitora.
+     */
     public void turnOn() {
         turnedOn.getAndIncrement();
         state.set(true);
     }
 
+    /**
+     * Vypnutie emitora.
+     */
     public void turnOff() {
         state.set(false);
     }
 
+    /**
+     * Stav emitora.
+     * @return Stav zapnutý / vypnutý.
+     */
     public boolean getState() {
         return state.get();
     }
 
+    /**
+     * Zmazanie emitora a odstránenie tak zo zoznamu všetkých aktualizovateľných emitorov.
+     */
     public void delete() {
         instances.remove(this);
         if (instances.size() == 0) board = null;

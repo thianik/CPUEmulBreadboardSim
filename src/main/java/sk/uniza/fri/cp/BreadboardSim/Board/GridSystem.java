@@ -1,6 +1,5 @@
 package sk.uniza.fri.cp.BreadboardSim.Board;
 
-
 import javafx.geometry.Point2D;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Paint;
@@ -8,7 +7,9 @@ import javafx.scene.shape.*;
 import javafx.scene.shape.Line;
 
 /**
- * @author Moris
+ * Mriežková súradnicová sústava plochy simulátora.
+ *
+ * @author Tomáš Hianik
  * @version 1.0
  * @created 17-mar-2017 16:16:34
  */
@@ -17,57 +18,93 @@ public class GridSystem {
 	private int sizeX;
 	private int sizeY;
 
-	public GridSystem(int sizeX, int sizeY){
-		this.sizeX = sizeX;
-		this.sizeY = sizeY;
-	}
+    /**
+     * Vytvára súradnicovú sústavu s rôzmymi rozmermi na X-ovej a Y-ovej osy.
+     *
+     * @param sizeX Veľkosť mriežky na X-ovej osy v pixeloch
+     * @param sizeY Veľkosť mriežky na Y-ovej osy v pixeloch
+     */
+    public GridSystem(int sizeX, int sizeY){
+        this.sizeX = sizeX;
+        this.sizeY = sizeY;
+    }
 
-	public GridSystem(int size){
-		this.sizeX = size;
-		this.sizeY = size;
-	}
+    /**
+     * Vytvára súradnicovú sústavu s rovnakým rozmerom na X-ovej aj Y-ovej osy.
+     *
+     * @param size Veľkosť strany štvorčeka v pixeloch
+     */
+    public GridSystem(int size){
+        this.sizeX = size;
+        this.sizeY = size;
+    }
 
+    /**
+     * Rozmer na X-ovej osy v pixeloch.
+     *
+     * @return Šírka chlievika.
+     */
     public int getSizeX() {
-        return (int) (sizeX);
+        return sizeX;
     }
 
+    /**
+     * Rozmer na Y-ovej osy v pixeloch.
+     *
+     * @return Výška chlievika.
+     */
     public int getSizeY() {
-        return (int) (sizeY);
+        return sizeY;
     }
 
-	public int getSizeMin(){ return Math.min(sizeX, sizeY);}
+    /**
+     * Menší rozmer z X-ovej / Y-onovej osy.
+     *
+     * @return Menší rozmer chlievika.
+     */
+    public int getSizeMin(){ return Math.min(sizeX, sizeY);}
 
-	public int getSizeMax(){ return Math.max(sizeX, sizeY);}
+    /**
+     * Väčší rozmer z X-ovej / Y-onovej osy.
+     *
+     * @return Väčší rozmer chlievika.
+     */
+    public int getSizeMax(){ return Math.max(sizeX, sizeY);}
 
-	public Point2D screenToGrid(double screenX, double screenY){
-		return new Point2D(0,0);
-	}
-
-	public Point2D getPosition(double x, double y){
-		int gridX = 0;
-		int gridY = 0;
-
-		gridX = (int) (Math.round(x) / sizeX) * sizeX;
-		gridY = (int) (Math.round(y) / sizeY) * sizeY;
-
-        return new Point2D(gridX, gridY);
+    /**
+     * Prepočet z jednotiek mriežky na pixely.
+     * Point2D.x = gridX * šírkaŠtvorčekaPX
+     *
+     * @param gridX X-ová súradnica na mriežke.
+     * @param gridY Y-ová súradnica na mriežke.
+     * @return Súradnice v pixeloch.
+     */
+    public Point2D gridToPixel(int gridX, int gridY) {
+        return new Point2D(gridX * sizeX, gridY * sizeY);
     }
 
-	public Point2D getPosition(Point2D point){
-		return getPosition(point.getX(), point.getY());
-	}
-
-    public Point2D getBox(double x, double y, double scale) {
+    /**
+     * Podľa súradníc v pixeloch vráti súradnice na mriežke.
+     *
+     * @param x X-ová súrdanica v pixeloch.
+     * @param y Y-ová súrdanica v pixeloch.
+     * @return Súradnice na mriežke.
+     */
+    Point2D pixelToGrid(double x, double y) {
         return new Point2D(x / sizeX, y / sizeY);
     }
 
-	public Point2D gridToLocal(int gridX, int gridY){
-        return new Point2D(gridX * sizeX,
-                gridY * sizeY);
-    }
-
-	public Pane generateBackground(double width, double height, Paint bgColor, Paint linesColor){
-		Pane bck = new Pane(new Rectangle(width, height, bgColor));
+    /**
+     * Vygeneruje panel s pozadím podľa nastavenej veľkosti mriežky.
+     *
+     * @param width      Šírka plochy v pixeloch.
+     * @param height     Výška plochy v pixeloch.
+     * @param bgColor    Farba pozadia.
+     * @param linesColor Farba čiar mriežky.
+     * @return Panel s vygenerovaným pozadím.
+     */
+    Pane generateBackground(double width, double height, Paint bgColor, Paint linesColor) {
+        Pane bck = new Pane(new Rectangle(width, height, bgColor));
 
 		for (int x = 0; x <= width; x += sizeX){
 			bck.getChildren().add(generateGridLine(x, 0, x, height, linesColor));
@@ -78,15 +115,24 @@ public class GridSystem {
 		}
 
 		return bck;
-	}
+    }
 
-	private Line generateGridLine(double startX, double startY, double endX, double endY, Paint lineColor){
-		Line line = new Line(startX, startY, endX, endY);
-		line.setStroke(lineColor);
-		line.setOpacity(0.5);
-		line.setStrokeWidth(1);
+    /**
+     * Generovanie čiary na mriežku pozadia.
+     *
+     * @param startX    Začiatočná súracnica X.
+     * @param startY    Začiatočná súracnica Y.
+     * @param endX      Koncová súracnica X.
+     * @param endY      Koncová súracnica Y.
+     * @param lineColor Farba čiary.
+     * @return Vygenerovaná čiara.
+     */
+    private Line generateGridLine(double startX, double startY, double endX, double endY, Paint lineColor) {
+        Line line = new Line(startX, startY, endX, endY);
+        line.setStroke(lineColor);
+        line.setOpacity(0.5);
+        line.setStrokeWidth(1);
 
-		return line;
-	}
-
+        return line;
+    }
 }

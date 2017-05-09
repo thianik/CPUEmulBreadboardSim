@@ -1,15 +1,9 @@
 package sk.uniza.fri.cp.BreadboardSim.Board;
 
-
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
-import javafx.concurrent.WorkerStateEvent;
-import javafx.event.EventHandler;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.reactfx.EventSource;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Device;
 import sk.uniza.fri.cp.BreadboardSim.Socket.PowerSocket;
 import sk.uniza.fri.cp.Bus.Bus;
@@ -17,27 +11,28 @@ import sk.uniza.fri.cp.Bus.Bus;
 import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * @author Moris
+ * Simulačné jadro.
+ * O beh vlákna so simuláciou sa stara Service.
+ *
+ * @author Tomáš Hianik
  * @version 1.0
  * @created 17-mar-2017 16:16:34
  */
 public class BoardSimulator {
-    public static final Logger LOGGER = LogManager.getLogger("MainLogger");
-    public static final Logger QUEUELOGGER = LogManager.getLogger("QueueLogger");
 
-	private LinkedBlockingQueue<BoardEvent> eventsQueue;
+    private long startTime;
+    private int events;
 
-	private List<PowerSocket> powerSockets;
-	private BooleanProperty running;
+    private LinkedBlockingQueue<BoardEvent> eventsQueue; //naplánované udalosti
+    private List<PowerSocket> powerSockets; //sokety, ktoré sa maju po spusteni napojit
+    private BooleanProperty running; //priznak behu simulacie
 
-    private AtomicBoolean steadyState = new AtomicBoolean(false); //TODO steadystate ako property a podla toho riadit emittor
-
-	private Service simulatorService = new Service() {
+    /**
+     * Simulačná slučka nového vlákna
+     */
+    private Service simulatorService = new Service() {
 		@Override
 		protected Task createTask() {
 			return new Task() {
@@ -45,13 +40,12 @@ public class BoardSimulator {
 				protected Object call() throws Exception {
                     Thread.currentThread().setName("SimulationThread");
 
-                    int processedEvents = 0;
+                    boolean steadyState = false;
 
                     //pripojenie napajania
                     powerSockets.forEach(PowerSocket::powerUp);
 
                     running.setValue(true);
-                    steadyState.set(false);
 
                     Bus.getBus().setEventsQueue(eventsQueue);
                     Bus.getBus().simulationIsRunning(true);
@@ -59,6 +53,9 @@ public class BoardSimulator {
 
                     HashSet<Device> devicesToUpdate = new HashSet<>();
                     BoardEvent event;
+
+                    startTime = System.currentTimeMillis();
+
                     //obsluha eventov
 					while(!isCancelled()){
 						try {
@@ -68,29 +65,36 @@ public class BoardSimulator {
                                     event = eventsQueue.take();
                                 } else {
                                     Bus.getBus().dataInSteadyState();
-                                    steadyState.set(true);
+                                    steadyState = true;
                                     event = eventsQueue.take();
                                 }
                             }
 
-                            if (steadyState.get()) {
+                            if (steadyState) {
                                 Bus.getBus().dataIsChanging();
-                                steadyState.set(false);
+                                steadyState = false;
                             }
 
                             event.process(devicesToUpdate);
-                            processedEvents++;
 
                             devicesToUpdate.forEach((Device::simulate));
 
 							devicesToUpdate.clear();
-						} catch (InterruptedException e){
+
+                            events++;
+                        } catch (InterruptedException e){
 							if(isCancelled()) break;
 						} catch (NullPointerException e){
 							e.printStackTrace(System.err);
                             devicesToUpdate.clear();
                         }
-					}
+
+                        if (System.currentTimeMillis() - startTime > 1000) {
+                            System.out.println("Eventov " + events);
+                            events = 0;
+                            startTime = System.currentTimeMillis();
+                        }
+                    }
 
                     Bus.getBus().dataIsChanging();
 
@@ -102,76 +106,65 @@ public class BoardSimulator {
                         devicesToUpdate.clear();
                     }
                     running.setValue(false);
-                    steadyState.set(true);
                     Bus.getBus().simulationIsRunning(false);
 
-                    System.out.println("Processed events: " + processedEvents);
                     return null;
                 }
             };
 		}
 	};
 
-	public BoardSimulator(){
+    /**
+     * Objekt jadra simulátora.
+     */
+    BoardSimulator() {
         this.eventsQueue = new LinkedBlockingQueue<>();
         this.running = new SimpleBooleanProperty(false);
 
-		simulatorService.onFailedProperty();
-		simulatorService.setOnFailed(new EventHandler<WorkerStateEvent>() {
-			@Override
-			public void handle(WorkerStateEvent event) {
-				System.out.println(event);
-				simulatorService.getException().printStackTrace(System.err);
-			}
-		});
-	}
+        simulatorService.setOnFailed(event -> {
+            System.out.println(event);
+            simulatorService.getException().printStackTrace(System.err);
+        });
+    }
 
-
-	public void start(List<PowerSocket> powerSockets){
+    /**
+     * Spustenie simulačného vlákna.
+     *
+     * @param powerSockets Najájacie sokety, ktoré sa majú simulovať ako prvé.
+     */
+    public void start(List<PowerSocket> powerSockets){
 		this.powerSockets = powerSockets;
 
 		simulatorService.restart();
     }
 
-
-	public void stop(){
+    /**
+     * Zastavenie simulačného vlákna.
+     */
+    public void stop(){
 		simulatorService.cancel();
 	}
 
 	/**
+     * Pridanie novej udalosti do fronty.
      *
-     * @param event
-	 */
+     * @param event Nová udalosť simulácie.
+     */
 	public void addEvent(BoardEvent event){
 		try {
-
-//            if (event.getSocket() != null)
-//                QUEUELOGGER.debug("[PRIDAVAM k " + eventsQueue.size() + "] soket: " + event.getSocket() + " na komponente: " + event.getSocket().getComponent() +
-//                        (event.getSocket().getDevice() != null ? (" zariadenie: " + event.getSocket().getDevice() + " a pin: " + event.getSocket().getPin().getName()) : "") +
-//                        (event instanceof BoardChangeEvent ? " na hodnotu: " + ((BoardChangeEvent) event).getValue() : ""));
-
-//            Bus.getBus().dataIsChanging();
             eventsQueue.put(event);
-
         } catch (InterruptedException e) {
 //            e.printStackTrace();
         }
 	}
 
-	public BooleanProperty runningProperty(){
+    /**
+     * Proterty behu simululácie.
+     *
+     * @return Property - true, ak sa simulácia vykonáva, false inak.
+     */
+    public BooleanProperty runningProperty(){
         return this.running;
     }
 
-    public boolean inSteadyState() {
-        return steadyState.get();
-    }
-
-    private AtomicBoolean wait = new AtomicBoolean(false);
-
-    /**
-     * Cakanie na nastavenie priznakov
-     */
-    public void waitForMe(boolean value) {
-        wait.set(value);
-    }
 }

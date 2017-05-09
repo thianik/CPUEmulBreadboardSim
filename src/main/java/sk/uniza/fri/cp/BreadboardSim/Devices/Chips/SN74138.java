@@ -9,7 +9,11 @@ import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.Pin;
 import java.util.Arrays;
 
 /**
- * Created by Moris on 9.4.2017.
+ * Obvod 74138
+ * Dekóder z 3 na 8
+ *
+ * @author Tomáš Hianik
+ * @created 9.4.2017.
  */
 public class SN74138 extends Chip {
 

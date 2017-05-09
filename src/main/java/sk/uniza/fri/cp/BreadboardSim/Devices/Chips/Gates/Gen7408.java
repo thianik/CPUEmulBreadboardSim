@@ -1,6 +1,5 @@
 package sk.uniza.fri.cp.BreadboardSim.Devices.Chips.Gates;
 
-import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import sk.uniza.fri.cp.BreadboardSim.Board.Board;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Chips.Chip;
@@ -9,7 +8,11 @@ import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.OutputPin;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.Pin;
 
 /**
- * Created by Moris on 9.4.2017.
+ * Obvod 7408
+ * 4x 2-vstupový AND
+ *
+ * @author Tomáš Hianik
+ * @created 9.4.2017.
  */
 public class Gen7408 extends Chip {
 

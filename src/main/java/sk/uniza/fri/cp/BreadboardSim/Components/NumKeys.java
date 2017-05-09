@@ -33,47 +33,53 @@ import java.util.List;
 import java.util.function.Consumer;
 
 /**
- * Komponent s klavesnicou
- * @author Moris
+ * Komponent s klavesnicou.
+ *
+ * @author Tomáš Hianik
  * @version 1.0
  * @created 17-mar-2017 16:16:35
  */
 public class NumKeys extends Component {
 
-	private Rectangle background;
-	private Group buttonsGroup;
-
-	private Socket[] columnSockets;
-	private Socket[] rowSockets;
+    private Socket[] columnSockets;
+    private Socket[] rowSockets;
     private Button[][] buttons;
 
     //kontextove menu
     private ContextMenu contextMenu;
 	private MenuItem miChangeButtonBehaviour;
 	private boolean twoClick;
-	boolean leftMouseButtonDown;
+    private boolean leftMouseButtonDown;
 
+    /**
+     * Konštruktor pre itemPicker.
+     */
     public NumKeys() {
     }
 
+    /**
+     * Konštruktor pre vytvorenie objektu určeného pre plochu siumlátora.
+     *
+     * @param board Plocha simulátora
+     */
     public NumKeys(Board board) {
         super(board);
 
-		columnSockets = new Socket[4];
-		rowSockets = new Socket[4];
+        columnSockets = new Socket[4];
+        rowSockets = new Socket[4];
         buttons = new Button[4][4];
 
-		//grafika
-		GridSystem grid = getBoard().getGrid();
+        //grafika
+        GridSystem grid = getBoard().getGrid();
 
-		this.gridWidth = grid.getSizeX() * 22;
-		this.gridHeight = grid.getSizeY() * 17;
-        background = new Rectangle(this.gridWidth, this.gridHeight, SchoolBreadboard.BACKGROUND_COLOR);
+        this.gridWidth = grid.getSizeX() * 22;
+        this.gridHeight = grid.getSizeY() * 17;
+        Rectangle background = new Rectangle(this.gridWidth, this.gridHeight, SchoolBreadboard.BACKGROUND_COLOR);
 
-		//sokety
-		Group columnGroup = generateColumnSockets();
-		columnGroup.setLayoutX(grid.getSizeX() * 6);
-		columnGroup.setLayoutY(grid.getSizeY() * 2);
+        //sokety
+        Group columnGroup = generateColumnSockets();
+        columnGroup.setLayoutX(grid.getSizeX() * 6);
+        columnGroup.setLayoutY(grid.getSizeY() * 2);
 
         Group rowGroup = generateRowSockets();
         rowGroup.setLayoutX(grid.getSizeX() * 15);
@@ -82,9 +88,9 @@ public class NumKeys extends Component {
         //GND
         Group gndGroup = SocketsFactory.getHorizontalPower(this, 4, Potential.Value.LOW, getPowerSockets());
         Text rowText = Board.getLabelText("GND", grid.getSizeMin());
-		rowText.setLayoutX(grid.getSizeX() * 4);
-		rowText.setLayoutY(rowText.getBoundsInParent().getHeight()/2.0);
-		gndGroup.getChildren().add(rowText);
+        rowText.setLayoutX(grid.getSizeX() * 4);
+        rowText.setLayoutY(rowText.getBoundsInParent().getHeight()/2.0);
+        gndGroup.getChildren().add(rowText);
 
         gndGroup.setLayoutX(grid.getSizeX() * 15);
         gndGroup.setLayoutY(grid.getSizeY());
@@ -99,24 +105,24 @@ public class NumKeys extends Component {
         vccGroup.setLayoutX(grid.getSizeX() * 11);
         vccGroup.setLayoutY(grid.getSizeY() * 2);
 
-		//tlacitka
-		buttonsGroup = new Group();
+        //tlacitka
+        Group buttonsGroup = new Group();
 
-		for (int y = 0; y < 4; y++) {
-			for (int x = 0; x < 4; x++) {
+        for (int y = 0; y < 4; y++) {
+            for (int x = 0; x < 4; x++) {
                 Button button = new Button(board, rowSockets[3 - y], columnSockets[x], y, x);
                 button.setUserData(x + ", " + y);
                 button.setLayoutX(button.getWidth() * x);
-				button.setLayoutY(button.getHeight() * (3-y));
+                button.setLayoutY(button.getHeight() * (3-y));
 
                 buttons[x][y] = button;
                 buttonsGroup.getChildren().add(button);
-			}
-		}
+            }
+        }
         buttonsGroup.setLayoutX(grid.getSizeX() * 5);
-		buttonsGroup.setLayoutY(grid.getSizeY() * 4);
+        buttonsGroup.setLayoutY(grid.getSizeY() * 4);
 
-		this.getChildren().addAll(background, buttonsGroup, columnGroup, rowGroup, gndGroup, vccGroup);
+        this.getChildren().addAll(background, buttonsGroup, columnGroup, rowGroup, gndGroup, vccGroup);
 
         //registracia vsetkych soketov komponentu
         this.addAllSockets(getPowerSockets());
@@ -124,29 +130,29 @@ public class NumKeys extends Component {
         this.addAllSockets(rowSockets);
 
 
-		//kontextove menu pre zmenu spravania tlacitok
-		this.miChangeButtonBehaviour = new MenuItem("Dva kliky");
-		this.miChangeButtonBehaviour.setOnAction(event -> {
-			twoClick = !twoClick;
-			miChangeButtonBehaviour.setText(twoClick?"Jeden klik":"Dva kliky");
-		});
+        //kontextove menu pre zmenu spravania tlacitok
+        this.miChangeButtonBehaviour = new MenuItem("Dva kliky");
+        this.miChangeButtonBehaviour.setOnAction(event -> {
+            twoClick = !twoClick;
+            miChangeButtonBehaviour.setText(twoClick?"Jeden klik":"Dva kliky");
+        });
 
-		this.contextMenu = new ContextMenu();
-		this.contextMenu.getItems().add(this.miChangeButtonBehaviour);
+        this.contextMenu = new ContextMenu();
+        this.contextMenu.getItems().add(this.miChangeButtonBehaviour);
 
-		this.addEventHandler(MouseEvent.MOUSE_PRESSED, event -> {
-			leftMouseButtonDown = event.isSecondaryButtonDown();
-			if(!leftMouseButtonDown && contextMenu.isShowing())
-				contextMenu.hide();
-			});
+        this.addEventHandler(MouseEvent.MOUSE_PRESSED, event -> {
+            leftMouseButtonDown = event.isSecondaryButtonDown();
+            if(!leftMouseButtonDown && contextMenu.isShowing())
+                contextMenu.hide();
+        });
 
-		this.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
-			if(leftMouseButtonDown) {
-				this.contextMenu.show(this, event.getScreenX(), event.getScreenY());
-				leftMouseButtonDown = false;
-			}
-		});
-	}
+        this.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
+            if(leftMouseButtonDown) {
+                this.contextMenu.show(this, event.getScreenX(), event.getScreenY());
+                leftMouseButtonDown = false;
+            }
+        });
+    }
 
 	private Group generateColumnSockets(){
 
@@ -413,16 +419,11 @@ public class NumKeys extends Component {
             return false;
         }
 
-        private final Logger QUEUELOGGER = LogManager.getLogger("QueueLogger");
         @Override
         public void simulate() {
             if (shouldBeColumnLow()) {
-//                System.out.println("HW KEY " + columnPos + " LOW");
-//                QUEUELOGGER.debug("HW KEY " + columnPos + "," + rowPos + " LOW");
                 getBoard().addEvent(new BoardChangeEvent(this.column, Potential.Value.LOW));
             } else {
-//                System.out.println("HW KEY " + columnPos + " HIGH");
-//                QUEUELOGGER.debug("HW KEY " + columnPos + "," + rowPos + " HIGH");
                 getBoard().addEvent(new BoardChangeEvent(this.column, Potential.Value.HIGH));
             }
         }

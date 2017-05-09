@@ -14,6 +14,7 @@ import sk.uniza.fri.cp.BreadboardSim.Components.*;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Chips.*;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Chips.Gates.*;
 import sk.uniza.fri.cp.BreadboardSim.Wire.Wire;
+import sk.uniza.fri.cp.Bus.Bus;
 
 import java.io.*;
 import java.net.URL;
@@ -120,8 +121,23 @@ public class BreadboardController implements Initializable {
      */
     public boolean powerOn() {
         if (this.board.isSimulationRunning()) return true;
+        if (Bus.getBus().isUsbConnected()) {
+            return false;
+        }
 
         this.board.powerOn();
+        return false;
+    }
+
+    /**
+     * Zastavenie simulácie.
+     *
+     * @return Predchádzajúci stav simulácie. True - bežala, false - nebola spustená.
+     */
+    public boolean powerOff() {
+        if (this.board.isSimulationRunning()) return true;
+
+        this.board.powerOff();
         return false;
     }
 

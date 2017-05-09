@@ -3,13 +3,14 @@ package sk.uniza.fri.cp.BreadboardSim.Devices.Pin;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Device;
-import sk.uniza.fri.cp.BreadboardSim.Socket.Potential;
 import sk.uniza.fri.cp.BreadboardSim.Socket.Socket;
 
 /**
- * @author Moris
+ * Trieda reprezentujúca pin zariadenia.
+ *
+ * @author Tomáš Hianik
  * @version 1.0
- * @created 17-mar-2017 16:16:35
+ * @created 17.3.2017
  */
 public abstract class Pin extends Circle {
 
@@ -25,9 +26,8 @@ public abstract class Pin extends Circle {
 	 * PUSH_PULL - klasicky vystup, pri napojeni vysupv +5V a GND nedefinovana hodnota
 	 * TRI_STATE - pridáva tretí stav vysokej impedancie, kedy sa "odpája" od obvodu a nemá naň vplyv -> InputOutputPin
 	 */
-    // OPEN_COLLECTOR - pin pri hodnote LOW stiahne celu vetvu do LOW, pri HIGH je kvazi "odpojeny"
     public enum PinDriver {
-        PUSH_PULL, TRI_STATE /*, OPEN_COLLECTOR*/
+        PUSH_PULL, TRI_STATE
     }
 
 	private Socket socket;
@@ -36,87 +36,101 @@ public abstract class Pin extends Circle {
 
     private String name = "UNNAMED " + this.getClass().getSimpleName();
 
-	public Pin(Device device){
-		this.device = device;
+    /**
+     * Vytvorenie pinu na zariadení.
+     *
+     * @param device Zariadenie, ku ktorému je pin priradený.
+     */
+    public Pin(Device device){
+        this.device = device;
 
-		//"grafika" pre vytvorenie boundary na koliziu so soketmi
-		this.setRadius(1);
-		this.setFill(Color.RED);
-	}
+        //"grafika" pre vytvorenie boundary na koliziu so soketmi
+        this.setRadius(1);
+        this.setFill(Color.RED);
+    }
 
-	public Pin(Device device, String name){
-		this(device);
+    /**
+     * Vytvorenie pinu na zariadení s názvom.
+     *
+     * @param device Zariadenie, ku ktorému je pin priradený.
+     * @param name   Názov pinu
+     */
+    public Pin(Device device, String name){
+        this(device);
 
-		this.name = name;
-	}
+        this.name = name;
+    }
 
-	public Socket getSocket(){
-		return socket;
-	}
+    /**
+     * Vráti zariadenie, ku ktorému je pin priradený.
+     *
+     * @return Zariadenia pinu.
+     */
+    public Device getDevice() {
+        return device;
+    }
 
-	public PinState getState(){
-		return state;
-	}
-
-	/**
-	 * Nastavenie stavu vystupneho pinu zmeni aj potencial pripojeneho soketu
-	 * @param state Novy stav pinu - High, Low, High Impedance, Not connected
-	 */
-	public void setState(PinState state){
-		this.state = state;
-/*
-		switch (state){
-			case HIGH: this.socket.setPotential(Potential.Value.HIGH);
-			break;
-			case LOW: this.socket.setPotential(Potential.Value.LOW);
-			break;
-			default: this.socket.setPotential(Potential.Value.NC);
-		}*/
-	}
-
-	/**
-	 * Aktualizacia vstupneho stavu pinu na zaklade hodnoty potencialu pripojeneho soketu
-	 */
-	public void updateState(){
-		//if(this instanceof InputPin || (this instanceof InputOutputPin && this.state == PinState.HIGH_IMPEDANCE)) {
-			Potential.Value value = this.socket.getPotential().getValue();
-
-			switch (value) {
-				case HIGH:
-					this.state = PinState.HIGH;
-					break;
-				case LOW:
-					this.state = PinState.LOW;
-					break;
-				default:
-					this.state = PinState.NOT_CONNECTED;
-			}
-		//}
-	}
-
-	public void setSocket(Socket socket){
-		this.socket = socket;
-		this.setFill(Color.GREEN);
-	}
-
-	public void removeSocket(){
-		this.socket = null;
-	}
-
-	public Device getDevice(){
-		return device;
-	}
-
-	public boolean isConnected(){
-		return this.socket != null;
-	}
-
-	public void disconnect(){
-		if(this.socket != null) this.socket.disconnect();
-		this.setFill(Color.RED);
-	}
-
+    /**
+     * Vráti názov pinu.
+     *
+     * @return Názov pinu.
+     */
     public String getName() {
         return this.name;
+    }
+
+    /**
+     * Vráti stav pinu.
+     *
+     * @return Stav pinu.
+     */
+    public PinState getState() {
+        return state;
+    }
+
+    /**
+     * Vráti soket, ku ktorému je pin pripojený.
+     *
+     * @return Pripojený soket, null ak ku žiadnemu nie je pipojený.
+     */
+    public Socket getSocket() {
+        return socket;
+    }
+
+	/**
+     * Nastavenie stavu výstupného pinu. NEZmení potenciál pripojeného soketu.
+     *
+     * @param state Nový stav pinu - High, Low, High Impedance, Not connected
+     */
+	public void setState(PinState state){
+		this.state = state;
+	}
+
+    /**
+     * Nastavenie soketu k pinu.
+     * POZOR Nepripája soket k pinu! Preto by sa pripájanie malo robiť cez soket.
+     *
+     * @param socket Soket, ku ktorému je pin pripojený.
+     */
+    public void setSocket(Socket socket){
+		this.socket = socket;
+		this.setFill(Color.GREEN);
+    }
+
+    /**
+     * Odpojenie pinu od soketu.
+     */
+    public void disconnect() {
+        if (this.socket != null) this.socket.disconnect();
+        this.setFill(Color.RED);
+    }
+
+    /**
+     * Kontrola, či je pin pripojený k nejakému soketu.
+     *
+     * @return True ak je pripojený, false inak.
+     */
+    public boolean isConnected() {
+        return this.socket != null;
     }
 }

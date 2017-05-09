@@ -16,63 +16,71 @@ import java.util.LinkedList;
 import java.util.List;
 
 /**
- * @author Moris
+ * Komponent kontaktnej dosky.
+ *
+ * @author Tomáš Hianik
  * @version 1.0
  * @created 17-mar-2017 16:16:34
  */
 public class Breadboard extends Component {
 
-	//grafika
-	private Rectangle background;
     private static final Color BACKGROUND_COLOR = Color.rgb(217, 217, 217);
 
+    /**
+     * Konštruktor pre ItemPicker.
+     */
     public Breadboard() {
     }
 
-	public Breadboard(Board board){
+    /**
+     * Konštruktor pre vytovrenie objeku pre plochu simulátora.
+     *
+     * @param board Plocha simulátora.
+     */
+    public Breadboard(Board board){
         super(board);
 
-		//grafika
-		GridSystem grid = getBoard().getGrid();
-		this.gridWidth = grid.getSizeX() * 66;
-		this.gridHeight = grid.getSizeY() * 23;
+        //grafika
+        GridSystem grid = getBoard().getGrid();
+        this.gridWidth = grid.getSizeX() * 66;
+        this.gridHeight = grid.getSizeY() * 23;
 
-		background = new Rectangle(this.gridWidth, this.gridHeight, BACKGROUND_COLOR);
+        Rectangle background = new Rectangle(this.gridWidth, this.gridHeight, BACKGROUND_COLOR);
         Rectangle middleSpace = new Rectangle(this.gridWidth, grid.getSizeY(), Color.rgb(204, 201, 201));
         middleSpace.setLayoutY(grid.getSizeY() * 11);
 
         Group topPowerLines = generatePowerLines();
         topPowerLines.setLayoutX(grid.getSizeX() * 4);
-		topPowerLines.setLayoutY(grid.getSizeY() * 2);
+        topPowerLines.setLayoutY(grid.getSizeY() * 2);
 
         Group topSockets = generate5VerticalSocketsGroups();
         topSockets.setLayoutX(grid.getSizeX() * 2);
-		topSockets.setLayoutY(grid.getSizeX() * 6);
+        topSockets.setLayoutY(grid.getSizeX() * 6);
 
         Group bottomSockets = generate5VerticalSocketsGroups();
         bottomSockets.setLayoutX(grid.getSizeX() * 2);
-		bottomSockets.setLayoutY(grid.getSizeX() * 13);
+        bottomSockets.setLayoutY(grid.getSizeX() * 13);
 
         Group bottomPowerLines = generatePowerLines();
         bottomPowerLines.setLayoutX(grid.getSizeX() * 4);
-		bottomPowerLines.setLayoutY(grid.getSizeY() * 20);
+        bottomPowerLines.setLayoutY(grid.getSizeY() * 20);
 
-		//popisky
-		Group charLabelsLeft = generateAtoJLabels();
-		charLabelsLeft.setLayoutX(grid.getSizeX());
-		charLabelsLeft.setLayoutY(grid.getSizeY() * 6);
+        //popisky
+        Group charLabelsLeft = generateAtoJLabels();
+        charLabelsLeft.setLayoutX(grid.getSizeX());
+        charLabelsLeft.setLayoutY(grid.getSizeY() * 6);
 
-		Group charLabelsRight = generateAtoJLabels();
-		charLabelsRight.setLayoutX(grid.getSizeX() * 65);
-		charLabelsRight.setLayoutY(grid.getSizeY() * 6);
+        Group charLabelsRight = generateAtoJLabels();
+        charLabelsRight.setLayoutX(grid.getSizeX() * 65);
+        charLabelsRight.setLayoutY(grid.getSizeY() * 6);
 
-		Group numberLabelsTop = generateNumberLabels();
-		numberLabelsTop.setLayoutX(grid.getSizeX() * 2);
-		numberLabelsTop.setLayoutY(grid.getSizeY() * 4.5);
+        Group numberLabelsTop = generateNumberLabels();
+        numberLabelsTop.setLayoutX(grid.getSizeX() * 2);
+        numberLabelsTop.setLayoutY(grid.getSizeY() * 4.5);
 
-		Group numberLabelsBottom = generateNumberLabels();
-		numberLabelsBottom.setLayoutX(grid.getSizeX() * 2);
-		numberLabelsBottom.setLayoutY(grid.getSizeY() * 17.5);
+        Group numberLabelsBottom = generateNumberLabels();
+        numberLabelsBottom.setLayoutX(grid.getSizeX() * 2);
+        numberLabelsBottom.setLayoutY(grid.getSizeY() * 17.5);
 
         this.getChildren().addAll(background, middleSpace, topPowerLines, topSockets, bottomSockets, bottomPowerLines, charLabelsLeft, charLabelsRight, numberLabelsTop, numberLabelsBottom);
     }

@@ -20,13 +20,8 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
-import org.jdom2.*;
-import org.jdom2.input.SAXBuilder;
-import org.jdom2.output.XMLOutputter;
 import sk.uniza.fri.cp.BreadboardSim.Components.*;
 import sk.uniza.fri.cp.BreadboardSim.DescriptionPane;
-import sk.uniza.fri.cp.BreadboardSim.Devices.Chips.*;
-import sk.uniza.fri.cp.BreadboardSim.Devices.Chips.Gates.*;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Device;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.Pin;
 import sk.uniza.fri.cp.BreadboardSim.Item;
@@ -34,9 +29,6 @@ import sk.uniza.fri.cp.BreadboardSim.SchoolBreadboard;
 import sk.uniza.fri.cp.BreadboardSim.Socket.PowerSocket;
 import sk.uniza.fri.cp.BreadboardSim.Selectable;
 import sk.uniza.fri.cp.BreadboardSim.Socket.Socket;
-import sk.uniza.fri.cp.BreadboardSim.Wire.Joint;
-import sk.uniza.fri.cp.BreadboardSim.Wire.Wire;
-import sk.uniza.fri.cp.BreadboardSim.Wire.WireEnd;
 
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
@@ -169,7 +161,7 @@ public class Board extends ScrollPane {
         //vytvorenie prvej vývojovej dosky a jej umiestnenie do stredu plochy
         SchoolBreadboard sb = new SchoolBreadboard(this);
         this.addItem(sb);
-        sb.moveTo((int) (width / gridSizePx / 2 - sb.getGridWidth() / 2), (int) (height / gridSizePx / 2 - sb.getGridHeight() / 2));
+        sb.moveTo((int) (width / gridSizePx / 2d - sb.getGridWidth() / 2d), (int) (height / gridSizePx / 2d - sb.getGridHeight() / 2d));
         this.hasChanged = false;
 
 
@@ -492,7 +484,7 @@ public class Board extends ScrollPane {
      */
     public Point2D getMousePositionOnGrid(MouseEvent event) {
         Point2D local = layersManager.getLayer("background").sceneToLocal(event.getSceneX(), event.getSceneY());
-        return gridSystem.getBox(local.getX(), local.getY(), getAppliedScale());
+        return gridSystem.pixelToGrid(local.getX(), local.getY());
     }
 
     /**

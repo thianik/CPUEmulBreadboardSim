@@ -2,27 +2,26 @@ package sk.uniza.fri.cp.BreadboardSim;
 
 
 import javafx.geometry.Bounds;
-import javafx.scene.control.Label;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.Shape;
 import javafx.scene.shape.StrokeLineCap;
-import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import sk.uniza.fri.cp.BreadboardSim.Board.Board;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Chips.Chip;
 
 /**
- * interface???
- * @author Moris
+ * Item je objekt na ploche alebo v zozname dostupných objektov.
+ *
+ * @author Tomáš Hianik
  * @version 1.0
- * @created 17-mar-2017 16:16:35
+ * @created 17.3.2017
  */
 public abstract class Item extends Movable {
 
-    AnchorPane cachedDescription;
+    private AnchorPane cachedDescription;
     private Shape selectionShape; //prekrytie pri selecte
 
 	public Item(Board board){
@@ -55,17 +54,14 @@ public abstract class Item extends Movable {
         return new Pane(new Rectangle(itemName.getBoundsInParent().getWidth() + 10, 30, Color.GREEN), itemName);
     }
 
-	/**
-	 * Panel s popisom objektu. Vkladá sa do panela ScrollPanel.
-	 * @return Panel s popisom
-	 */
+    /**
+     * Vráti popis objektu.
+     *
+     * @return Panel s popisom objektu.
+     */
     public AnchorPane getDescription() {
         if (this.cachedDescription != null) return cachedDescription;
         return null;
-    }
-
-    protected void cacheDescription(AnchorPane descriptionPane) {
-        this.cachedDescription = descriptionPane;
     }
 
     @Override

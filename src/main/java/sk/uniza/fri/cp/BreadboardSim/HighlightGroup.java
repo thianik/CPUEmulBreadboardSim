@@ -3,24 +3,25 @@ package sk.uniza.fri.cp.BreadboardSim;
 
 import javafx.event.EventHandler;
 import javafx.scene.Group;
-import javafx.scene.control.Label;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.*;
 import sk.uniza.fri.cp.BreadboardSim.Board.Board;
 
 /**
- * @author Moris
+ * Výber a zvýraznenie objektov na ploche.
+ *
+ * @author Tomáš Hianik
  * @version 1.0
- * @created 17-mar-2017 16:16:34
+ * @created 17.3.2017
  */
 public abstract class HighlightGroup extends Group implements Selectable {
 
-    AnchorPane cachedDescription;
+    private Pane cachedDescription;
     private boolean isSelectable;
     private boolean isSelected;
 
-	public HighlightGroup(){
-	    this.isSelectable = true;
+    protected HighlightGroup() {
+        this.isSelectable = true;
 
 		EventHandler<MouseEvent> onMouseClickEventHandler = (event) -> {
             if (!event.isPrimaryButtonDown()) return;
@@ -44,27 +45,23 @@ public abstract class HighlightGroup extends Group implements Selectable {
 
 	}
 
-	/**
-	 * 
-	 * @param turnOn
-	 */
-	public void highlightSelect(boolean turnOn){
-
-	}
-
-	/**
-	 * 
-	 * @param sender
-	 * @param description
-	 */
-	public void highlightAddWarning(HighlightGroup sender, String description){
-
-	}
-
-
-	public Pane getDescription(){
+    /**
+     * Vráti popis objektu, ak je cachovaný, inak null.
+     *
+     * @return Panel s popisom objektu.
+     */
+    public Pane getDescription(){
         if (this.cachedDescription != null) return this.cachedDescription;
         return null;
+    }
+
+    /**
+     * Cachovanie panelu s popisom.
+     *
+     * @param descriptionPane Panel s popisom.
+     */
+    protected void cacheDescription(Pane descriptionPane) {
+        this.cachedDescription = descriptionPane;
     }
 
     @Override
@@ -92,6 +89,11 @@ public abstract class HighlightGroup extends Group implements Selectable {
         this.isSelectable = newValue;
     }
 
+    /**
+     * Kontrola, či je objekt vybratý.
+     *
+     * @return True ak je, false inak.
+     */
     public boolean isSelected() {
         return this.isSelected;
     }

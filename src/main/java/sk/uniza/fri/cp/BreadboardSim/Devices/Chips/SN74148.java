@@ -7,7 +7,11 @@ import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.OutputPin;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.Pin;
 
 /**
- * Created by Moris on 9.4.2017.
+ * Obvod 74148
+ * Prioritný kóder z 8 na 3
+ *
+ * @author Tomáš Hianik
+ * @created 9.4.2017.
  */
 public class SN74148 extends Chip {
 
