@@ -213,8 +213,8 @@ public abstract class Chip extends Device {
     }
 
     @Override
-    public AnchorPane getDescription() {
-        AnchorPane cached = super.getDescription();
+    public Pane getDescription() {
+        Pane cached = super.getDescription();
         if (cached == null) {
             VBox wrapper = new VBox();
             wrapper.setAlignment(Pos.CENTER);

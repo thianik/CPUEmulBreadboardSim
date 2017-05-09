@@ -19,6 +19,7 @@ import javafx.fxml.Initializable;
 import java.io.*;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
@@ -715,7 +716,8 @@ public class CPUController implements Initializable {
         File file = chooser.showOpenDialog(btnLoadCode.getScene().getWindow());
 
         if(file != null)
-            try(BufferedReader br = new BufferedReader(new FileReader(file))){
+            try (BufferedReader br = new BufferedReader(new InputStreamReader(
+                    new FileInputStream(file), StandardCharsets.UTF_8))) {
                 codeEditor.clear();
                 StringBuilder sb = new StringBuilder();
                 br.lines().forEach(line -> {
@@ -818,7 +820,9 @@ public class CPUController implements Initializable {
         }
 
         if(file != null) {
-            try (PrintWriter out = new PrintWriter(file)) {
+            try (PrintWriter out = new PrintWriter(
+                    new OutputStreamWriter(
+                            new FileOutputStream(file), StandardCharsets.UTF_8))) {
                 out.print(codeEditor.getDocument().getText());
                 currentFile = file;
                 titPaneCode.setText("Kód - " + currentFile.getName());

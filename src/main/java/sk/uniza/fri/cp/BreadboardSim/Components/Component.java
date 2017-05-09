@@ -226,7 +226,7 @@ public abstract class Component extends Item {
     }
 
     @Override
-    public AnchorPane getDescription() {
+    public Pane getDescription() {
         return super.getDescription();
     }
 

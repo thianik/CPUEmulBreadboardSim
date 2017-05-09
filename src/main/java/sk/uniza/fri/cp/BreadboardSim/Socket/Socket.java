@@ -505,11 +505,9 @@ public class Socket extends Group {
      */
     private void highlightConnectedSockets(LinkedList<Socket> list) {
         if (list == highlightedConnectedSockets) {
-            System.out.println("highlihgt other " + this);
             getPotential().getConnectedSockets(list);
             list.forEach(socket -> socket.highlight(COMMON_POTENTIAL_OTHER));
         } else {
-            System.out.println("highlihgt " + this);
             getPotential().getConnectedSockets(list);
             list.forEach(socket -> socket.highlight(COMMON_POTENTIAL));
         }
@@ -518,10 +516,8 @@ public class Socket extends Group {
     private void unhighlightConnectedSockets(LinkedList<Socket> list) {
         if (!list.isEmpty()) {
             if (list == highlightedConnectedSockets) {
-                System.out.println("highlihgt other " + this);
                 list.forEach(socket -> socket.unhighlight(COMMON_POTENTIAL_OTHER));
             } else {
-                System.out.println("highlihgt " + this);
                 list.forEach(socket -> socket.unhighlight(COMMON_POTENTIAL));
             }
             list.clear();

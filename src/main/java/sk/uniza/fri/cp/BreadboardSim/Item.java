@@ -21,7 +21,6 @@ import sk.uniza.fri.cp.BreadboardSim.Devices.Chips.Chip;
  */
 public abstract class Item extends Movable {
 
-    private AnchorPane cachedDescription;
     private Shape selectionShape; //prekrytie pri selecte
 
 	public Item(Board board){
@@ -52,16 +51,6 @@ public abstract class Item extends Movable {
         itemName.setLayoutX(5);
         itemName.setLayoutY(itemName.getBoundsInParent().getHeight());
         return new Pane(new Rectangle(itemName.getBoundsInParent().getWidth() + 10, 30, Color.GREEN), itemName);
-    }
-
-    /**
-     * Vráti popis objektu.
-     *
-     * @return Panel s popisom objektu.
-     */
-    public AnchorPane getDescription() {
-        if (this.cachedDescription != null) return cachedDescription;
-        return null;
     }
 
     @Override
