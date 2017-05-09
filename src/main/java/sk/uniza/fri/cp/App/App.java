@@ -1,6 +1,7 @@
 package sk.uniza.fri.cp.App;
 
 import javafx.application.Application;
+import javafx.event.EventHandler;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -10,6 +11,7 @@ import javafx.scene.input.KeyEvent;
 import javafx.stage.Stage;
 import sk.uniza.fri.cp.App.BreadboardControl.BreadboardController;
 import sk.uniza.fri.cp.App.CPUControl.CPUController;
+
 
 /**
  * Aplikácia simulátora vývojovej dosky FRI UNIZA a emulátor 8 bitového CPU.
@@ -45,8 +47,10 @@ public class App extends Application {
             if (ke.getCode().isFunctionKey()) return;
 
             CPUController controller = CpuLayoutLoader.getController();
-            if (controller.isExecuting())
+            if (controller.isExecuting()) {
                 controller.keyboardInput(ke);
+                ke.consume();
+            }
         });
 
         //pri kliknuti na tlacidlo zatvorenia okna
@@ -70,6 +74,16 @@ public class App extends Application {
 
         Scene breadboardScene = new Scene(breadboardContent);
         breadboardScene.getStylesheets().add(getClass().getResource("/css/BreadboardSim_style.css").toExternalForm());
+        breadboardScene.addEventFilter(KeyEvent.KEY_PRESSED, ke -> {
+            if (ke.getCode().isFunctionKey()) return;
+
+            CPUController controller = CpuLayoutLoader.getController();
+            if (controller.isExecuting()) {
+                controller.keyboardInput(ke);
+                ke.consume();
+            }
+        });
+
         Stage breadboardStage = new Stage();
         breadboardStage.setTitle("Simulátor - Nový obvod");
         breadboardStage.getIcons().add(new Image(getClass().getResourceAsStream("/icons/simulator_icon_128.png")));
