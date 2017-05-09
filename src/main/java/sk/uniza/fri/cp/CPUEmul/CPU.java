@@ -22,14 +22,12 @@ import java.util.concurrent.Semaphore;
 /**
  * Emulátor procesora použitého pri výučbe predmetu Číslicové počítače na fakulte riadenia a informatiky.
  * Pred spustením vykonávania programu je potrebné parsovaný program zaviesť.
- * //TODO hlbsi popis
+ *
  * @author Tomáš Hianik
  * @version 1.0
- * @created 07-feb-2017 18:40:27
+ * @created 07.2.2017
  */
 public class CPU extends Thread {
-    public static final Logger LOGGER = LogManager.getLogger("MainLogger");
-
     //logovanie casov instrukcii
     private static Logger timesLogger;
 
@@ -173,7 +171,7 @@ public class CPU extends Thread {
                         UsbITCheckSkipped = 0;
                     } else {
                         UsbITCheckSkipped++;
-                        it = false;//TODO ma tu byt alebo nie??
+                        it = false;
                     }
 
                     //ak je povolene prerusenie a aj vyvolane
@@ -921,14 +919,11 @@ public class CPU extends Thread {
     private void read(enumInstructionsSet inst, short addr, String destRegName) throws InterruptedException {
         //nastavenie adresy
         microstepAwait("Nastavenie adresy");
-//        System.out.println("CPU Zaciatok nastavovania adresy");
         bus.setAddressBus(addr);
-//        System.out.println("CPU Koniec nastavovania adresy");
 
         microstepAwait("Nastavenie priznaku " + (inst == enumInstructionsSet.INN?"IOR":"MR") + " = 0");
 
         //nastavenie priznaku citania
-//        System.out.println("CPU Nastavenie priznaku citania ");
         if (inst == enumInstructionsSet.INN)
             bus.setIR_(false);
         else
@@ -936,18 +931,14 @@ public class CPU extends Thread {
 
         //cakanie na nastavenie dat na datovej zbernici
         //updateMessage("Cakanie na nastavenie dat");
-//        LOGGER.debug("CPU Cakanie na steady state pri citani ");
         this.waitForSteadySimulation(inst, true);
 
         //nacitaj data
         microstepAwait("Nacitanie dat");
-//        LOGGER.debug("CPU Citanie dat");
         byte Rd = bus.getDataBus();
-//        LOGGER.debug("CPU Citanie dat dokoncene " + Byte.toUnsignedInt(Rd));
         setRegisterVal(destRegName, Rd);
 
         //zrus priznak citania
-//        System.out.println("CPU Zrusenie priznaku pri citani z chipu");
         microstepAwait("Zrusenie priznaku " + (inst == enumInstructionsSet.INN?"IOR":"MR"));
         if(inst == enumInstructionsSet.INN)
             bus.setIR_(true);
@@ -974,38 +965,32 @@ public class CPU extends Thread {
 
         //nastavenie dat
         microstepAwait("Nastavenie dat");
-//        LOGGER.debug("CPU Nastavenie dat pri zapise na chip");
         bus.setDataBus(data);
 
         //nastavenie priznaku
         microstepAwait("Nastavenie priznaku " + (inst == enumInstructionsSet.OUT?"IOW":"MW") + " = 0");
 
         //nastavenie priznaku
-//        LOGGER.debug("CPU Nastavenie priznaku zapisu na chip");
         if (inst == enumInstructionsSet.OUT)
             bus.setIW_(false);
         else
             bus.setMW_(false);
 
         //updateMessage("Cakanie na nastavenie dat");
-//        System.out.println("CPU Cakanie na steady state");
         this.waitForSteadySimulation(inst, true);
 
         //zrusenie priznaku
         microstepAwait("Zrusenie priznaku ZAPISU");
-//        LOGGER.debug("CPU Zrusenie priznaku zapisu na chip");
         if(inst == enumInstructionsSet.OUT)
             bus.setIW_(true);
         else
             bus.setMW_(true);
 
         //cakanie, aby sa nezapisali nespravne data
-//        System.out.println("CPU Cakanie na steady state");
         this.waitForSteadySimulation(inst, false);
 
         //zrusenie dat
         microstepAwait("Zrusenie dat");
-//        LOGGER.debug("CPU Zrusenie dat pri zapise na chip");
         bus.setRandomData();
 
         //zrusenie adresy

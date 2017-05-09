@@ -15,8 +15,6 @@ import sk.uniza.fri.cp.CPUEmul.Parser;
 import java.util.TreeSet;
 import java.util.function.IntFunction;
 
-//TODO prist na lepsi sposob spravy breakpointov
-
 /**
  * Faktorka pre breakpointy paragrafov použitých v editore.
  *

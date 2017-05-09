@@ -190,7 +190,7 @@ public class Parser extends Task<Program>{
                             }
                         }
 
-                        //obycajne navestie aj prerusenie, aby sa bolo mozne nan odkazova //TODO ma byt povolene odkazovat aj na prerusenia?
+                        //obycajne navestie aj prerusenie, aby sa bolo mozne nan odkazova
                         labels.put(label, instructions.size()); //index nasledujucej instrukcie, ktora bude pridana
 
                     } else {

@@ -1,5 +1,8 @@
 package sk.uniza.fri.cp.BreadboardSim;
 
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import sk.uniza.fri.cp.BreadboardSim.Board.Board;
@@ -151,4 +154,8 @@ public class SchoolBreadboard extends Item {
             super.delete();
     }
 
+    @Override
+    public Pane getImage() {
+        return new Pane(new ImageView(new Image("/icons/components/schoolBoard.png")));
+    }
 }

@@ -135,10 +135,9 @@ public class BreadboardController implements Initializable {
      * @return Predchádzajúci stav simulácie. True - bežala, false - nebola spustená.
      */
     public boolean powerOff() {
-        if (this.board.isSimulationRunning()) return true;
-
+        boolean wasRunning = this.board.isSimulationRunning();
         this.board.powerOff();
-        return false;
+        return wasRunning;
     }
 
     /**
@@ -211,6 +210,13 @@ public class BreadboardController implements Initializable {
         File file = chooser.showOpenDialog(root.getScene().getWindow());
 
         if (file != null) {
+            if (board.isSimulationRunning()) {
+                powerOff();
+                while (true) {
+                    if (!(board.isSimulationRunning())) break;
+                }
+            }
+
             if (board.load(file)) {
                 ((Stage) root.getScene().getWindow()).setTitle("Simulátor - " + file.getName());
                 currentFile = file;
@@ -225,6 +231,13 @@ public class BreadboardController implements Initializable {
     @FXML
     private void handleClearBoardAction() {
         if (!continueIfUnsavedFile()) return;
+
+        if (board.isSimulationRunning()) {
+            powerOff();
+            while (true) {
+                if (!(board.isSimulationRunning())) break;
+            }
+        }
 
         board.clearBoard();
         ((Stage) root.getScene().getWindow()).setTitle("Simulátor - Nový obvod");

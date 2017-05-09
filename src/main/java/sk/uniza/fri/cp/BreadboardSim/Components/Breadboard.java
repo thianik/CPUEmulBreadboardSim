@@ -3,6 +3,9 @@ package sk.uniza.fri.cp.BreadboardSim.Components;
 
 import javafx.scene.Group;
 import javafx.scene.control.Label;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Line;
 import javafx.scene.shape.Rectangle;
@@ -176,4 +179,9 @@ public class Breadboard extends Component {
 
 		return numberLabels;
 	}
+
+    @Override
+    public Pane getImage() {
+        return new Pane(new ImageView(new Image("/icons/components/breadboard.png")));
+    }
 }

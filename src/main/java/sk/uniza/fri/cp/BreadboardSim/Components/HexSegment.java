@@ -2,6 +2,9 @@ package sk.uniza.fri.cp.BreadboardSim.Components;
 
 
 import javafx.scene.Group;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
@@ -179,6 +182,11 @@ public class HexSegment extends Component{
         }
     }
 
+    @Override
+    public Pane getImage() {
+        return new Pane(new ImageView(new Image("/icons/components/7segment.png")));
+    }
+
     private class OneSegment extends Region {
 
         private static final int GRID_LENGTH = 2;
@@ -247,6 +255,5 @@ public class HexSegment extends Component{
         void delete() {
             this.innerPotential.delete();
         }
-
 	}
 }

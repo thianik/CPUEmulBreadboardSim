@@ -23,9 +23,6 @@ import static sk.uniza.fri.cp.Bus.k041Library.*;
  * @created 07-feb-2017 18:40:27
  */
 public class Bus{
-    public static final Logger LOGGER = LogManager.getLogger("MainLogger");
-    public static final Logger QUEUELOGGER = LogManager.getLogger("QueueLogger");
-
 	private static Bus instance; //inštancia singletonu
 	private SimpleBooleanProperty USBConnected; //indikátor pripojenia vývojovej dosky cez USB
     private Semaphore dataSemaphore; //semafor pre cakanie na nastavenie dat simulatorom
@@ -201,18 +198,15 @@ public class Bus{
      * Ak je pripojenie riešené pomocou USB k reálnej doske, čaká sa 50ms.
      *
      * @return True ak prišiel v časovom úseku oznam o nastavení dát, false inak.
-     * @throws InterruptedException Prerušenie počas čakania na nastavenie dát.
      */
     public boolean waitForSteadyState() {
         if (Thread.currentThread().getName().equalsIgnoreCase("SimulationThread")) return true;
         if (!this.isUsbConnected()) {
-//            LOGGER.debug("WAITING FOR STEADY STATE");
-//            QUEUELOGGER.debug("WAITING FOR STEADY STATE PERMITS " + dataSemaphore.availablePermits());
 
             if (isSimulationRunning) {
                 while (true) {
                     try {
-                        if (!(!dataSemaphore.tryAcquire(5, TimeUnit.MINUTES) || queue.size() != 0)) break;
+                        if (!(!dataSemaphore.tryAcquire(5, TimeUnit.SECONDS) || queue.size() != 0)) break;
                     } catch (InterruptedException e) {
                         return false;
                     }
@@ -222,7 +216,6 @@ public class Bus{
                 return false;
             }
 
-//            return isSimulationRunning && dataSemaphore.tryAcquire(5, TimeUnit.MINUTES);
         } else {
             //ak je pripojenie cez USB, cakaj aka synchronne //TODO je potrebne cakanie?
             //Thread.sleep(50);
@@ -240,11 +233,7 @@ public class Bus{
      * Oznámevnie zbernici, že dáta boli ustálené a je možné ich čítať.
      */
     public void dataInSteadyState() {
-//      LOGGER.debug("STEADY STATE IN");
-//      QUEUELOGGER.debug("STEADY STATE BEFORE RELEASE");
         dataSemaphore.release(20);
-//      QUEUELOGGER.debug("STEADY STATE AFTER RELEASE");
-//      LOGGER.debug("STEADY STATE OUT");
     }
 
     /**
@@ -253,8 +242,6 @@ public class Bus{
      */
     public void dataIsChanging() {
         dataSemaphore.drainPermits();
-//        QUEUELOGGER.debug("DRAIN PERMITS");
-//        LOGGER.debug("DATA IS CHANGING");
     }
 
     /**

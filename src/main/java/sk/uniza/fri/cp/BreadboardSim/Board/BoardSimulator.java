@@ -1,5 +1,6 @@
 package sk.uniza.fri.cp.BreadboardSim.Board;
 
+import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.concurrent.Service;
@@ -142,8 +143,9 @@ public class BoardSimulator {
      * Zastavenie simulačného vlákna.
      */
     public void stop(){
-		simulatorService.cancel();
-	}
+        if (Platform.isFxApplicationThread())
+            simulatorService.cancel();
+    }
 
 	/**
      * Pridanie novej udalosti do fronty.
