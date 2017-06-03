@@ -3,8 +3,8 @@ package sk.uniza.fri.cp.BreadboardSim.Board;
 import javafx.geometry.Point2D;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Paint;
-import javafx.scene.shape.*;
 import javafx.scene.shape.Line;
+import javafx.scene.shape.Rectangle;
 
 /**
  * Mriežková súradnicová sústava plochy simulátora.

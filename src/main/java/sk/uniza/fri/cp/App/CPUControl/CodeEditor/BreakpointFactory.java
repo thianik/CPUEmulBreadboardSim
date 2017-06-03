@@ -1,13 +1,13 @@
 package sk.uniza.fri.cp.App.CPUControl.CodeEditor;
 
-import javafx.collections.*;
-import javafx.event.EventHandler;
+import javafx.collections.ObservableSet;
+import javafx.collections.SetChangeListener;
+import javafx.collections.WeakSetChangeListener;
 import javafx.geometry.Pos;
 import javafx.scene.Cursor;
 import javafx.scene.Node;
-import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.StackPane;
-import javafx.scene.paint.*;
+import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import org.fxmisc.richtext.CodeArea;
 import sk.uniza.fri.cp.CPUEmul.Parser;

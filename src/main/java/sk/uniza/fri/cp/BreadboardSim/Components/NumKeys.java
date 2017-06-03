@@ -10,15 +10,11 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Pane;
-import javafx.scene.layout.Region;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Rectangle;
-
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import sk.uniza.fri.cp.BreadboardSim.Board.Board;
 import sk.uniza.fri.cp.BreadboardSim.Board.BoardChangeEvent;
 import sk.uniza.fri.cp.BreadboardSim.Board.GridSystem;
@@ -30,10 +26,8 @@ import sk.uniza.fri.cp.BreadboardSim.Socket.Potential;
 import sk.uniza.fri.cp.BreadboardSim.Socket.Socket;
 import sk.uniza.fri.cp.BreadboardSim.Socket.SocketType;
 import sk.uniza.fri.cp.BreadboardSim.Socket.SocketsFactory;
-import sk.uniza.fri.cp.Bus.Bus;
 
 import java.util.List;
-import java.util.function.Consumer;
 
 /**
  * Komponent s klavesnicou.

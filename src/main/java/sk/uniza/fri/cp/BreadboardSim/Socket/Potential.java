@@ -3,7 +3,10 @@ package sk.uniza.fri.cp.BreadboardSim.Socket;
 
 import sk.uniza.fri.cp.BreadboardSim.Devices.Device;
 
-import java.util.*;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Set;
 
 /**
  * Potenciál medzi dvoma soketmi.

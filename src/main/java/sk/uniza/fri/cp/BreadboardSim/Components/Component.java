@@ -1,16 +1,17 @@
 package sk.uniza.fri.cp.BreadboardSim.Components;
 
 
-import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.Pane;
-import sk.uniza.fri.cp.BreadboardSim.*;
 import sk.uniza.fri.cp.BreadboardSim.Board.Board;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Device;
+import sk.uniza.fri.cp.BreadboardSim.Item;
+import sk.uniza.fri.cp.BreadboardSim.SchoolBreadboard;
 import sk.uniza.fri.cp.BreadboardSim.Socket.PowerSocket;
 import sk.uniza.fri.cp.BreadboardSim.Socket.Socket;
 import sk.uniza.fri.cp.BreadboardSim.Wire.Wire;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 /**

@@ -3,8 +3,8 @@ package sk.uniza.fri.cp.BreadboardSim.Board;
 import javafx.scene.Group;
 import javafx.scene.layout.Pane;
 import sk.uniza.fri.cp.BreadboardSim.Components.Component;
-import sk.uniza.fri.cp.BreadboardSim.SchoolBreadboard;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Device;
+import sk.uniza.fri.cp.BreadboardSim.SchoolBreadboard;
 import sk.uniza.fri.cp.BreadboardSim.Wire.Joint;
 import sk.uniza.fri.cp.BreadboardSim.Wire.Wire;
 

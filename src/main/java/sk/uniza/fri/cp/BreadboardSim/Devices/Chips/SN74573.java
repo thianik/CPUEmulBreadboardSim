@@ -1,8 +1,6 @@
 package sk.uniza.fri.cp.BreadboardSim.Devices.Chips;
 
 import javafx.scene.layout.Pane;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import sk.uniza.fri.cp.BreadboardSim.Board.Board;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.InputPin;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.OutputPin;

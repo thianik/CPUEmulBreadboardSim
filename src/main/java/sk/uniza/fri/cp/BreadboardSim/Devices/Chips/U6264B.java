@@ -1,10 +1,30 @@
 package sk.uniza.fri.cp.BreadboardSim.Devices.Chips;
 
-import javafx.scene.layout.Pane;
+import javafx.animation.Animation;
+import javafx.animation.Interpolator;
+import javafx.animation.Transition;
+import javafx.beans.property.SimpleIntegerProperty;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.value.ObservableValue;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.geometry.Insets;
+import javafx.scene.control.TableCell;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
+import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
+import javafx.stage.Stage;
+import javafx.stage.WindowEvent;
+import javafx.util.Callback;
+import javafx.util.Duration;
 import sk.uniza.fri.cp.BreadboardSim.Board.Board;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.*;
 
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 /**
  * Obvod U6264B
@@ -52,6 +72,13 @@ public class U6264B extends Chip {
 
     private final byte[] savedData = new byte[8192];
 
+    //inspector
+    private Stage inspectionStage;
+    private TableView<String[]> tableView;
+    private TableColumn tcAddress;
+    private TableColumn[] tcDataHex, tcDataAscii;
+    private ObservableList<String[]> observableDataRows;
+
     public U6264B() {
         super(PINS_COUNT);
     }
@@ -98,7 +125,9 @@ public class U6264B extends Chip {
         if (this.isLow(_W_)) {
             //zapis do pamate
             byte data = decodeData();
-            this.savedData[decodeAddress()] = data;
+            int address = decodeAddress();
+            this.savedData[address] = data;
+            updateInspectorData(address);
 
             return;
         }
@@ -125,6 +154,19 @@ public class U6264B extends Chip {
         }
 
         return (byte) data;
+    }
+
+    private void updateInspectorData(int address) {
+        if (inspectionStage != null && inspectionStage.isShowing()) {
+            int row = address / 16;
+            int indexHex = 1 + address % 16;
+            int indexAscii = 17 + address % 16;
+            byte data = savedData[address];
+            String[] rowData = observableDataRows.get(row);
+            rowData[indexHex] = String.format("%02X", data);
+            rowData[indexAscii] = String.format("%c", data == 0 ? '.' : (char) data);
+            observableDataRows.set(row, rowData);
+        }
     }
 
     @Override
@@ -180,6 +222,18 @@ public class U6264B extends Chip {
         this.setPin(_DQ7, Pin.PinState.NOT_CONNECTED);
 
         Arrays.fill(this.savedData, (byte) 0);
+
+        if (inspectionStage != null && inspectionStage.isShowing()) {
+            for (int i = 0; i < observableDataRows.size(); i++) {
+                String[] rowData = observableDataRows.get(i);
+                for (int j = 0; j < 16; j++) {
+                    rowData[j + 1] = "00";
+                    rowData[j + 17] = ".";
+                }
+
+                observableDataRows.set(i, rowData);
+            }
+        }
     }
 
 
@@ -196,4 +250,170 @@ public class U6264B extends Chip {
     public Pane getImage() {
         return generateItemImage(NAME, PINS_COUNT, 5);
     }
+
+    @Override
+    protected Stage getInspectionWindow() {
+        if (inspectionStage != null) return inspectionStage;
+
+        inspectionStage = super.getInspectionWindow();
+
+        tableView = new TableView<>();
+        tcDataHex = new TableColumn[16];
+        tcDataAscii = new TableColumn[16];
+
+        observableDataRows = FXCollections.observableArrayList();
+
+        //vytvorenie pola s informaciami pre kazdy riadok
+        byte d;
+        for (int i = 0; i < 512; i++) {
+            //adresa + 16 hex + 16 ascii
+            String[] data = new String[33];
+
+            //adresa
+            data[0] = String.format("0x%04X", i * 16);
+
+            //hex hodnoty
+            for (int j = 0; j < 16; j++) {
+                data[j + 1] = String.format("%02X", savedData[i * 16 + j]);
+            }
+
+            //ascii hodnoty
+            for (int j = 0; j < 16; j++) {
+                d = savedData[i * 16 + j];
+                data[j + 17] = String.format("%c", d == 0 ? '.' : (char) d);
+            }
+
+            observableDataRows.add(data);
+        }
+
+
+        //faktorka pre zvyraznenie zmenenych chlievikov
+        Callback<TableColumn<String[], String>, TableCell<String[], String>> cellFactory =
+                new Callback<TableColumn<String[], String>, TableCell<String[], String>>() {
+                    @Override
+                    public TableCell<String[], String> call(TableColumn<String[], String> column) {
+                        //buffer pre predoslu hodnotu chlievika
+                        final StringBuilder sb = new StringBuilder();
+                        //buffer pre posledny index chlievika, tableView ich prehadzuje pri mene velkosti okna zmene obsahu
+                        SimpleIntegerProperty lastIndex = new SimpleIntegerProperty(-1);
+
+                        TableCell<String[], String> cell = new TableCell<String[], String>() {
+                            @Override
+                            protected void updateItem(String item, boolean empty) {
+                                super.updateItem(item, empty);
+
+                                //ak je chlievik prazdny, nic sa nedeje, hlavne ziadne NullPointerEx
+                                if (empty) {
+                                    setText("");
+                                    return;
+                                }
+
+                                //ak sa hodnota v chlieviku zmenila, spusti animaciu zvyraznenia
+                                if (sb.length() > 0 && !sb.toString().equals(item) && lastIndex.intValue() == getIndex()) {
+                                    final Animation anim = new Transition() {
+                                        {
+                                            setCycleDuration(Duration.seconds(2));
+                                            setInterpolator(Interpolator.EASE_OUT);
+                                        }
+
+                                        @Override
+                                        protected void interpolate(double frac) {
+                                            Color color = new Color(1, 0.2, 0.2, 1 - frac);
+                                            setBackground(new Background(new BackgroundFill(color, CornerRadii.EMPTY, Insets.EMPTY)));
+                                        }
+                                    };
+
+                                    anim.playFromStart();
+                                }
+
+                                //aktualizuj obsah chlievika
+                                sb.replace(0, 2, item);
+                                setText(sb.toString());
+
+                                lastIndex.set(getIndex());
+                            }
+                        };
+
+                        return cell;
+                    }
+                };
+
+        //vytvorenie stlpcov
+        //adresy
+        tcAddress = new TableColumn("Adresa");
+        tcAddress.setStyle("-fx-alignment: CENTER;");
+        tcAddress.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<String[], String>, ObservableValue>() {
+            @Override
+            public ObservableValue call(TableColumn.CellDataFeatures<String[], String> param) {
+                return new SimpleStringProperty(param.getValue()[0]);
+            }
+        });
+        tableView.getColumns().add(tcAddress);
+
+        //separator
+        tableView.getColumns().add(new TableColumn<>());
+
+        //hex data
+        for (int i = 0; i < 16; i++) {
+            tcDataHex[i] = new TableColumn(Integer.toString(i));
+            tcDataHex[i].setCellFactory(cellFactory);
+
+            final int colNo = i;
+            tcDataHex[i].setCellValueFactory(new Callback<TableColumn.CellDataFeatures<String[], String>, ObservableValue>() {
+                @Override
+                public ObservableValue call(TableColumn.CellDataFeatures<String[], String> param) {
+                    return new SimpleStringProperty(param.getValue()[colNo + 1]);
+                }
+            });
+
+            tcDataHex[i].setPrefWidth(23);
+            tcDataHex[i].setStyle("-fx-alignment: CENTER;");
+            tableView.getColumns().add(tcDataHex[i]);
+        }
+
+        //separator
+        tableView.getColumns().add(new TableColumn<>());
+
+        //ascii data
+        for (int i = 0; i < 16; i++) {
+            tcDataAscii[i] = new TableColumn(Integer.toString(i));
+            tcDataAscii[i].setCellFactory(cellFactory);
+
+            final int colNo = i;
+            tcDataAscii[i].setCellValueFactory(new Callback<TableColumn.CellDataFeatures<String[], String>, ObservableValue>() {
+                @Override
+                public ObservableValue call(TableColumn.CellDataFeatures<String[], String> param) {
+                    return new SimpleStringProperty(param.getValue()[colNo + 17]);
+                }
+            });
+
+            tcDataAscii[i].setPrefWidth(19);
+            tcDataAscii[i].setStyle("-fx-alignment: CENTER;");
+            tableView.getColumns().add(tcDataAscii[i]);
+        }
+
+        tableView.setItems(observableDataRows);
+        tableView.setStyle("-fx-font-size: 12px;");
+        tableView.setEditable(false);
+
+        VBox.setVgrow(tableView, Priority.ALWAYS);
+
+        VBox root = ((VBox) inspectionStage.getScene().getRoot());
+        root.getChildren().add(tableView);
+        root.setPrefWidth(800);
+        root.setPrefHeight(600);
+
+        inspectionStage.addEventHandler(WindowEvent.WINDOW_HIDDEN, event -> {
+            tableView = null;
+            tcAddress = null;
+            tcDataHex = null;
+            tcDataAscii = null;
+            observableDataRows = null;
+            inspectionStage = null;
+        });
+
+        return inspectionStage;
+    }
+
+
 }

@@ -2,7 +2,6 @@ package sk.uniza.fri.cp.BreadboardSim;
 
 
 import javafx.geometry.Bounds;
-import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;

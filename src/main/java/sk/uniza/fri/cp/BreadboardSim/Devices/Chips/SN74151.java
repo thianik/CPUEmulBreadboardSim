@@ -1,6 +1,5 @@
 package sk.uniza.fri.cp.BreadboardSim.Devices.Chips;
 
-import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import sk.uniza.fri.cp.BreadboardSim.Board.Board;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.InputPin;

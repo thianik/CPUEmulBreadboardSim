@@ -23,9 +23,6 @@ import java.util.concurrent.LinkedBlockingQueue;
  */
 public class BoardSimulator {
 
-    private long startTime;
-    private int events;
-
     private LinkedBlockingQueue<BoardEvent> eventsQueue; //naplánované udalosti
     private List<PowerSocket> powerSockets; //sokety, ktoré sa maju po spusteni napojit
     private BooleanProperty running; //priznak behu simulacie
@@ -55,8 +52,6 @@ public class BoardSimulator {
                     HashSet<Device> devicesToUpdate = new HashSet<>();
                     BoardEvent event;
 
-                    startTime = System.currentTimeMillis();
-
                     //obsluha eventov
 					while(!isCancelled()){
 						try {
@@ -82,18 +77,11 @@ public class BoardSimulator {
 
 							devicesToUpdate.clear();
 
-                            events++;
                         } catch (InterruptedException e){
 							if(isCancelled()) break;
 						} catch (NullPointerException e){
 							e.printStackTrace(System.err);
                             devicesToUpdate.clear();
-                        }
-
-                        if (System.currentTimeMillis() - startTime > 1000) {
-                            System.out.println("Eventov " + events);
-                            events = 0;
-                            startTime = System.currentTimeMillis();
                         }
                     }
 

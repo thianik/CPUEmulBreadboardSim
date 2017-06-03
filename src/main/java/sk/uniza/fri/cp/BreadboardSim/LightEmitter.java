@@ -1,8 +1,6 @@
 package sk.uniza.fri.cp.BreadboardSim;
 
 import javafx.application.Platform;
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Shape;
 import sk.uniza.fri.cp.BreadboardSim.Board.Board;
@@ -144,7 +142,7 @@ public class LightEmitter {
                         //ak ma emitter nastaveny minimalny update a bol zopnuty viac ako dva krat za dany cas, zapni ho
                         emitter.shape.setFill(emitter.col_turnedOn);
                     } else {
-                        //inak sa riad posla akutalne nastavenej hodnoty
+                        //inak sa riad podla akutalne nastavenej hodnoty
                         if (emitter.state.get()) {
                             emitter.shape.setFill(emitter.col_turnedOn);
                         } else {

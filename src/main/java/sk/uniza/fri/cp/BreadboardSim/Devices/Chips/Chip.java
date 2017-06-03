@@ -1,29 +1,40 @@
 package sk.uniza.fri.cp.BreadboardSim.Devices.Chips;
 
+import javafx.application.Platform;
+import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Group;
-import javafx.scene.control.TextArea;
-import javafx.scene.image.*;
-import javafx.scene.layout.*;
+import javafx.scene.Scene;
+import javafx.scene.image.ImageView;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
-import javafx.scene.shape.*;
+import javafx.scene.paint.Paint;
+import javafx.scene.shape.Arc;
+import javafx.scene.shape.ArcType;
 import javafx.scene.shape.Polygon;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
-import javafx.scene.text.TextFlow;
+import javafx.stage.Stage;
+import javafx.stage.WindowEvent;
 import sk.uniza.fri.cp.BreadboardSim.Board.Board;
 import sk.uniza.fri.cp.BreadboardSim.Board.GridSystem;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Device;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.Pin;
+import sk.uniza.fri.cp.BreadboardSim.LightEmitter;
 import sk.uniza.fri.cp.BreadboardSim.Socket.Potential;
 import sk.uniza.fri.cp.BreadboardSim.Socket.Socket;
 
-import java.io.IOException;
-import java.net.URI;
 import java.util.Arrays;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Abstraktná trieda pre všetky integrované obvody.
@@ -38,6 +49,17 @@ public abstract class Chip extends Device {
 
 	private Pin[] pins;
     private int gridHeight = 3;
+
+    private static InspectionPinsUpdater ipu = new InspectionPinsUpdater();
+    private Stage inspectorStage;
+
+    private EventHandler<MouseEvent> onMouseDoubleClick = event -> {
+        if (event.getClickCount() >= 2) {
+            Stage stage = this.getInspectionWindow();
+            stage.show();
+            stage.toFront();
+        }
+    };
 
     /**
      * Vytovrenie objektu chipu pre itemPicker.
@@ -63,6 +85,8 @@ public abstract class Chip extends Device {
         fillPins();
 
         this.getChildren().add(generateGraphic());
+
+        this.addEventHandler(MouseEvent.MOUSE_CLICKED, onMouseDoubleClick);
     }
 
     /**
@@ -80,6 +104,8 @@ public abstract class Chip extends Device {
         fillPins();
 
         this.getChildren().add(generateGraphic());
+
+        this.addEventHandler(MouseEvent.MOUSE_CLICKED, onMouseDoubleClick);
     }
 
     /**
@@ -166,6 +192,29 @@ public abstract class Chip extends Device {
      */
 	protected abstract void fillPins();
 
+    protected Stage getInspectionWindow() {
+        if (inspectorStage != null) return inspectorStage;
+
+        VBox root = new VBox();
+        root.setAlignment(Pos.CENTER);
+
+        Text chipName = new Text(getName());
+        chipName.setFont(Font.font(20));
+        root.getChildren().addAll(chipName, generateInspectionImage());
+
+        Stage stage = new Stage();
+        Scene scene = new Scene(root);
+
+        stage.setScene(scene);
+
+        stage.addEventHandler(WindowEvent.WINDOW_HIDDEN, event -> {
+            Arrays.stream(this.pins).forEach(pin -> ipu.remove(pin));
+            inspectorStage = null;
+        });
+
+        return inspectorStage = stage;
+    }
+
     /**
      * Zaregistruje obvodu pin s daným čislom.
      *
@@ -243,6 +292,16 @@ public abstract class Chip extends Device {
             this.cacheDescription(descriptionPane);
             return descriptionPane;
         } else return cached;
+    }
+
+    @Override
+    public void delete() {
+        super.delete();
+
+        //ak je otvoreny inspektor pre chip, zatvor ho pri zmazani
+        if (inspectorStage != null && inspectorStage.isShowing()) {
+            inspectorStage.close();
+        }
     }
 
     //GENEROVANIE GRAFIKY
@@ -339,8 +398,6 @@ public abstract class Chip extends Device {
     protected static Pane generateItemImage(String chipName, int pinsCount) {
         return generateItemImage(chipName, pinsCount, 3);
     }
-
-    //
 
     /**
      * Generovanie grafiky pre itemPicker s definovanou výškou obvodu.
@@ -490,5 +547,199 @@ public abstract class Chip extends Device {
         }
 
         return imageGroup;
+    }
+
+
+    /**
+     * Generovanie popisu obvodu pre okno s informáciami o obvode v reálnom čase.
+     *
+     * @return Skupina obsahujúca obrázk s popisom.
+     */
+    protected Group generateInspectionImage() {
+        Group imageGroup = new Group();
+
+        List<Pin> pins = getPins();
+
+        double padding = 10;
+        double pinHeight = 10;
+        double pinWidth = 15;
+        double pinMargin = 8;
+        double textMargin = 5;
+        double fontSize = 10;
+        double height = 70;
+        double width = 2 * padding + (pinHeight + 2 * pinMargin) * pins.size() / 2 - 2 * pinMargin;
+        double strokeWidth = 1.5;
+
+        Rectangle body = new Rectangle(width, height, Color.WHITE);
+        body.setStroke(Color.BLACK);
+        body.setStrokeWidth(strokeWidth);
+        imageGroup.getChildren().add(body);
+
+        Arc mark = new Arc(0, height / 2d, 8, 5, -90, 180);
+        mark.setType(ArcType.ROUND);
+        mark.setFill(Color.WHITE);
+        mark.setStroke(Color.BLACK);
+        mark.setStrokeWidth(strokeWidth);
+        imageGroup.getChildren().add(mark);
+
+        //piny
+        for (int i = 0; i < pins.size(); i++) {
+            Group pinGroup = new Group();
+            InspectionPin pinBody = new InspectionPin(pinWidth, pinHeight, Color.WHITE, pins.get(i));
+            ipu.add(pinBody);
+            pinBody.setStroke(Color.BLACK);
+            pinBody.setStrokeWidth(strokeWidth);
+
+            Text pinName = new Text(pins.get(i).getName());
+            pinName.setFont(Font.font(fontSize));
+            pinName.setLayoutX(pinWidth / 2.0 - pinName.getBoundsInParent().getWidth() / 2.0); //centrovanie textu pod pin
+
+            Text pinNumber = new Text(Integer.toString(i + 1));
+            pinNumber.setFont(Font.font(fontSize));
+            pinNumber.setLayoutX(pinWidth / 2.0 - pinNumber.getBoundsInParent().getWidth() / 2.0); //centrovanie cisla pod pin
+
+            pinGroup.getChildren().addAll(pinBody, pinName, pinNumber);
+
+            if (i < pins.size() / 2) {
+                //piny dole
+                pinNumber.setLayoutY(-pinNumber.getBoundsInParent().getHeight() + pinNumber.getBaselineOffset() - textMargin);
+                pinName.setLayoutY(pinHeight + pinName.getBoundsInParent().getHeight());
+
+                //posunutie celej grupy
+                pinGroup.setLayoutX(padding + i * (pinHeight + 2 * pinMargin));
+                pinGroup.setLayoutY(height);
+            } else {
+                //piny hore
+                pinNumber.setLayoutY(pinHeight + pinName.getBoundsInParent().getHeight());
+                pinName.setLayoutY(-pinNumber.getBoundsInParent().getHeight() + pinName.getBaselineOffset() - textMargin);
+
+                pinGroup.setLayoutX(padding + (pins.size() - i - 1) * (pinHeight + 2 * pinMargin));
+                pinGroup.setLayoutY(-pinHeight);
+            }
+
+            imageGroup.getChildren().add(pinGroup);
+        }
+
+        return imageGroup;
+    }
+
+    /**
+     * Trieda pre pin zobrazeny v inspektorovi IC.
+     * Meni farbu na zaklade stavu pinu, podla ktoreho bola instancia vytvorena.
+     */
+    private static class InspectionPin extends Rectangle {
+        private Pin pin;
+
+        public InspectionPin(double width, double height, Paint fill, Pin pin) {
+            super(width, height, fill);
+            this.pin = pin;
+        }
+
+        public Pin.PinState getState() {
+            if (this.pin.getSocket() == null) return Pin.PinState.NOT_CONNECTED;
+            if (this.pin.getState() == Pin.PinState.HIGH_IMPEDANCE) return Pin.PinState.HIGH_IMPEDANCE;
+
+            //hodnota podla soketu, hodnota pinu sa neupdateuje vzdy
+            switch (this.pin.getSocket().getPotential().getValue()) {
+                case HIGH:
+                    return Pin.PinState.HIGH;
+                case LOW:
+                    return Pin.PinState.LOW;
+                default:
+                    return Pin.PinState.NOT_CONNECTED;
+            }
+        }
+
+        public Pin getPin() {
+            return this.pin;
+        }
+    }
+
+    private static class InspectionPinsUpdater {
+        private static final Color HIGH_COLOR = Color.RED;
+        private static final Color LOW_COLOR = Color.BLUE;
+        private static final Color HiZ_COLOR = Color.ORANGE;
+        private static final Color NC_COLOR = Color.GRAY;
+
+        private LinkedList<InspectionPin> pins = new LinkedList<>();
+        //"skrtiace" vlakno RunLater poziadaviek
+        private static Thread thread;
+        //pocitadlo pre pristup k RunLater
+        private AtomicLong counter = new AtomicLong(-1);
+
+        public void add(InspectionPin pin) {
+            if (!this.pins.contains(pin))
+                this.pins.add(pin);
+
+            if (this.pins.size() == 1) this.startUpdating();
+        }
+
+        public void remove(InspectionPin pin) {
+            this.pins.remove(pin);
+            if (this.pins.size() == 0) this.stopUpdating();
+        }
+
+        public void remove(Pin pin) {
+            Iterator<InspectionPin> i = this.pins.iterator();
+            while (i.hasNext()) {
+                if (i.next().getPin() == pin) {
+                    i.remove();
+                    break;
+                }
+            }
+
+            if (this.pins.size() == 0) this.stopUpdating();
+        }
+
+        private void startUpdating() {
+            counter.set(-1);
+
+            thread = new Thread(() -> {
+                Board board = this.pins.get(0).getPin().getDevice().getBoard();
+                while (!Thread.currentThread().isInterrupted()) {
+                    if (board.isSimulationRunning()
+                            && counter.getAndSet(1) == -1) {
+                        updateUI(counter);
+                    }
+                }
+
+                updateUI(counter); //posledny update -> vypnutie
+            });
+
+            thread.setName("InspectorWindowUpdater");
+            thread.setDaemon(true);
+            thread.start();
+        }
+
+        private void stopUpdating() {
+            if (thread != null) thread.interrupt();
+        }
+
+        private void updateUI(final AtomicLong counter) {
+
+            Platform.runLater(() -> {
+                //pre kazdy emitter na ploche
+                for (InspectionPin pin :
+                        pins) {
+
+                    switch (pin.getState()) {
+                        case HIGH:
+                            pin.setFill(HIGH_COLOR);
+                            break;
+                        case LOW:
+                            pin.setFill(LOW_COLOR);
+                            break;
+                        case HIGH_IMPEDANCE:
+                            pin.setFill(HiZ_COLOR);
+                            break;
+                        default:
+                            pin.setFill(NC_COLOR);
+                    }
+                }
+
+                counter.set(-1);
+            });
+
+        }
     }
 }

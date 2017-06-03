@@ -4,7 +4,10 @@ import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.input.MouseEvent;
-import javafx.scene.layout.*;
+import javafx.scene.layout.FlowPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.VBox;
 import sk.uniza.fri.cp.BreadboardSim.Components.Component;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Device;
 

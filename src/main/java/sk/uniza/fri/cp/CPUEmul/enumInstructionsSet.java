@@ -1,6 +1,7 @@
 package sk.uniza.fri.cp.CPUEmul;
 
-import static sk.uniza.fri.cp.CPUEmul.Regexes.*;
+import static sk.uniza.fri.cp.CPUEmul.Regexes.rByte;
+import static sk.uniza.fri.cp.CPUEmul.Regexes.rShort;
 
 /**
  * Inštrukčná sada CPU Emulátora.

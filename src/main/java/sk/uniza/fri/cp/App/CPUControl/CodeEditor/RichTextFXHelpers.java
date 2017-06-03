@@ -2,7 +2,8 @@ package sk.uniza.fri.cp.App.CPUControl.CodeEditor;
 
 import org.fxmisc.richtext.StyleClassedTextArea;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.stream.Collectors;
 
 /**

@@ -2,16 +2,14 @@ package sk.uniza.fri.cp.BreadboardSim.Devices;
 
 import javafx.event.EventHandler;
 import javafx.scene.input.MouseEvent;
-import sk.uniza.fri.cp.BreadboardSim.*;
 import sk.uniza.fri.cp.BreadboardSim.Board.Board;
 import sk.uniza.fri.cp.BreadboardSim.Board.BoardChangeEvent;
-import sk.uniza.fri.cp.BreadboardSim.Board.BoardEvent;
 import sk.uniza.fri.cp.BreadboardSim.Components.Component;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Chips.Chip;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.Pin;
+import sk.uniza.fri.cp.BreadboardSim.Item;
 import sk.uniza.fri.cp.BreadboardSim.Socket.Potential;
 import sk.uniza.fri.cp.BreadboardSim.Socket.Socket;
-import sk.uniza.fri.cp.Bus.Bus;
 
 import java.util.ArrayList;
 import java.util.Arrays;

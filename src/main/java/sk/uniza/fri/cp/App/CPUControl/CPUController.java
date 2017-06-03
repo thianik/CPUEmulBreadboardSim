@@ -3,31 +3,23 @@ package sk.uniza.fri.cp.App.CPUControl;
 import javafx.animation.Animation;
 import javafx.animation.Transition;
 import javafx.application.Platform;
-import javafx.beans.property.*;
+import javafx.beans.property.Property;
+import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleIntegerProperty;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
-import javafx.collections.*;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.collections.ObservableSet;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 import javafx.concurrent.WorkerStateEvent;
 import javafx.css.PseudoClass;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
-
-import java.io.*;
-import java.net.URL;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Paths;
-import java.util.*;
-import java.util.concurrent.CountDownLatch;
-import java.util.function.Consumer;
-
-//CodeArea zvyraznovanie slov
-import javafx.scene.Parent;
-import javafx.scene.Scene;
+import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
@@ -39,17 +31,12 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
-import javafx.stage.WindowEvent;
 import javafx.util.Duration;
 import org.controlsfx.control.Notifications;
 import org.controlsfx.control.ToggleSwitch;
 import org.fxmisc.flowless.VirtualizedScrollPane;
-import org.fxmisc.richtext.*;
-
-import javafx.scene.control.*;
-import javafx.scene.control.Button;
-import javafx.scene.control.TextField;
-
+import org.fxmisc.richtext.CodeArea;
+import org.fxmisc.richtext.InlineCssTextArea;
 import sk.uniza.fri.cp.App.BreadboardControl.BreadboardController;
 import sk.uniza.fri.cp.App.CPUControl.CodeEditor.CodeEditorFactory;
 import sk.uniza.fri.cp.App.CPUControl.CodeEditor.RichTextFXHelpers;
@@ -61,7 +48,20 @@ import sk.uniza.fri.cp.CPUEmul.Exceptions.InvalidCodeLinesException;
 import sk.uniza.fri.cp.CPUEmul.Parser;
 import sk.uniza.fri.cp.CPUEmul.Program;
 
-import static sk.uniza.fri.cp.App.CPUControl.DataRepresentation.*;
+import java.io.*;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
+import java.util.Optional;
+import java.util.ResourceBundle;
+import java.util.TreeSet;
+import java.util.concurrent.CountDownLatch;
+import java.util.function.Consumer;
+
+import static sk.uniza.fri.cp.App.CPUControl.DataRepresentation.eRepresentation;
+import static sk.uniza.fri.cp.App.CPUControl.DataRepresentation.getDisplayRepresentation;
+
+//CodeArea zvyraznovanie slov
 
 
 /**
@@ -458,10 +458,8 @@ public class CPUController implements Initializable {
                 protected void updateItem(StackTableCell item, boolean empty) {
                     super.updateItem(item, empty);
 
-
                     pseudoClassStateChanged(pcStackHead, (!empty) && item.getAddressInt() == StackTableCell.getStackHead());
                     pseudoClassStateChanged(pcDataChanged, (!empty) && item.isChanged());
-
                 }
             }
         );
@@ -488,7 +486,7 @@ public class CPUController implements Initializable {
             tableViewRAMItems.add(new MemoryTableCell(i,0));
         tableViewRAM.setItems(tableViewRAMItems);                               //priradenie pola do tabulky
 
-        //faktorka na riadky - pridavanie pseudotried pre vrchol zasobnika a zmenene data
+        //faktorka na riadky - pridavanie pseudotried pre zmenene data
         tableViewRAM.setRowFactory(tv ->
             new TableRow<MemoryTableCell>(){
                 @Override
