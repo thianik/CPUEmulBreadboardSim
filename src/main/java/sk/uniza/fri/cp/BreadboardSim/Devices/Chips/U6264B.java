@@ -73,7 +73,7 @@ public class U6264B extends Chip {
     private final byte[] savedData = new byte[8192];
 
     //inspector
-    private Stage inspectionStage;
+    private volatile Stage inspectionStage;
     private TableView<String[]> tableView;
     private TableColumn tcAddress;
     private TableColumn[] tcDataHex, tcDataAscii;

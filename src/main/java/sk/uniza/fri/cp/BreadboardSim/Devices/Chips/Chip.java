@@ -490,11 +490,11 @@ public abstract class Chip extends Device {
         double padding = 10;
         double pinHeight = 10;
         double pinWidth = 15;
-        double pinMargin = 8;
+        double pinMargin = 6;
         double textMargin = 5;
         double fontSize = 10;
         double height = 70;
-        double width = 2 * padding + (pinHeight + 2 * pinMargin) * pins.size() / 2 - 2 * pinMargin;
+        double width = 2 * padding + (pinWidth + 2 * pinMargin) * pins.size() / 2 - 2 * pinMargin;
         double strokeWidth = 1.5;
 
         Rectangle body = new Rectangle(width, height, Color.WHITE);
@@ -532,14 +532,14 @@ public abstract class Chip extends Device {
                 pinName.setLayoutY(pinHeight + pinName.getBoundsInParent().getHeight());
 
                 //posunutie celej grupy
-                pinGroup.setLayoutX(padding + i * (pinHeight + 2 * pinMargin));
+                pinGroup.setLayoutX(padding + i * (pinWidth + 2 * pinMargin));
                 pinGroup.setLayoutY(height);
             } else {
                 //piny hore
                 pinNumber.setLayoutY(pinHeight + pinName.getBoundsInParent().getHeight());
                 pinName.setLayoutY(-pinNumber.getBoundsInParent().getHeight() + pinName.getBaselineOffset() - textMargin);
 
-                pinGroup.setLayoutX(padding + (pins.size() - i - 1) * (pinHeight + 2 * pinMargin));
+                pinGroup.setLayoutX(padding + (pins.size() - i - 1) * (pinWidth + 2 * pinMargin));
                 pinGroup.setLayoutY(-pinHeight);
             }
 
@@ -567,7 +567,7 @@ public abstract class Chip extends Device {
         double textMargin = 5;
         double fontSize = 10;
         double height = 70;
-        double width = 2 * padding + (pinHeight + 2 * pinMargin) * pins.size() / 2 - 2 * pinMargin;
+        double width = 2 * padding + (pinWidth + 2 * pinMargin) * pins.size() / 2 - 2 * pinMargin;
         double strokeWidth = 1.5;
 
         Rectangle body = new Rectangle(width, height, Color.WHITE);
@@ -606,14 +606,14 @@ public abstract class Chip extends Device {
                 pinName.setLayoutY(pinHeight + pinName.getBoundsInParent().getHeight());
 
                 //posunutie celej grupy
-                pinGroup.setLayoutX(padding + i * (pinHeight + 2 * pinMargin));
+                pinGroup.setLayoutX(padding + i * (pinWidth + 2 * pinMargin));
                 pinGroup.setLayoutY(height);
             } else {
                 //piny hore
                 pinNumber.setLayoutY(pinHeight + pinName.getBoundsInParent().getHeight());
                 pinName.setLayoutY(-pinNumber.getBoundsInParent().getHeight() + pinName.getBaselineOffset() - textMargin);
 
-                pinGroup.setLayoutX(padding + (pins.size() - i - 1) * (pinHeight + 2 * pinMargin));
+                pinGroup.setLayoutX(padding + (pins.size() - i - 1) * (pinWidth + 2 * pinMargin));
                 pinGroup.setLayoutY(-pinHeight);
             }
 

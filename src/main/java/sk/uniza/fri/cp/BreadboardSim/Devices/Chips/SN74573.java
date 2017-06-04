@@ -1,6 +1,13 @@
 package sk.uniza.fri.cp.BreadboardSim.Devices.Chips;
 
+import javafx.application.Platform;
+import javafx.scene.Group;
 import javafx.scene.layout.Pane;
+import javafx.scene.layout.VBox;
+import javafx.scene.text.Text;
+import javafx.scene.text.TextFlow;
+import javafx.stage.Stage;
+import javafx.stage.WindowEvent;
 import sk.uniza.fri.cp.BreadboardSim.Board.Board;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.InputPin;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.OutputPin;
@@ -42,6 +49,10 @@ public class SN74573 extends Chip {
     private static final int[] outputs = {_1Q, _2Q, _3Q, _4Q, _5Q, _6Q, _7Q, _8Q};
     private final boolean[] savedData = new boolean[8];
 
+    //inspektor
+    private volatile Stage inspectionStage;
+    private Text[] showedBits;
+
     public SN74573() {
         super(PINS_COUNT);
     }
@@ -52,14 +63,12 @@ public class SN74573 extends Chip {
 
     private void updateGate() {
         if (this.isHigh(_LE)) {
-            //debug
-            int data = 0;
-
             //povoleny zapis
             for (int i = 0; i < 8; i++) {
                 this.savedData[i] = this.isHigh(inputs[i]);
-                data += this.savedData[i] ? 1 << (7 - i) : 0;
             }
+
+            updateInspector();
         }
 
         if (this.isHigh(_OE_)) {
@@ -73,6 +82,24 @@ public class SN74573 extends Chip {
             }
         }
 
+    }
+
+    private void updateInspector() {
+        if (this.inspectionStage != null && this.inspectionStage.isShowing()) {
+            if (Platform.isFxApplicationThread()) {
+                for (int i = 0; i < 8; i++) {
+                    if (this.showedBits != null)
+                        this.showedBits[i].setText(this.savedData[i] ? "H" : "L");
+                }
+            } else {
+                Platform.runLater(() -> {
+                    for (int i = 0; i < 8; i++) {
+                        if (this.showedBits != null)
+                            this.showedBits[i].setText(this.savedData[i] ? "H" : "L");
+                    }
+                });
+            }
+        }
     }
 
     @Override
@@ -122,6 +149,8 @@ public class SN74573 extends Chip {
         for (int i = 0; i < 8; i++) {
             this.savedData[i] = false;
         }
+
+        updateInspector();
     }
 
     @Override
@@ -136,5 +165,42 @@ public class SN74573 extends Chip {
 
     public Pane getImage() {
         return generateItemImage(NAME, PINS_COUNT);
+    }
+
+    @Override
+    protected Stage getInspectionWindow() {
+        if (this.inspectionStage != null) return inspectionStage;
+
+        this.inspectionStage = super.getInspectionWindow();
+
+        Group textsGroup = new Group();
+        this.showedBits = new Text[8];
+
+        //z obr. IC
+        double padding = 10;
+        double pinWidth = 15;
+        double pinMargin = 6;
+        double icHeight = 70;
+
+        //data
+        for (int i = 0; i < 8; i++) {
+            this.showedBits[i] = new Text(this.savedData[i] ? "H" : "L");
+            textsGroup.getChildren().add(this.showedBits[i]);
+
+            this.showedBits[i].setLayoutX(padding + i * (4 + pinWidth + 2 * pinMargin));
+        }
+
+        //posunutie zobrazenia dat do stredu IC
+        textsGroup.setTranslateY(-(icHeight));
+
+        VBox root = ((VBox) inspectionStage.getScene().getRoot());
+        root.getChildren().add(textsGroup);
+
+        this.inspectionStage.addEventHandler(WindowEvent.WINDOW_HIDDEN, event -> {
+            this.showedBits = null;
+            this.inspectionStage = null;
+        });
+
+        return this.inspectionStage;
     }
 }
