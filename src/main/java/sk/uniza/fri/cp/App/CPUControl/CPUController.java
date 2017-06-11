@@ -912,7 +912,8 @@ public class CPUController implements Initializable {
 	@FXML
 	private void handleButtonStopAction(){
         cpu.stopExecute();
-	}
+        cos_cpu.clearBuffer();
+    }
 
     /**
      * Ak je aktuálny kód v editore parsovaný a zavedený do programu, zašle príkaz na spustenie vykonávania CPU.

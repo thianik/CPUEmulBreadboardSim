@@ -5,6 +5,8 @@ import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonType;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Device;
 import sk.uniza.fri.cp.BreadboardSim.Socket.PowerSocket;
 import sk.uniza.fri.cp.Bus.Bus;
@@ -22,6 +24,8 @@ import java.util.concurrent.LinkedBlockingQueue;
  * @created 17-mar-2017 16:16:34
  */
 public class BoardSimulator {
+
+    private static final int ASYNCH_TIMEOUT_MS = 5000;
 
     private LinkedBlockingQueue<BoardEvent> eventsQueue; //naplánované udalosti
     private List<PowerSocket> powerSockets; //sokety, ktoré sa maju po spusteni napojit
@@ -52,9 +56,22 @@ public class BoardSimulator {
                     HashSet<Device> devicesToUpdate = new HashSet<>();
                     BoardEvent event;
 
+                    long lastSteadyStateTime = System.currentTimeMillis();
+
                     //obsluha eventov
 					while(!isCancelled()){
 						try {
+                            if (System.currentTimeMillis() - lastSteadyStateTime > ASYNCH_TIMEOUT_MS) {
+                                Platform.runLater(() -> {
+                                    Alert alert = new Alert(
+                                            Alert.AlertType.ERROR,
+                                            "Chyba simulácie. Príliš dlhá odozva.",
+                                            ButtonType.CLOSE);
+                                    alert.show();
+                                });
+                                this.cancel();
+                            }
+
                             event = eventsQueue.poll();
                             if (event == null) {
                                 if (eventsQueue.size() > 0) {
@@ -63,6 +80,7 @@ public class BoardSimulator {
                                     Bus.getBus().dataInSteadyState();
                                     steadyState = true;
                                     event = eventsQueue.take();
+                                    lastSteadyStateTime = System.currentTimeMillis();
                                 }
                             }
 
@@ -133,6 +151,8 @@ public class BoardSimulator {
     public void stop(){
         if (Platform.isFxApplicationThread())
             simulatorService.cancel();
+        else
+            Platform.runLater(() -> simulatorService.cancel());
     }
 
 	/**

@@ -95,7 +95,11 @@ public class WireEnd extends Joint {
             if (socket != null && socket.connect(this)) {
                 this.socket = socket;
 
-                this.socket.getItem().localToSceneTransformProperty().addListener(socketPositionChangeListener);
+                this.socket.getItem().localToParentTransformProperty().addListener(socketPositionChangeListener);
+
+                //TODO FATALNA CHYBA - pri "setrnejsom" localToScene nastava chyba pri zoome a jointoch na kabliku (vid zoom hadika)
+                //this.socket.getItem().localToSceneTransformProperty().addListener(socketPositionChangeListener);
+
                 setLayoutX(socket.getBoardX() / getBoard().getAppliedScale());
                 setLayoutY(socket.getBoardY() / getBoard().getAppliedScale());
 
@@ -146,7 +150,10 @@ public class WireEnd extends Joint {
     protected void disconnectSocket() {
         if(this.socket == null) return;
 		Socket socketToUpdate = this.socket;
-        this.socket.getItem().localToSceneTransformProperty().removeListener(socketPositionChangeListener);
+
+        this.socket.getItem().localToParentTransformProperty().removeListener(socketPositionChangeListener);
+
+        //this.socket.getItem().localToSceneTransformProperty().removeListener(socketPositionChangeListener);
         this.socket.disconnect();
 		this.socket = null;
 		this.getWire().updatePotential();

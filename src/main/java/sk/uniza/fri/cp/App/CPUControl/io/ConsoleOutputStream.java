@@ -113,6 +113,10 @@ public class ConsoleOutputStream extends OutputStream {
         }
     }
 
+    public void clearBuffer() {
+        charsQueue.clear();
+    }
+
     @Override
     public void write(int b) throws IOException {
         synchronized (charsQueue) {

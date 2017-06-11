@@ -313,7 +313,7 @@ public class Wire extends HighlightGroup {
 		this.segments.add(firstSegment);
 		this.segments.add(secondSegment);
 
-        //zaradenie noveo jointu do zoznamu na poziciu medzi povodne dva
+        //zaradenie noveho jointu do zoznamu na poziciu medzi povodne dva
         int fjIndex = this.joints.indexOf(firstJoint);
         this.joints.add(fjIndex + 1, newJoint);
 
