@@ -94,6 +94,22 @@
     -fx-graphic: none;
 }
 
+.btn-new {
+    -fx-graphic: url("../icons/file.png");
+}
+
+.btn-open {
+    -fx-graphic: url("../icons/open.png");
+}
+
+.btn-save {
+    -fx-graphic: url("../icons/save.png");
+}
+
+.btn-save-as {
+    -fx-graphic: url("../icons/save-as.png");
+}
+
 .btn-parse {
     -fx-graphic: url("../icons/check.png");
 }

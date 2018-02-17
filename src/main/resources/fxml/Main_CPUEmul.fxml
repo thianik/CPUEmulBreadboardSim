@@ -22,6 +22,7 @@
 <?import javafx.scene.control.TitledPane?>
 <?import javafx.scene.control.ToggleButton?>
 <?import javafx.scene.control.ToggleGroup?>
+<?import javafx.scene.control.Tooltip?>
 <?import javafx.scene.input.KeyCodeCombination?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.BorderPane?>
@@ -102,6 +103,34 @@
             </MenuBar>
              <HBox fx:id="toolBox" alignment="CENTER">
                <children>
+                   <ButtonBar buttonMinWidth="25.0">
+                       <buttons>
+                           <Button accessibleHelp="Nový súbor" mnemonicParsing="false"
+                                   onAction="#handleMenuFileNewAction" styleClass="btn-new">
+                               <tooltip>
+                                   <Tooltip text="Nový kód"/>
+                               </tooltip>
+                           </Button>
+                           <Button layoutX="20.0" layoutY="18.0" mnemonicParsing="false"
+                                   onAction="#handleMenuFileOpenAction" styleClass="btn-open">
+                               <tooltip>
+                                   <Tooltip text="Otvoriť kód"/>
+                               </tooltip>
+                           </Button>
+                           <Button layoutX="115.0" layoutY="18.0" mnemonicParsing="false"
+                                   onAction="#handleMenuFileSaveAction" styleClass="btn-save">
+                               <tooltip>
+                                   <Tooltip text="Uložiť kód"/>
+                               </tooltip>
+                           </Button>
+                           <Button layoutX="65.0" layoutY="18.0" mnemonicParsing="false"
+                                   onAction="#handleMenuFileSaveAsAction" styleClass="btn-save-as">
+                               <tooltip>
+                                   <Tooltip text="Uložiť kód ako"/>
+                               </tooltip>
+                           </Button>
+                       </buttons>
+                   </ButtonBar>
                    <ButtonBar buttonMinWidth="110.0" maxWidth="1.7976931348623157E308" prefHeight="40.0">
                     <buttons>
                         <Button fx:id="btnParse" alignment="BASELINE_LEFT" layoutX="280.0" layoutY="18.0"
