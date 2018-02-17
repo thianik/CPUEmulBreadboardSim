@@ -162,6 +162,9 @@ public class BoardSimulator {
      */
 	public void addEvent(BoardEvent event){
 		try {
+            //vyriesene asynchronne zapojenie -> odstranenie eventu na sokete ktory uz nie je aktualny
+            //existuje efektivnejsi sposob?
+            eventsQueue.removeIf((boardEvent -> boardEvent.getSocket().equals(event.getSocket())));
             eventsQueue.put(event);
         } catch (InterruptedException e) {
 //            e.printStackTrace();

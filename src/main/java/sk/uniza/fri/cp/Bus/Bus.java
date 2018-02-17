@@ -204,6 +204,7 @@ public class Bus{
             if (isSimulationRunning) {
                 while (true) {
                     try {
+                        //TODO korekcia ak semafor vrati false, aj metoda ma vratit false
                         if (!(!dataSemaphore.tryAcquire(5, TimeUnit.SECONDS) || queue.size() != 0)) break;
                     } catch (InterruptedException e) {
                         return false;

@@ -1,12 +1,40 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.geometry.*?>
-<?import javafx.scene.control.*?>
+<?import java.lang.String?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ButtonBar?>
+<?import javafx.scene.control.CheckMenuItem?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Menu?>
+<?import javafx.scene.control.MenuBar?>
+<?import javafx.scene.control.MenuItem?>
+<?import javafx.scene.control.ProgressBar?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.SeparatorMenuItem?>
+<?import javafx.scene.control.Slider?>
+<?import javafx.scene.control.SplitPane?>
+<?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.TabPane?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.TitledPane?>
+<?import javafx.scene.control.ToggleButton?>
+<?import javafx.scene.control.ToggleGroup?>
 <?import javafx.scene.input.KeyCodeCombination?>
-<?import javafx.scene.layout.*?>
-<?import javafx.scene.text.*?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.FlowPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
 <?import org.controlsfx.control.ToggleSwitch?>
-<BorderPane fx:id="rootPane" prefHeight="640.0" prefWidth="1000.0" xmlns="http://javafx.com/javafx/8.0.111" xmlns:fx="http://javafx.com/fxml/1" fx:controller="sk.uniza.fri.cp.App.CPUControl.CPUController">
+
+<BorderPane fx:id="rootPane" prefHeight="640.0" prefWidth="1000.0" xmlns="http://javafx.com/javafx/8.0.141"
+            xmlns:fx="http://javafx.com/fxml/1" fx:controller="sk.uniza.fri.cp.App.CPUControl.CPUController">
    <top>
       <VBox BorderPane.alignment="CENTER">
          <children>
@@ -17,21 +45,42 @@
                     <MenuItem mnemonicParsing="false" onAction="#handleMenuFileNewAction" text="Nový">
                            <accelerator>
                               <KeyCodeCombination alt="UP" code="N" control="DOWN" meta="UP" shift="UP" shortcut="UP" />
-                           </accelerator></MenuItem>
+                           </accelerator>
+                        <styleClass>
+                            <String fx:value="item"/>
+                            <String fx:value="item-new"/>
+                        </styleClass>
+                    </MenuItem>
                         <MenuItem mnemonicParsing="false" onAction="#handleMenuFileOpenAction" text="Otvoriť...">
                            <accelerator>
                               <KeyCodeCombination alt="UP" code="O" control="DOWN" meta="UP" shift="UP" shortcut="UP" />
-                           </accelerator></MenuItem>
+                           </accelerator>
+                            <styleClass>
+                                <String fx:value="item"/>
+                                <String fx:value="item-open"/>
+                            </styleClass>
+                        </MenuItem>
                         <MenuItem mnemonicParsing="false" onAction="#handleMenuFileSaveAction" text="Uložiť">
                            <accelerator>
                               <KeyCodeCombination alt="UP" code="S" control="DOWN" meta="UP" shift="UP" shortcut="UP" />
-                           </accelerator></MenuItem>
+                           </accelerator>
+                            <styleClass>
+                                <String fx:value="item"/>
+                                <String fx:value="item-save"/>
+                            </styleClass>
+                        </MenuItem>
                         <MenuItem mnemonicParsing="false" onAction="#handleMenuFileSaveAsAction" text="Uložiť ako...">
                            <accelerator>
                               <KeyCodeCombination alt="UP" code="S" control="DOWN" meta="UP" shift="DOWN" shortcut="UP" />
-                           </accelerator></MenuItem>
+                           </accelerator>
+                            <styleClass>
+                                <String fx:value="item"/>
+                                <String fx:value="item-save-as"/>
+                            </styleClass>
+                        </MenuItem>
                         <SeparatorMenuItem mnemonicParsing="false" />
-                        <MenuItem mnemonicParsing="false" onAction="#handleMenuFileExitAction" text="Koniec" />
+                      <MenuItem mnemonicParsing="false" onAction="#handleMenuFileExitAction" styleClass="item-close"
+                                text="Koniec"/>
                   </items>
                 </Menu>
                 <Menu mnemonicParsing="false" text="Nastavenia">
@@ -55,12 +104,22 @@
                <children>
                    <ButtonBar buttonMinWidth="110.0" maxWidth="1.7976931348623157E308" prefHeight="40.0">
                     <buttons>
-                        <Button fx:id="btnParse" layoutX="280.0" layoutY="18.0" mnemonicParsing="false" onAction="#handleButtonParseAction" text="Zaveď [F4]" />
-                        <Button fx:id="btnStart" mnemonicParsing="false" onAction="#handleButtonStartAction" text="Spusti [F5]" />
-                      <Button fx:id="btnStep" mnemonicParsing="false" onAction="#handleButtonStepAction" text="Krok [F7]" />
-                        <Button fx:id="btnPause" layoutX="450.0" layoutY="18.0" mnemonicParsing="false" onAction="#handleButtonPauseAction" text="Pauza [F9]" />
-                        <Button fx:id="btnReset" layoutX="370.0" layoutY="18.0" mnemonicParsing="false" onAction="#handleButtonResetAction" text="Reset [F12]" />
-                        <Button fx:id="btnStop" layoutX="535.0" layoutY="18.0" mnemonicParsing="false" onAction="#handleButtonStopAction" text="Stop [F10]" />
+                        <Button fx:id="btnParse" alignment="BASELINE_LEFT" layoutX="280.0" layoutY="18.0"
+                                mnemonicParsing="false" onAction="#handleButtonParseAction" styleClass="btn-parse"
+                                text="Syntax [F4]"/>
+                        <Button fx:id="btnStart" alignment="BASELINE_LEFT" mnemonicParsing="false"
+                                onAction="#handleButtonStartAction" styleClass="btn-play" text="Spusti [F5]"/>
+                        <Button fx:id="btnStep" alignment="BASELINE_LEFT" mnemonicParsing="false"
+                                onAction="#handleButtonStepAction" styleClass="btn-step" text="Krok [F7]"/>
+                        <Button fx:id="btnPause" alignment="BASELINE_LEFT" layoutX="450.0" layoutY="18.0"
+                                mnemonicParsing="false" onAction="#handleButtonPauseAction" styleClass="btn-pause"
+                                text="Pauza [F9]"/>
+                        <Button fx:id="btnReset" alignment="BASELINE_LEFT" layoutX="370.0" layoutY="18.0"
+                                mnemonicParsing="false" onAction="#handleButtonResetAction" styleClass="btn-reset"
+                                text="Reset [F12]"/>
+                        <Button fx:id="btnStop" alignment="BASELINE_LEFT" layoutX="535.0" layoutY="18.0"
+                                mnemonicParsing="false" onAction="#handleButtonStopAction" styleClass="btn-stop"
+                                text="Stop [F10]"/>
                     </buttons>
                   </ButtonBar>
                    <ButtonBar prefHeight="40.0" prefWidth="200.0" HBox.hgrow="ALWAYS">

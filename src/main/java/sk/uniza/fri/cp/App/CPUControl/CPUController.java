@@ -690,6 +690,7 @@ public class CPUController implements Initializable {
 
         codeEditor.clear();
         titPaneCode.setText(CODE_PANE_TEXT);
+        currentFile = null;
         fileSaved = true;
     }
 

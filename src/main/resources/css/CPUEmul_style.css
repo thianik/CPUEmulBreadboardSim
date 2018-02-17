@@ -68,3 +68,52 @@
 .split-pane *.split-pane-divider {
     -fx-padding: 0 1 0 1;
 }
+
+/* Menu icons */
+.item-open > .label {
+    -fx-graphic: url("../icons/open.png");
+}
+
+.item-new > .label {
+    -fx-graphic: url("../icons/file.png");
+}
+
+.item-save > .label {
+    -fx-graphic: url("../icons/save.png");
+}
+
+.item-save-as > .label {
+    -fx-graphic: url("../icons/save-as.png");
+}
+
+.item-close > .label {
+    -fx-graphic: url("../icons/close-window.png");
+}
+
+.item .accelerator-text {
+    -fx-graphic: none;
+}
+
+.btn-parse {
+    -fx-graphic: url("../icons/check.png");
+}
+
+.btn-play {
+    -fx-graphic: url("../icons/play.png");
+}
+
+.btn-step {
+    -fx-graphic: url("../icons/step-over.png");
+}
+
+.btn-pause {
+    -fx-graphic: url("../icons/pause.png");
+}
+
+.btn-reset {
+    -fx-graphic: url("../icons/reset.png");
+}
+
+.btn-stop {
+    -fx-graphic: url("../icons/stop.png");
+}
