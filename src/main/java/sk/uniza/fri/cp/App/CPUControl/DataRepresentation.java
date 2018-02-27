@@ -32,7 +32,24 @@ final class DataRepresentation {
             case Hex:
                 return "0x" + Integer.toHexString((value & 0xFF)  + 0x100).substring(1).toUpperCase();
             case ASCII:
-                return String.valueOf((char) value);
+                switch (value) {
+                    case 8:
+                        return "[BACKSPACE]";
+                    case 9:
+                        return "[TAB]";
+                    case 10:
+                        return "[LF]";
+                    case 13:
+                        return "[CR]";
+                    case 27:
+                        return "[ESC]";
+                    case 32:
+                        return "[SPACE]";
+                    case 127:
+                        return "[DEL]";
+                    default:
+                        return String.valueOf((char) value);
+                }
         }
         return "";
     }
