@@ -766,7 +766,10 @@ public class CPU extends Thread {
 
                         synchronized (this) {
                             if (key.getCode().isLetterKey() || key.getCode().isDigitKey())
-                                setRegisterVal("d", key.getText().charAt(0));
+                                if (key.getCode().isLetterKey() && key.isShiftDown())
+                                    setRegisterVal("d", key.getText().charAt(0) - 32);
+                                else
+                                    setRegisterVal("d", key.getText().charAt(0));
                             else if(key.getCode() == KeyCode.ENTER)
                                 setRegisterVal("d", 13);
                             else

@@ -43,7 +43,7 @@ public class App extends Application {
         //(http://stackoverflow.com/questions/25397742/javafx-keyboard-event-shortcut-key)
         //a posielanie ich do CPU
         mainScene.addEventFilter(KeyEvent.KEY_PRESSED, ke -> {
-            if (ke.getCode().isFunctionKey()) return;
+            if (ke.getCode().isFunctionKey() || ke.getCode().isModifierKey()) return;
 
             CPUController controller = CpuLayoutLoader.getController();
             if (controller.isExecuting()) {
@@ -74,7 +74,7 @@ public class App extends Application {
         Scene breadboardScene = new Scene(breadboardContent);
         breadboardScene.getStylesheets().add(getClass().getResource("/css/BreadboardSim_style.css").toExternalForm());
         breadboardScene.addEventFilter(KeyEvent.KEY_PRESSED, ke -> {
-            if (ke.getCode().isFunctionKey()) return;
+            if (ke.getCode().isFunctionKey() || ke.getCode().isModifierKey()) return;
 
             CPUController controller = CpuLayoutLoader.getController();
             if (controller.isExecuting()) {

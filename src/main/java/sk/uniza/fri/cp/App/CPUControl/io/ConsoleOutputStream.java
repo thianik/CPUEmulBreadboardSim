@@ -63,6 +63,8 @@ public class ConsoleOutputStream extends OutputStream {
      */
     private void writeToConsole(int b){
         if(!isUsed) {
+            if (console.getParagraph(console.getCurrentParagraph()).getText().length() > 0)
+                console.appendText("\n");
             console.setStyle(console.getCurrentParagraph(), "-fx-fill: red");
             console.appendText("[CPU KONZOLA]\n");
             isUsed = true;
@@ -70,10 +72,10 @@ public class ConsoleOutputStream extends OutputStream {
 
         int paragraph = console.getCurrentParagraph();
         if( b == 10) { //LF - novy riadok, rovnaka pozicia
-            int carretCol = console.getCaretColumn();
+            int caretCol = console.getCaretColumn();
             console.appendText("\n");
-            if (carretCol > 0)
-                console.appendText(String.format("%" + carretCol + "s", ""));
+            if (caretCol > 0)
+                console.appendText(String.format("%" + caretCol + "s", ""));
         } else if( b == 13) { //CR - vratenie na zaciatok riadku
             console.moveTo(console.getCurrentParagraph(), 0);
         } else {

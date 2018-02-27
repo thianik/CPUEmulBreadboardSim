@@ -471,7 +471,7 @@ public class CPUController implements Initializable {
 
         //inicializacia tabulky konstant
         tableViewProgMemoryItems = FXCollections.observableArrayList();         //vytvorenie ArrayListu pre ukladanie itemov
-        for (int i = 0; i <= 256; i++)                                          //vytvorenie zvyskych adries zasobnika
+        for (int i = 0; i < 256; i++)                                          //vytvorenie zvyskych adries zasobnika
             tableViewProgMemoryItems.add(new MemoryTableCell(i,0));
         tableViewProgMemory.setItems(tableViewProgMemoryItems);                 //priradenie pola do tabulky
 
@@ -482,7 +482,7 @@ public class CPUController implements Initializable {
 
         //inicializacia tabulky RAM
         tableViewRAMItems = FXCollections.observableArrayList();         //vytvorenie ArrayListu pre ukladanie itemov
-        for (int i = 0; i <= 256; i++)                                          //vytvorenie zvyskych adries zasobnika
+        for (int i = 0; i < 256; i++)                                          //vytvorenie zvyskych adries zasobnika
             tableViewRAMItems.add(new MemoryTableCell(i,0));
         tableViewRAM.setItems(tableViewRAMItems);                               //priradenie pola do tabulky
 
@@ -1216,8 +1216,6 @@ public class CPUController implements Initializable {
         btnStop.setDisable(true);
 
         codeEditor.setEditable(true);
-
-        if(cos_cpu.isUsed()) console.appendText("\n");
 
         updateGUI();
     }
