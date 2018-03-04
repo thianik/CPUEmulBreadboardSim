@@ -1,9 +1,12 @@
 package sk.uniza.fri.cp.App.BreadboardControl;
 
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.geometry.Point2D;
 import javafx.scene.control.*;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
@@ -111,6 +114,11 @@ public class BreadboardController implements Initializable {
         //aktualne priblizenie
         this.board.zoomScaleProperty().addListener((observable, oldValue, newValue) ->
                 this.lbZoom.setText(((int) (newValue.doubleValue() * 100)) + "%"));
+
+        // Akceleratory
+        Platform.runLater(() -> {
+            this.root.getScene().getAccelerators().put(new KeyCodeCombination(KeyCode.BACK_SPACE), this::handleClearBoardAction);
+        });
     }
 
     /**

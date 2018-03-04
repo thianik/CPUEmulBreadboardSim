@@ -40,9 +40,9 @@ public class BusInterface extends Component {
     private static final Color ADDRESS_LED_ON = Color.RED;
     private static final Color ADDRESS_LED_OFF = Color.DARKRED;
     private static final Color DATA_LED_ON = Color.LIME;
-    private static final Color DATA_LED_OFF = Color.SEAGREEN;
+    private static final Color DATA_LED_OFF = Color.rgb(54, 122, 84); // Color.SEAGREEN
     private static final Color CONTROL_LED_ON = Color.YELLOW;
-    private static final Color CONTROL_LED_OFF = Color.OLIVE;
+    private static final Color CONTROL_LED_OFF = Color.rgb(100, 100, 0); // Color.OLIVE;
 
     private AddressBusCommunicator[] addressBusCommunicators = new AddressBusCommunicator[16];
     private DataBusCommunicator[] dataBusCommunicators = new DataBusCommunicator[8];
@@ -300,7 +300,7 @@ public class BusInterface extends Component {
 
         //ozancenie
         name = Board.getLabelText("AB", grid.getSizeMin());
-        name.setLayoutX(-grid.getSizeX() * 3);
+        name.setLayoutX(-grid.getSizeX() * 1.1);
         addressInterface.getChildren().add(name);
 
 
@@ -335,7 +335,7 @@ public class BusInterface extends Component {
 
         //ozancenie
         name = Board.getLabelText("DB", grid.getSizeMin());
-        name.setLayoutX(-grid.getSizeX() * 3);
+        name.setLayoutX(-grid.getSizeX() * 1.1);
         dataInterface.getChildren().add(name);
 
         //RIADIACA ZBERNICA
@@ -607,9 +607,6 @@ public class BusInterface extends Component {
 
 	private static class AddressBusCommunicator extends BusCommunicator{
 
-        private static final Color ON_COLOR = Color.RED;
-        private static final Color OFF_COLOR = Color.DARKRED;
-
         private volatile static int address;
 
         /**
@@ -622,7 +619,7 @@ public class BusInterface extends Component {
         }
 
         public AddressBusCommunicator(Board board, Socket interfaceSocket, int byteNr) {
-            super(board, interfaceSocket, byteNr, ON_COLOR, OFF_COLOR);
+            super(board, interfaceSocket, byteNr, ADDRESS_LED_ON, ADDRESS_LED_OFF);
         }
 
         @Override
@@ -640,9 +637,6 @@ public class BusInterface extends Component {
     }
 
 	private static class DataBusCommunicator extends BusCommunicator{
-
-        private static final Color ON_COLOR = Color.LIME;
-        private static final Color OFF_COLOR = Color.SEAGREEN;
 
         private volatile static int data; //aktualne data na zbernici
         private volatile static boolean read; //nastavenie ako vstupu
@@ -666,7 +660,7 @@ public class BusInterface extends Component {
         }
 
         public DataBusCommunicator(Board board, Socket interfaceSocket, int byteNr) {
-            super(board, interfaceSocket, byteNr, ON_COLOR, OFF_COLOR);
+            super(board, interfaceSocket, byteNr, DATA_LED_ON, DATA_LED_OFF);
             this.read = false;
             this.write = false;
         }
@@ -749,9 +743,6 @@ public class BusInterface extends Component {
 
 	private static class ControlBusCommunicator extends BusCommunicator{
 
-        private static final Color ON_COLOR = Color.YELLOW;
-        private static final Color OFF_COLOR = Color.OLIVE;
-
         private volatile static int controls; //priznaky na zbernici
 
         public static void setControls(int newControls) {
@@ -759,7 +750,7 @@ public class BusInterface extends Component {
         }
 
         public ControlBusCommunicator(Board board, Socket interfaceSocket, int byteNr) {
-            super(board, interfaceSocket, byteNr, ON_COLOR, OFF_COLOR);
+            super(board, interfaceSocket, byteNr, CONTROL_LED_ON, CONTROL_LED_OFF);
         }
 
         @Override

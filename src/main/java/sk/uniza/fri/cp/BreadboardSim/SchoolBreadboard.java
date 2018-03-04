@@ -21,7 +21,7 @@ import java.util.List;
  */
 public class SchoolBreadboard extends Item {
 
-    public static final Color BACKGROUND_COLOR = Color.rgb(68, 117, 84);
+    public static final Color BACKGROUND_COLOR = Color.rgb(97, 139, 111); // 68, 117, 84
     private static final int GRID_WIDTH = 70;
     private static final int GRID_HEIGHT = 46;
 
