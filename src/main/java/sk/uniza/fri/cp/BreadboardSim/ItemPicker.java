@@ -44,7 +44,8 @@ public class ItemPicker extends VBox {
         this.componentsPane .setHgap(5);
 
         //tlacidla pre zmenu zobrazovanych itemov
-        Button btnDevices = new Button("Zariadenia");;
+        Button btnDevices = new Button("Súčiastky");
+        ;
         btnDevices.setOnMouseClicked(event -> contentPane.setContent(devicesPane));
 
         Button btnComponents = new Button("Komponenty");

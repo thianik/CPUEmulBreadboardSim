@@ -114,11 +114,6 @@ public class BreadboardController implements Initializable {
         //aktualne priblizenie
         this.board.zoomScaleProperty().addListener((observable, oldValue, newValue) ->
                 this.lbZoom.setText(((int) (newValue.doubleValue() * 100)) + "%"));
-
-        // Akceleratory
-        Platform.runLater(() -> {
-            this.root.getScene().getAccelerators().put(new KeyCodeCombination(KeyCode.BACK_SPACE), this::handleClearBoardAction);
-        });
     }
 
     /**

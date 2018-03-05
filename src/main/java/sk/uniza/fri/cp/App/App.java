@@ -87,8 +87,8 @@ public class App extends Application {
         breadboardStage.setTitle("Simulátor - Nový obvod");
         breadboardStage.getIcons().add(new Image(getClass().getResourceAsStream("/icons/simulator_icon_128.png")));
         breadboardScene.addEventFilter(KeyEvent.KEY_RELEASED, event -> {
-                    //ak bol stalceny delete
-                    if(event.getCode().equals(KeyCode.DELETE)){
+            //ak bol stalceny delete alebo backspace
+            if (event.getCode().equals(KeyCode.DELETE) || event.getCode().equals(KeyCode.BACK_SPACE)) {
                         ((BreadboardController) breadboardLayoutLoader.getController()).callDelete();
                     }
                 }
