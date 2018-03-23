@@ -56,7 +56,7 @@ public class Probe extends Component {
         Socket gndSocket = new Socket(this, Potential.Value.LOW);
 
         Circle emitter = new Circle(grid.getSizeMin() * RADIUS_COEF, PROBE_OFF_COLOR);
-        LED led = new LED(board, emitter, PROBE_ON_COLOR);
+        LED led = new LED(board, emitter, PROBE_ON_COLOR, this);
         led.setLayoutX(grid.getSizeX() * 3);
         led.setLayoutY(grid.getSizeY());
         led.makeImmovable();

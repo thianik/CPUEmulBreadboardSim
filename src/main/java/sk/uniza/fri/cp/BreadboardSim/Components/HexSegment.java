@@ -221,7 +221,7 @@ public class HexSegment extends Component{
 				case DOT: segmentShape = new Rectangle(grid.getSizeX() * this.thicknessCoef, grid.getSizeY() * this.thicknessCoef, SEGMENT_OFF_COLOR);
 			}
 
-            this.LED = new LED(getBoard(), segmentShape, SEGMENT_ON_COLOR);
+			this.LED = new LED(getBoard(), segmentShape, SEGMENT_ON_COLOR, HexSegment.this);
             this.LED.makeImmovable();
             this.LED.setInverseAnodeLogic(true);
 

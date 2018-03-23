@@ -765,7 +765,10 @@ public class CPU extends Thread {
                         }
 
                         synchronized (this) {
-                            setRegisterVal("d", key.getCharacter().charAt(0));
+                            if (key.getCode().isArrowKey())
+                                setRegisterVal("d", key.getCode().impl_getCode());
+                            else
+                                setRegisterVal("d", key.getCharacter().charAt(0));
                         }
 
                         break;

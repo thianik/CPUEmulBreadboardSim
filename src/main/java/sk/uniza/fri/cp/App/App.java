@@ -44,6 +44,21 @@ public class App extends Application {
         //zachytenie vsetkych klaves (okrem funkcnych klaves) na mainScene
         //(http://stackoverflow.com/questions/25397742/javafx-keyboard-event-shortcut-key)
         //a posielanie ich do CPU
+        EventHandler<KeyEvent> onKeyPressed = (ke) -> {
+            if (ke.getEventType() == KeyEvent.KEY_PRESSED) {
+                CPUController controller = CpuLayoutLoader.getController();
+                switch (ke.getCode()) {
+                    case UP:
+                    case DOWN:
+                    case LEFT:
+                    case RIGHT:
+                        if (controller.isExecuting()) {
+                            controller.keyboardInput(ke);
+                            ke.consume();
+                        }
+                }
+            }
+        };
         EventHandler<KeyEvent> onKeyTyped = (ke) -> {
             CPUController controller = CpuLayoutLoader.getController();
             if (controller.isExecuting()) {
@@ -53,6 +68,7 @@ public class App extends Application {
         };
 
         mainScene.addEventFilter(KeyEvent.KEY_TYPED, onKeyTyped);
+        mainScene.addEventFilter(KeyEvent.ANY, onKeyPressed);
 
         //pri kliknuti na tlacidlo zatvorenia okna
         primaryStage.setOnCloseRequest(event -> {
@@ -76,6 +92,7 @@ public class App extends Application {
         Scene breadboardScene = new Scene(breadboardContent);
         breadboardScene.getStylesheets().add(getClass().getResource("/css/BreadboardSim_style.css").toExternalForm());
         breadboardScene.addEventFilter(KeyEvent.KEY_TYPED, onKeyTyped);
+        breadboardScene.addEventFilter(KeyEvent.ANY, onKeyPressed);
 
         Stage breadboardStage = new Stage();
         breadboardStage.setTitle("Simulátor - Nový obvod");

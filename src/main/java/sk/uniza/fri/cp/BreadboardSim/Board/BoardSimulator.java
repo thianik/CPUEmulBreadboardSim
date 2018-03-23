@@ -7,6 +7,8 @@ import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import sk.uniza.fri.cp.BreadboardSim.Devices.Device;
 import sk.uniza.fri.cp.BreadboardSim.Socket.PowerSocket;
 import sk.uniza.fri.cp.Bus.Bus;
@@ -14,6 +16,7 @@ import sk.uniza.fri.cp.Bus.Bus;
 import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Simulačné jadro.
@@ -30,6 +33,9 @@ public class BoardSimulator {
     private LinkedBlockingQueue<BoardEvent> eventsQueue; //naplánované udalosti
     private List<PowerSocket> powerSockets; //sokety, ktoré sa maju po spusteni napojit
     private BooleanProperty running; //priznak behu simulacie
+
+    public AtomicLong tick = new AtomicLong(0);
+    public static final Logger QUEUELOGGER = LogManager.getLogger("QueueLogger");
 
     /**
      * Simulačná slučka nového vlákna
@@ -95,6 +101,8 @@ public class BoardSimulator {
 
 							devicesToUpdate.clear();
 
+                            //tick.incrementAndGet();
+                            //QUEUELOGGER.debug("TICK: " + tick.incrementAndGet());
                         } catch (InterruptedException e){
 							if(isCancelled()) break;
 						} catch (NullPointerException e){
