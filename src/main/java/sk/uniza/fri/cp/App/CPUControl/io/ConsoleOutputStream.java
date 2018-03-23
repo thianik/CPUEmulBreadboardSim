@@ -80,7 +80,10 @@ public class ConsoleOutputStream extends OutputStream {
             console.moveTo(console.getCurrentParagraph(), 0);
         } else {
             int pos = console.getCaretPosition();
-            console.replaceText(pos, pos+1, String.valueOf((char) b));
+            if (pos == console.getLength())
+                console.replaceText(pos, pos, String.valueOf((char) b));
+            else
+                console.replaceText(pos, pos + 1, String.valueOf((char) b));
         }
 
         console.setStyle(paragraph, "-fx-fill: " + color + "; -fx-font-family: monospace;");

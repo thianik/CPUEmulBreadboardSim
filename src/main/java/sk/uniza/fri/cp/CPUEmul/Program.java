@@ -97,7 +97,7 @@ public class Program {
 		breakpointsListener = (change) -> {
 		    synchronized (this) { //FXThread meni, CPU cita
                 breaks.clear();
-                obsBreakIndexes.forEach(index ->
+                obsBreakIndexes.stream().filter((index) -> index >= 0).forEach(index ->
                         breaks.add(lineIndexToInstructionIndex.get(index)));
             }
         };
