@@ -105,9 +105,11 @@ public class NumKeys extends Component {
         //tlacitka
         Group buttonsGroup = new Group();
 
+        String[] btnLabels = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F"};
+
         for (int y = 0; y < 4; y++) {
             for (int x = 0; x < 4; x++) {
-                Button button = new Button(board, rowSockets[3 - y], columnSockets[x], y, x);
+                Button button = new Button(board, rowSockets[3 - y], columnSockets[x], y, x, btnLabels[x + y * 4]);
                 button.setUserData(x + ", " + y);
                 button.setLayoutX(button.getWidth() * x);
                 button.setLayoutY(button.getHeight() * (3-y));
@@ -320,7 +322,7 @@ public class NumKeys extends Component {
 			}
 		};
 
-        Button(Board board, Socket row, Socket column, int rowPos, int columnPos) {
+        Button(Board board, Socket row, Socket column, int rowPos, int columnPos, String label) {
             super(board);
             this.row = row;
 			this.column = column;
@@ -371,6 +373,14 @@ public class NumKeys extends Component {
 			bottomRightBolt.setCenterX(width - boltOffset);
 			bottomRightBolt.setCenterY(height - boltOffset);
 
+            // button label
+            Text labelText = new Text(label);
+            labelText.setX(-labelText.getBoundsInParent().getWidth() / 2.0 + shrinkX + baseBck.getWidth() / 2.0);
+            labelText.setY(labelText.getBoundsInParent().getHeight() / 2.0 + baseBck.getHeight() / 2.0);
+            labelText.setFill(Color.valueOf("white"));
+            labelText.setFont(Font.font(grid.getSizeY() * 1.4));
+            labelText.setMouseTransparent(true);
+
 			buttonBase = new Group(baseBck, topLeftBolt, topRightBolt, bottomLeftBolt, bottomRightBolt);
 
 			button.addEventFilter(MouseEvent.MOUSE_ENTERED, onMouseEnter);
@@ -379,7 +389,7 @@ public class NumKeys extends Component {
 			button.addEventFilter(MouseEvent.MOUSE_RELEASED, onMouseRelease);
 			button.addEventFilter(MouseEvent.MOUSE_DRAGGED, Event::consume);
 
-			this.getChildren().addAll(buttonBase, button);
+            this.getChildren().addAll(buttonBase, button, labelText);
 
             this.makeImmovable();
         }

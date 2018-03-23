@@ -31,6 +31,7 @@ public class HexSegment extends Component{
 	private static final Color SEGMENT_OFF_COLOR = Color.LIGHTGRAY;
 
     private static int segmentID = 1;
+    private int oneSegmentId = 1;
 
 	private HexSegment instance;
 	private OneSegment[] segments;
@@ -58,6 +59,7 @@ public class HexSegment extends Component{
     public HexSegment(Board board){
         super(board);
         this.instance = this;
+        //this.setId("HexSegment"+segmentID);
 
         GridSystem grid = board.getGrid();
 
@@ -204,7 +206,7 @@ public class HexSegment extends Component{
 		OneSegment(SegmentType type){
 			this.type = type;
 			this.thicknessCoef = 0.5;
-
+            this.setId("HexSegment" + (segmentID - 1) + "_OneSegment" + oneSegmentId++);
 			//vytvorenie fiktivneho vnutorneho soketu pre pripojenie gnd ledky a napojenie na potencial zo spolocneho gnd soketku
             this.innerGndSocket = new Socket(instance);
             new Potential(this.innerGndSocket, commonGndSocket);

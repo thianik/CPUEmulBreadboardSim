@@ -6,7 +6,7 @@
 
     <groupId>sk.uniza.fri.cp</groupId>
     <artifactId>CPUEmul-and-BreadboardSim</artifactId>
-    <version>1.2.4</version>
+    <version>1.2.5</version>
 
     <build>
         <plugins>
@@ -40,7 +40,7 @@
         <dependency>
             <groupId>org.fxmisc.richtext</groupId>
             <artifactId>richtextfx</artifactId>
-            <version>0.7-M3</version>
+            <version>0.8.2</version>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
