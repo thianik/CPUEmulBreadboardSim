@@ -138,7 +138,6 @@ public class LightEmitter {
     }
 
     private static long lastTick = 0;
-
     private static void updateUI(final AtomicLong counter) {
 
         Platform.runLater(() -> {
