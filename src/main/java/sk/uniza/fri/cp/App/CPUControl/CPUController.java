@@ -196,7 +196,7 @@ public class CPUController implements Initializable {
     @FXML private Label lbUpdateGUIIntValue;
     @FXML private CheckMenuItem chmiSettingsAllowUpdateGUI;
     @FXML private HBox hboxUpdateGUIInt;
-    volatile private int GUIUpdateInt = 10;
+    volatile private int GUIUpdateInt = 150;
 
     private Service updateGUIService = new Service() {
         @Override
@@ -389,14 +389,17 @@ public class CPUController implements Initializable {
         sliderUpdateGUIInt.valueProperty().addListener(new ChangeListener<Number>() {
             @Override
             public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
-                lbUpdateGUIIntValue.setText(String.valueOf((int) sliderUpdateGUIInt.getValue()));
                 GUIUpdateInt = (int) sliderUpdateGUIInt.getValue();
+                lbUpdateGUIIntValue.setText(String.valueOf(GUIUpdateInt));
             }
         });
 
         initCPU();
         initializeGUITables();
         updateGUI();
+
+        // defaultne zapnutie updateovania GUI EZFix
+        handleMenuSettingsAllowUpdateGUIAction();
     }
 
     /**

@@ -14,6 +14,6 @@ public class NonExistingInterruptLabelException extends Exception {
      * @param intNumber Číslo prerušenia od 0 do F.
      */
     public NonExistingInterruptLabelException(String intNumber) {
-        super("Neexistujúce návestie prerušenia INT0" + intNumber);
+        super("Neexistujúce návestie prerušenia INT" + intNumber);
     }
 }

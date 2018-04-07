@@ -91,7 +91,9 @@
                         <SeparatorMenuItem mnemonicParsing="false" />
                         <CheckMenuItem fx:id="chmiSettingsMicrostep" mnemonicParsing="false" onAction="#handleMenuSettingsMicrostepAction" text="Mikro krokovanie" />
                         <SeparatorMenuItem mnemonicParsing="false" />
-                        <CheckMenuItem fx:id="chmiSettingsAllowUpdateGUI" mnemonicParsing="false" onAction="#handleMenuSettingsAllowUpdateGUIAction" text="Povoliť aktualizáciu GUI" />
+                      <CheckMenuItem fx:id="chmiSettingsAllowUpdateGUI" mnemonicParsing="false"
+                                     onAction="#handleMenuSettingsAllowUpdateGUIAction" selected="true"
+                                     text="Povoliť aktualizáciu GUI"/>
                   </items>
                 </Menu>
                 <Menu mnemonicParsing="false" text="Pomoc">
@@ -184,11 +186,14 @@
                   <Label fx:id="lbStatus" text="Stav" />
                </children>
             </HBox>
-            <HBox fx:id="hboxUpdateGUIInt" alignment="CENTER_RIGHT" disable="true" minWidth="50.0" prefHeight="100.0" prefWidth="50.0" spacing="5.0" HBox.hgrow="ALWAYS">
+             <HBox fx:id="hboxUpdateGUIInt" alignment="CENTER_RIGHT" minWidth="50.0" prefHeight="100.0" prefWidth="50.0"
+                   spacing="5.0" HBox.hgrow="ALWAYS">
                <children>
                   <Label alignment="CENTER_RIGHT" contentDisplay="RIGHT" text="Interval obnovy GUI" textAlignment="RIGHT" />
-                  <Slider fx:id="sliderUpdateGUIInt" blockIncrement="5.0" max="150.0" min="10.0" snapToTicks="true" value="10.0" HBox.hgrow="NEVER" />
-                  <Label fx:id="lbUpdateGUIIntValue" alignment="CENTER_RIGHT" contentDisplay="RIGHT" minWidth="25.0" text="10" textAlignment="RIGHT" />
+                   <Slider fx:id="sliderUpdateGUIInt" blockIncrement="5.0" majorTickUnit="10.0" max="150.0" min="10.0"
+                           minorTickCount="5" snapToTicks="true" value="150.0" HBox.hgrow="NEVER"/>
+                   <Label fx:id="lbUpdateGUIIntValue" alignment="CENTER_RIGHT" contentDisplay="RIGHT" minWidth="25.0"
+                          text="150" textAlignment="RIGHT"/>
                   <Label text="ms" />
                </children>
             </HBox>

@@ -6,7 +6,7 @@
 
     <groupId>sk.uniza.fri.cp</groupId>
     <artifactId>CPUEmul-and-BreadboardSim</artifactId>
-    <version>1.2.5</version>
+    <version>1.2.7</version>
 
     <build>
         <plugins>
