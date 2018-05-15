@@ -184,7 +184,8 @@ public class CPU extends Thread {
                             }
                         }
                     }
-                    f_int_level_old = it;
+                    if (UsbITCheckSkipped == 0)
+                        f_int_level_old = it;
 
                     if (timesLogger != null)
                         timesLogger.info("{} \t ns: {} \t kontrola IT: {}", nextInstruction.getType().name(), (endInstExeTime - startInstExeTime), (System.nanoTime() - endInstExeTime));

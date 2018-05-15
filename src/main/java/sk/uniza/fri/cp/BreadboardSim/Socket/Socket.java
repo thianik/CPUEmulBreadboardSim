@@ -75,6 +75,9 @@ public class Socket extends Group {
             Socket socket = (Socket) event.getSource();
             Point2D boardXY = socket.component.getBoard().sceneToBoard(event.getSceneX(), event.getSceneY());
             creatingWire.catchFreeEnd().moveTo(boardXY.getX(), boardXY.getY());
+
+            // stransparentnenie objektov nad ktorymi koniec kablika prechadza
+            creatingWire.catchFreeEnd().onMouseDragged(event);
         }
 
         event.consume();
@@ -88,6 +91,9 @@ public class Socket extends Group {
             creatingWire.setMouseTransparent(false);
             creatingWire.setOpacity(1);
             if (!creatingWire.areBothEndsConnected()) creatingWire.delete();
+
+            // odtransparentnenie objektov nad ktorymi presiel koniec kablika
+            creatingWire.catchFreeEnd().onMouseReleased(event);
             creatingWire = null;
         }
 

@@ -2,14 +2,21 @@ package sk.uniza.fri.cp.BreadboardSim.Wire;
 
 
 import javafx.application.Platform;
+import javafx.event.Event;
+import javafx.event.EventHandler;
 import javafx.scene.Group;
+import javafx.scene.Node;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
+import javafx.scene.shape.Line;
 import javafx.scene.shape.Rectangle;
 import sk.uniza.fri.cp.BreadboardSim.Board.Board;
 import sk.uniza.fri.cp.BreadboardSim.Board.GridSystem;
 import sk.uniza.fri.cp.BreadboardSim.Movable;
+
+import java.util.LinkedList;
 
 /**
  * Spájač častí káblikov.
@@ -22,6 +29,9 @@ import sk.uniza.fri.cp.BreadboardSim.Movable;
 public class Joint extends Movable {
 
     private static final Color DEFAULT_COLOR = Color.DARKGRAY;
+
+    // zoznam vypnutych node-ov pri tahani konca kablika
+    private final LinkedList<Node> disabledNodes = new LinkedList<>();
 
     //Na indexe 0 wireSegments je vždy segment. Aj pri odstránení
     WireSegment[] wireSegments; //segmenty ktore spaja
@@ -39,22 +49,22 @@ public class Joint extends Movable {
      * @param wire  Káblik, na ktorom je umiestnený.
      */
     public Joint(Board board, Wire wire){
-		super(board);
-		this.wire = wire;
+        super(board);
+        this.wire = wire;
 
-		this.wireSegments = new WireSegment[2];
+        this.wireSegments = new WireSegment[2];
 
-		GridSystem grid = getBoard().getGrid();
+        GridSystem grid = getBoard().getGrid();
 
-		boundingBox = new Rectangle(grid.getSizeX(), grid.getSizeY());
-		boundingBox.setOpacity(0);
-		boundingBox.setLayoutX(-grid.getSizeX()/2.0);
-		boundingBox.setLayoutY(-grid.getSizeY()/2.0);
+        boundingBox = new Rectangle(grid.getSizeX(), grid.getSizeY());
+        boundingBox.setOpacity(0);
+        boundingBox.setLayoutX(-grid.getSizeX()/2.0);
+        boundingBox.setLayoutY(-grid.getSizeY()/2.0);
 
         this.radius = grid.getSizeMin() / 3.7;
         Group graphic = generateJointGraphic(radius);
 
-		this.getChildren().addAll(boundingBox, graphic);
+        this.getChildren().addAll(boundingBox, graphic);
 
         this.setOnMouseDragged(event -> {
             getBoard().addSelect(getWire());
@@ -66,6 +76,35 @@ public class Joint extends Movable {
                 this.delete();
             } else getBoard().addSelect(getWire());
         });
+
+        this.addEventFilter(MouseEvent.MOUSE_DRAGGED, this::onMouseDragged);
+        this.addEventFilter(MouseEvent.MOUSE_RELEASED, this::onMouseReleased);
+    }
+
+    /**
+     * Akcia pri pohybe so spájačom/koncom káblika.
+     * Vytvorené predovšetkým pre odchytenie a stransparentnenie segmentov káblika, ktorý by prekážal pri zakpájaní do
+     * soketu.
+     *
+     * @param event MouseEvent
+     */
+    public void onMouseDragged(MouseEvent event) {
+        Node node = event.getPickResult().getIntersectedNode();
+        if (node != null && node instanceof Line) {
+            disabledNodes.addLast(node);
+            event.getPickResult().getIntersectedNode().setMouseTransparent(true);
+        }
+    }
+
+    /**
+     * Ukončenie pohybu spájača.
+     *
+     * @param event MouseEvent
+     */
+    public void onMouseReleased(MouseEvent event) {
+        if (!disabledNodes.isEmpty()) {
+            disabledNodes.forEach(node -> node.setMouseTransparent(false));
+        }
     }
 
     /**
