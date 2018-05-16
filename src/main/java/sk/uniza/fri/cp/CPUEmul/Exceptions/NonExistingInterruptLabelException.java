@@ -9,11 +9,12 @@ package sk.uniza.fri.cp.CPUEmul.Exceptions;
 public class NonExistingInterruptLabelException extends Exception {
 
     /**
-     * Vytvorenie výnimky s číslom prerušenia v hexadecimálnej sústave.
+     * Vytvorenie výnimky s číslom prerušenia v decimálnej sústave.
      *
-     * @param intNumber Číslo prerušenia od 0 do F.
+     * @param intNumber Číslo prerušenia od 0 do 15.
      */
-    public NonExistingInterruptLabelException(String intNumber) {
-        super("Neexistujúce návestie prerušenia INT" + intNumber);
+    public NonExistingInterruptLabelException(int intNumber) {
+        // Karpis - uprava nazvu na int00 az int15
+        super("Neexistujúce návestie prerušenia int" + ((intNumber < 10) ? "0" : "") + intNumber);
     }
 }

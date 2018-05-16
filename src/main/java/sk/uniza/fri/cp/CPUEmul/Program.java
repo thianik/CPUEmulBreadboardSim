@@ -188,7 +188,7 @@ public class Program {
 	    if(interruptionLabels.containsKey(intNumber)){
 	        return interruptionLabels.get(intNumber);
         } else {
-            throw new NonExistingInterruptLabelException(Integer.toString(intNumber));
+            throw new NonExistingInterruptLabelException(intNumber);
         }
 	}
 }

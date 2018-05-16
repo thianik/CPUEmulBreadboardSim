@@ -174,11 +174,20 @@ public class Parser extends Task<Program>{
                     //existuje uz dane navestie?
                     if(!labels.containsKey(label)) {
                         //kontrola, ci sa jedna o navestie pre prerusenie
-                        if(label.matches("int.*")){
-                            //navestie zacina int -> musi byt int00 az int0f
-                            if(label.matches("int0\\p{XDigit}")){
+                        if(label.matches("[iI][nN][tT].*")){
+                            // Karpis - navestie musi byt int00 az int15
+                            // alebo aj int00 az int0f
+                            if(label.matches("[iI][nN][tT]([0]\\d|[1][012345]|[0][abcdef])")){
                                 //splna podmienky navestia pre prerusenie
-                                int intNumber = Integer.parseInt(label.substring(4,5), 16);
+                                int intNumber;
+
+                                if(label.matches("int0\\p{XDigit}")){
+                                    // hexa
+                                    intNumber = Integer.parseInt(label.substring(4,5), 16);
+                                } else {
+                                    // dec
+                                    intNumber = Integer.parseInt(label.substring(3,5), 10);
+                                }
 
                                 if(!interruptionLabels.containsKey(intNumber)){
                                     interruptionLabels.put(intNumber, instructions.size()); //index nasledujucej instrukcie, ktora bude pridana

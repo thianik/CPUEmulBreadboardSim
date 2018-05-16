@@ -184,8 +184,10 @@ public class CPU extends Thread {
                             }
                         }
                     }
-                    if (UsbITCheckSkipped == 0)
+                    // Karpis - odlozenie starej urovne, len ked sa cita
+                    if (UsbITCheckSkipped == 0) {
                         f_int_level_old = it;
+                    }
 
                     if (timesLogger != null)
                         timesLogger.info("{} \t ns: {} \t kontrola IT: {}", nextInstruction.getType().name(), (endInstExeTime - startInstExeTime), (System.nanoTime() - endInstExeTime));
