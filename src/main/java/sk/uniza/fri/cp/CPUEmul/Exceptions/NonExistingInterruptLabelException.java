@@ -1,15 +1,20 @@
 package sk.uniza.fri.cp.CPUEmul.Exceptions;
 
 /**
- * Created by Moris on 21.2.2017.
+ * Výnimka pri neexistujúcom návestí prerušenia.
+ *
+ * @author Tomáš Hianik
+ * @created 21.2.2017.
  */
 public class NonExistingInterruptLabelException extends Exception {
 
-    public NonExistingInterruptLabelException() {
-        super("Neexistujúce návestie prerušenia!");
-    }
-
-    public NonExistingInterruptLabelException(String intNumber) {
-        super("Neexistujúce návestie prerušenia INT0" + intNumber);
+    /**
+     * Vytvorenie výnimky s číslom prerušenia v decimálnej sústave.
+     *
+     * @param intNumber Číslo prerušenia od 0 do 15.
+     */
+    public NonExistingInterruptLabelException(int intNumber) {
+        // Karpis - uprava nazvu na int00 az int15
+        super("Neexistujúce návestie prerušenia int" + ((intNumber < 10) ? "0" : "") + intNumber);
     }
 }

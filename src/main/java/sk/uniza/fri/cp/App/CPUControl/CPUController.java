@@ -3,10 +3,15 @@ package sk.uniza.fri.cp.App.CPUControl;
 import javafx.animation.Animation;
 import javafx.animation.Transition;
 import javafx.application.Platform;
-import javafx.beans.property.*;
+import javafx.beans.property.Property;
+import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleIntegerProperty;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
-import javafx.collections.*;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.collections.ObservableSet;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 import javafx.concurrent.WorkerStateEvent;
@@ -14,35 +19,25 @@ import javafx.css.PseudoClass;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-
-import java.io.*;
-import java.net.URL;
-import java.nio.file.Paths;
-import java.util.*;
-import java.util.concurrent.CountDownLatch;
-import java.util.function.Consumer;
-
-//CodeArea zvyraznovanie slov
+import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
+import javafx.scene.input.KeyCombination;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.stage.FileChooser;
+import javafx.stage.Stage;
 import javafx.util.Duration;
-import org.controlsfx.control.NotificationPane;
 import org.controlsfx.control.Notifications;
 import org.controlsfx.control.ToggleSwitch;
 import org.fxmisc.flowless.VirtualizedScrollPane;
-import org.fxmisc.richtext.*;
-
-import javafx.scene.control.*;
-import javafx.scene.control.Button;
-import javafx.scene.control.TextField;
-
+import org.fxmisc.richtext.CodeArea;
+import org.fxmisc.richtext.InlineCssTextArea;
+import sk.uniza.fri.cp.App.BreadboardControl.BreadboardController;
 import sk.uniza.fri.cp.App.CPUControl.CodeEditor.CodeEditorFactory;
 import sk.uniza.fri.cp.App.CPUControl.CodeEditor.RichTextFXHelpers;
 import sk.uniza.fri.cp.App.CPUControl.io.ConsoleOutputStream;
@@ -50,17 +45,29 @@ import sk.uniza.fri.cp.Bus.Bus;
 import sk.uniza.fri.cp.CPUEmul.CPU;
 import sk.uniza.fri.cp.CPUEmul.CPUStates;
 import sk.uniza.fri.cp.CPUEmul.Exceptions.InvalidCodeLinesException;
-import sk.uniza.fri.cp.CPUEmul.Exceptions.NonExistingInterruptLabelException;
 import sk.uniza.fri.cp.CPUEmul.Parser;
 import sk.uniza.fri.cp.CPUEmul.Program;
 
-import static sk.uniza.fri.cp.App.CPUControl.DataRepresentation.*;
+import java.io.*;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
+import java.util.Optional;
+import java.util.ResourceBundle;
+import java.util.TreeSet;
+import java.util.concurrent.CountDownLatch;
+import java.util.function.Consumer;
+
+import static sk.uniza.fri.cp.App.CPUControl.DataRepresentation.eRepresentation;
+import static sk.uniza.fri.cp.App.CPUControl.DataRepresentation.getDisplayRepresentation;
+
+//CodeArea zvyraznovanie slov
 
 
 /**
- * updateuje stav pri zmene stavu CPU (ChangeListener na Message Task-u)
+ * Controller pre okno CPUEmul-átora.
  *
- * @author Moris
+ * @author Tomáš Hianik
  * @version 1.0
  * @created 07-feb-2017 18:40:27
  */
@@ -75,11 +82,9 @@ public class CPUController implements Initializable {
     private eRepresentation displayFormRAMAddr;
     private eRepresentation displayFormRAMData;
 
-    private CPU cpu;
-    private ConsoleOutputStream cos_cpu;
-    private boolean f_code_parsed; //indikator, ci je zavedeny aktualny program             DALO BY SA NAHRADIT program != null
-    volatile private Program program;
-    volatile private boolean f_async;
+    private CPU cpu; //instancia CPU
+    private ConsoleOutputStream cos_cpu; //vystup na konzolu pre CPU
+    volatile private Program program; //parsovany program ktoreho kod je aktualne v editore
     volatile private boolean f_intBylevel;
     volatile private boolean f_microstep;
     volatile private boolean f_startPaused; //pri krokovani pred spustenim sa spusta CPU s pauzou
@@ -95,8 +100,6 @@ public class CPUController implements Initializable {
 
     //Menu
     //Nastavenia
-    @FXML private CheckMenuItem chmiSettingsSync;
-    @FXML private CheckMenuItem chmiSettingsAsync;
     @FXML private CheckMenuItem chmiSettingsINTLevel;
     @FXML private CheckMenuItem chmiSettingsINTChange;
     @FXML private CheckMenuItem chmiSettingsMicrostep;
@@ -106,8 +109,8 @@ public class CPUController implements Initializable {
     @FXML private StackPane codeAreaPane;
     @FXML private Button btnLoadCode;
     @FXML private Button btnSaveCode;
-    private final String STYLE_PARAGRAPH_ERROR = "paragraph-error";
-    final private String CODE_PANE_TEXT = "Kód";
+    private static final String STYLE_PARAGRAPH_ERROR = "paragraph-error";
+    private static final String CODE_PANE_TEXT = "Kód";
     private CodeArea codeEditor;
     private File currentFile;
     private boolean fileSaved;  //true ak je aktualny subor bezpecne ulozeny
@@ -126,14 +129,21 @@ public class CPUController implements Initializable {
     @FXML private ToggleGroup btnGroupRAMData;
 
 	//tlacidla
-	@FXML private Button btnParse;
+    @FXML
+    private HBox toolBox;
+    @FXML private Button btnParse;
 	@FXML private Button btnStart;
 	@FXML private Button btnStep;
 	@FXML private Button btnPause;
 	@FXML private Button btnReset;
 	@FXML private Button btnStop;
-	final private String BTN_TXT_START = "Spusti [F5]";
-    final private String BTN_TXT_CONTINUE = "Pokračovať [F5]";
+    private static final String BTN_TXT_START = "Spusti [F5]";
+    private static final String BTN_TXT_CONTINUE = "Pokračuj [F5]";
+
+    @FXML
+    private Button btnSimulator;
+    private Stage breadboardStage;
+    private BreadboardController breadboardController;
 
     @FXML private ToggleSwitch tsConnectBusUsb;
 
@@ -186,7 +196,7 @@ public class CPUController implements Initializable {
     @FXML private Label lbUpdateGUIIntValue;
     @FXML private CheckMenuItem chmiSettingsAllowUpdateGUI;
     @FXML private HBox hboxUpdateGUIInt;
-    volatile private int GUIUpdateInt = 10;
+    volatile private int GUIUpdateInt = 150;
 
     private Service updateGUIService = new Service() {
         @Override
@@ -259,7 +269,11 @@ public class CPUController implements Initializable {
         codeEditor.richChanges()
                 .filter(ch -> !ch.getInserted().getText().equals(ch.getRemoved().getText()))
                 .subscribe(change -> {
-                    f_code_parsed = false; //zmena v kode -> program nie je aktualny
+                    if (this.program != null) {
+                        this.program.removeListenerOnBreakpointsChange(observableBreakpointLines);
+                        this.program = null; //zmena v kode -> program nie je aktualny
+                    }
+
                     //cpu = null;
                     btnStart.setText(BTN_TXT_START);
 
@@ -309,23 +323,33 @@ public class CPUController implements Initializable {
         btnReset.setDisable(true);
         btnStop.setDisable(true);
 
+        btnSimulator.setDisable(true);
+
         //tlacidlo smerovania zbernice cez USB / BreadboardSim
-        tsConnectBusUsb.selectedProperty().addListener(new ChangeListener<Boolean>() {
-            @Override
-            public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {
-                if(newValue){   //ak sa chce pripojit na USB
-                    if(!Bus.getBus().connectUSB()){ //ak sa neporadilo pripojit na USB
-                        Notifications.create()
-                                .title("Chyba na USB")
-                                .text("Nepodarilo sa pripojiť")
-                                .showWarning();
-                        tsConnectBusUsb.selectedProperty().setValue(false);
+        if (System.getProperty("os.name").startsWith("Windows") && System.getProperty("sun.arch.data.model").equals("32")) {
+            //32bit windows -> mozna podpora komunikacie cez USB
+            tsConnectBusUsb.selectedProperty().addListener(new ChangeListener<Boolean>() {
+                @Override
+                public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {
+                    if (newValue) {   //ak sa chce pripojit na USB
+                        if (!Bus.getBus().connectUSB()) { //ak sa neporadilo pripojit na USB
+                            Notifications.create()
+                                    .title("Chyba na USB")
+                                    .text("Nepodarilo sa pripojiť")
+                                    .showWarning();
+                            tsConnectBusUsb.selectedProperty().setValue(false);
+                        } else { //ak sa podarilo pripojit, odpoj simulaciu, ak bezi
+                            breadboardController.powerOff();
+                        }
+                    } else { //ak false - odpojenie
+                        Bus.getBus().disconnectUSB();
                     }
-                } else { //ak false - odpojenie
-                    Bus.getBus().disconnectUSB();
                 }
-            }
-        });
+            });
+        } else {
+            //nie je mozna komunikacie cez USB
+            toolBox.getChildren().remove(tsConnectBusUsb);
+        }
 
         //inicializacia pozicie oddelovacov v horizontalnom SplitPaneli
         defSplitPaneHorizDividerPositions = splitPaneHoriz.getDividerPositions();
@@ -351,19 +375,31 @@ public class CPUController implements Initializable {
             btnPause.getScene().getAccelerators().put(new KeyCodeCombination(KeyCode.F9), ()->btnPause.fire());
             btnReset.getScene().getAccelerators().put(new KeyCodeCombination(KeyCode.F12), ()->btnReset.fire());
             btnStop.getScene().getAccelerators().put(new KeyCodeCombination(KeyCode.F10), ()->btnStop.fire());
+
+            btnStop.getScene().getAccelerators().put(new KeyCodeCombination(KeyCode.D, KeyCombination.CONTROL_DOWN, KeyCombination.ALT_DOWN), () -> {
+                CPU.startTimesDebug();
+                Notifications.create()
+                        .title("DEBUG")
+                        .text("Logovanie zapnuté")
+                        .showWarning();
+            });
         });
 
         //Stavovy riadok - GUI Update
         sliderUpdateGUIInt.valueProperty().addListener(new ChangeListener<Number>() {
             @Override
             public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
-                lbUpdateGUIIntValue.setText(String.valueOf((int) sliderUpdateGUIInt.getValue()));
                 GUIUpdateInt = (int) sliderUpdateGUIInt.getValue();
+                lbUpdateGUIIntValue.setText(String.valueOf(GUIUpdateInt));
             }
         });
 
+        initCPU();
         initializeGUITables();
         updateGUI();
+
+        // defaultne zapnutie updateovania GUI EZFix
+        handleMenuSettingsAllowUpdateGUIAction();
     }
 
     /**
@@ -376,6 +412,10 @@ public class CPUController implements Initializable {
             cpu.setKeyPressed(event);
     }
 
+    /**
+     * Informácia, či sa práve vykonáva program zavedený na CPU.
+     * @return True ak sa vykonáva, false inak.
+     */
     public boolean isExecuting(){
         return f_in_execution.getValue();
     }
@@ -387,10 +427,21 @@ public class CPUController implements Initializable {
      */
     public boolean exit(){
         if(!fileSaved && !continueIfUnsavedFile()) return false;
+        if (!breadboardController.continueIfUnsavedFile()) return false;
         Platform.exit();
         return true;
     }
 
+    /**
+     * Nastavnie okna, ktoré sa má zobraziť po kliknutí na tlačidlo otvorenia simulátora.
+     *
+     * @param stageToShow Javisko so simulátorom vývojovej dosky.
+     */
+    public void setBreadboardStage(Stage stageToShow, BreadboardController breadboardController) {
+        this.breadboardStage = stageToShow;
+        this.breadboardController = breadboardController;
+        this.btnSimulator.setDisable(false);
+    }
 
     /**
      * Inicializacia tabuliek pre pamate - Zasobnik , Konstanty programu, RAM
@@ -412,7 +463,6 @@ public class CPUController implements Initializable {
 
                     pseudoClassStateChanged(pcStackHead, (!empty) && item.getAddressInt() == StackTableCell.getStackHead());
                     pseudoClassStateChanged(pcDataChanged, (!empty) && item.isChanged());
-
                 }
             }
         );
@@ -424,7 +474,7 @@ public class CPUController implements Initializable {
 
         //inicializacia tabulky konstant
         tableViewProgMemoryItems = FXCollections.observableArrayList();         //vytvorenie ArrayListu pre ukladanie itemov
-        for (int i = 0; i <= 256; i++)                                          //vytvorenie zvyskych adries zasobnika
+        for (int i = 0; i < 256; i++)                                          //vytvorenie zvyskych adries zasobnika
             tableViewProgMemoryItems.add(new MemoryTableCell(i,0));
         tableViewProgMemory.setItems(tableViewProgMemoryItems);                 //priradenie pola do tabulky
 
@@ -435,11 +485,11 @@ public class CPUController implements Initializable {
 
         //inicializacia tabulky RAM
         tableViewRAMItems = FXCollections.observableArrayList();         //vytvorenie ArrayListu pre ukladanie itemov
-        for (int i = 0; i <= 256; i++)                                          //vytvorenie zvyskych adries zasobnika
+        for (int i = 0; i < 256; i++)                                          //vytvorenie zvyskych adries zasobnika
             tableViewRAMItems.add(new MemoryTableCell(i,0));
         tableViewRAM.setItems(tableViewRAMItems);                               //priradenie pola do tabulky
 
-        //faktorka na riadky - pridavanie pseudotried pre vrchol zasobnika a zmenene data
+        //faktorka na riadky - pridavanie pseudotried pre zmenene data
         tableViewRAM.setRowFactory(tv ->
             new TableRow<MemoryTableCell>(){
                 @Override
@@ -570,7 +620,7 @@ public class CPUController implements Initializable {
         };
 
         if (showSidebar.statusProperty().get() == Animation.Status.STOPPED && hideSidebar.statusProperty().get() == Animation.Status.STOPPED) {
-            if ( Math.abs(hidedAt - splitPaneHoriz.getDividers().get(dividerIndex).getPosition()) > 0.02) {
+            if (Math.abs(hidedAt - splitPaneHoriz.getDividers().get(dividerIndex).getPosition()) > 0.03) {
                 hideSidebar.play();
             } else {
                 showSidebar.play();
@@ -581,25 +631,6 @@ public class CPUController implements Initializable {
 
     //MENU
     @FXML
-    private void handleMenuSettingSyncAction(){
-        onChangeAsync(false);
-    }
-
-    @FXML
-    private void handleMenuSettingAsyncAction(){
-        onChangeAsync(true);
-    }
-
-    private void onChangeAsync(boolean newVal){
-        f_async = newVal;
-        if(cpu != null)
-            cpu.setAsync(f_async);
-
-        chmiSettingsSync.setSelected(!newVal);
-        chmiSettingsAsync.setSelected(newVal);
-    }
-
-    @FXML
     private void handleMenuSettingsINTLevelAction(){
         onChangeIntByLevel(true);
     }
@@ -609,6 +640,10 @@ public class CPUController implements Initializable {
         onChangeIntByLevel(false);
     }
 
+    /**
+     * Zmena nastavenia vyhodnocovania prerušenia na CPU.
+     * @param newVal True ak sa má vyhodnocovať prerušenie od úrovne, false ak od zmeny.
+     */
     private void onChangeIntByLevel(boolean newVal){
         f_intBylevel = newVal;
         if(cpu != null)
@@ -618,6 +653,9 @@ public class CPUController implements Initializable {
         chmiSettingsINTChange.setSelected(!newVal);
     }
 
+    /**
+     * Zapnutie resp. vypnutie mikrokrokovania.
+     */
     @FXML
     private void handleMenuSettingsMicrostepAction(){
         boolean isSelected = chmiSettingsMicrostep.isSelected();
@@ -628,6 +666,9 @@ public class CPUController implements Initializable {
         chmiSettingsMicrostep.setSelected(isSelected);
     }
 
+    /**
+     * Povolenie stálej aktualizácie GUI počas vykonávania programu.
+     */
     @FXML
     private void handleMenuSettingsAllowUpdateGUIAction(){
         boolean isSelected = chmiSettingsAllowUpdateGUI.isSelected();
@@ -643,22 +684,33 @@ public class CPUController implements Initializable {
         chmiSettingsAllowUpdateGUI.setSelected(isSelected);
     }
 
+    /**
+     * Obsluha položky menu pri vytváraní nového súboru.
+     */
     @FXML
     private void handleMenuFileNewAction(){
         if(!fileSaved && !continueIfUnsavedFile()) return;
 
         codeEditor.clear();
         titPaneCode.setText(CODE_PANE_TEXT);
+        currentFile = null;
         fileSaved = true;
     }
 
+    /**
+     * Obsluha položky menu pre otvorenie súboru s kódom.
+     */
    	@FXML
 	private void handleMenuFileOpenAction(){
+        if (isExecuting()) handleButtonStopAction();
         if(!fileSaved && !continueIfUnsavedFile()) return;
 
         FileChooser chooser = new FileChooser();
         chooser.setTitle("Otvoriť súbor...");
-        chooser.setInitialDirectory(new File(Paths.get("").toAbsolutePath().toString()));
+        chooser.setInitialDirectory(
+                currentFile != null
+                        ? currentFile.getParentFile()
+                        : new File(Paths.get("").toAbsolutePath().toString()));
         chooser.getExtensionFilters().addAll(
                 new FileChooser.ExtensionFilter("ASM","*.asm"),
                 new FileChooser.ExtensionFilter("TXT", "*.txt"));
@@ -666,11 +718,14 @@ public class CPUController implements Initializable {
         File file = chooser.showOpenDialog(btnLoadCode.getScene().getWindow());
 
         if(file != null)
-            try(BufferedReader br = new BufferedReader(new FileReader(file))){
+            try (BufferedReader br = new BufferedReader(new InputStreamReader(
+                    new FileInputStream(file), StandardCharsets.UTF_8))) {
                 codeEditor.clear();
+                StringBuilder sb = new StringBuilder();
                 br.lines().forEach(line -> {
-                    codeEditor.appendText(line + "\n");
+                    sb.append(line + "\n");
                 });
+                codeEditor.appendText(sb.toString());
                 currentFile = file;
                 titPaneCode.setText("Kód - " + currentFile.getName());
                 fileSaved = true;
@@ -681,18 +736,28 @@ public class CPUController implements Initializable {
             }
     }
 
+    /**
+     * Obsluha položky menu pre uloženie kódu do súboru.
+     */
 	@FXML
 	private void handleMenuFileSaveAction(){
 	    saveCode(false);
 	}
 
+    /**
+     * Obsluha položky menu pre uloženie kódu do iného súboru.
+     */
 	@FXML
     private void handleMenuFileSaveAsAction(){
         saveCode(true);
     }
 
+    /**
+     * Obsluha položky menu pre ukončenie aplikácie.
+     */
     @FXML
     private void handleMenuFileExitAction(){
+        if(this.cpu != null) this.cpu.cancel();
         exit();
     }
 
@@ -707,17 +772,17 @@ public class CPUController implements Initializable {
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
         alert.setTitle("Potvrdenie");
         alert.setHeaderText("Zmeny vo vašom kóde neboli uložené");
-        alert.setContentText("Naozaj chcete zahodiť zmeny vo vašom kóde?");
+        alert.setContentText("Prajete si uložiť zmeny?");
 
-        ButtonType btnTypeYes = new ButtonType("Neukladať");
-        ButtonType btnTypeCancel = new ButtonType("Zrušiť");
         ButtonType btnTypeSave = new ButtonType("Uložiť");
         ButtonType btnTypeSaveAs = new ButtonType("Uložiť ako");
+        ButtonType btnTypeNo = new ButtonType("Nie");
+        ButtonType btnTypeCancel = new ButtonType("Zrušiť");
+
 
         alert.getButtonTypes().clear();
-        alert.getButtonTypes().add(btnTypeYes);
         if(currentFile != null) alert.getButtonTypes().add(btnTypeSave);
-        alert.getButtonTypes().addAll(btnTypeSaveAs, btnTypeCancel);
+        alert.getButtonTypes().addAll(btnTypeSaveAs, btnTypeNo, btnTypeCancel);
 
         Optional<ButtonType> result = alert.showAndWait();
 
@@ -757,7 +822,9 @@ public class CPUController implements Initializable {
         }
 
         if(file != null) {
-            try (PrintWriter out = new PrintWriter(file)) {
+            try (PrintWriter out = new PrintWriter(
+                    new OutputStreamWriter(
+                            new FileOutputStream(file), StandardCharsets.UTF_8))) {
                 out.print(codeEditor.getDocument().getText());
                 currentFile = file;
                 titPaneCode.setText("Kód - " + currentFile.getName());
@@ -774,6 +841,9 @@ public class CPUController implements Initializable {
 
     //EDITOR KODU
 
+    /**
+     * Obsluha tlačidla pre zrušenie všetkých vytvorených breakpointov v kóde.
+     */
     @FXML
 	private void handleButtonUnbreakAllAction(){
 	    observableBreakpointLines.clear();
@@ -781,17 +851,26 @@ public class CPUController implements Initializable {
 
 	//OVLADANIE VYKONAVANIA CPU
 
+    /**
+     * Obsluha tlačidla pre parsovanie kódu z editoru.
+     */
 	@FXML
 	private void handleButtonParseAction(){
         parseCode(false);
 	}
 
+    /**
+     * Obsluha tlačidla pre pozastavenie vykonávania CPU.
+     */
 	@FXML
 	private void handleButtonPauseAction(){
         if(cpu == null) return;
-        cpu.pause();
+        cpu.pauseExecute();
 	}
 
+    /**
+     * Obsluha tlačidla pre resetovanie stavu CPU a stavu zbernice.
+     */
 	@FXML
 	private void handleButtonResetAction(){
 	    if(cpu != null)
@@ -803,43 +882,41 @@ public class CPUController implements Initializable {
         updateGUI(); //zrusenie cerveneho zvyraznenia novych hodnot
 	}
 
+    /**
+     * Obsluha tlačidla pre spustenie vykonávania CPU.
+     * Ak bolo CPU pozastavené, spustí pokračovanie vo vykonávaní.
+     */
 	@FXML
 	private void handleButtonStartAction(){
         f_startPaused = false;
-	    if(cpu == null || !f_in_execution.getValue()){
-            startCPUAction();
-        } else if(f_paused.getValue()){
-	        //ak je iba pozastavene vykonavanie
+        if (f_in_execution.getValue() && f_paused.getValue()) {
+            //ak je iba pozastavene vykonavanie
             cpu.continueExecute();
+        } else {
+            startCPUAction();
         }
-	}
+    }
 
+    /**
+     * Obsluha tlačidla pre vkonanie kroku a presunu na ďalšiu inštrukciu.
+     */
 	@FXML
 	private void handleButtonStepAction(){
         f_startPaused = true;
-        if(cpu == null || !f_in_execution.getValue())
-            startCPUAction();
-        else
+        if (f_in_execution.getValue()) {
             cpu.step();
-	}
-
-	@FXML
-	private void handleButtonStopAction(){
-        if(cpu == null) return;
-            cpu.cancel();
-	}
-
-    @FXML
-    private void handleButtonDevInt01ActionPressed(){
-        Bus.getBus().setDataBus((byte)1);
-        Bus.getBus().setIT(true);
+        } else {
+            startCPUAction();
+        }
     }
 
-    @FXML
-    private void handleButtonDevInt01ActionReleased(){
-        Bus.getBus().setIT(false);
-        //Bus.getBus().setRandomData();
-        updateGUI();
+    /**
+     * Obsluha tlačidla pre zastavenie vykonávania CPU.
+     */
+	@FXML
+	private void handleButtonStopAction(){
+        cpu.stopExecute();
+        cos_cpu.clearBuffer();
     }
 
     /**
@@ -847,23 +924,38 @@ public class CPUController implements Initializable {
      * Inak najprv parsuje kód.
      */
     private void startCPUAction(){
-        //nie je CPU ktore by nieco vykonavalo
-        if(!f_code_parsed) {
-            //este nie je zavedeny kod
+        if(this.program == null) {
+            //este nie je parsovany kod
             parseCode(true);
         } else {
-            //kod uz je zavedeny, staci spustit CPU
+            //kod uz je parsovany, staci spustit CPU
             startExecution();
+        }
+    }
+
+    //TLACIDLO PRE OTVORENIE SIMULATORA
+    @FXML
+    private void handleButtonSimulatorAction() {
+        if (breadboardStage.isShowing()) {
+            breadboardStage.hide();
+        } else {
+            breadboardStage.show();
         }
     }
 
     //KONZOLA
 
+    /**
+     * Obsluha tlačidla pre vymazanie obsahu konzoly.
+     */
     @FXML
     private void handleButtonConsoleClearAction(){
         console.clear();
     }
 
+    /**
+     * Obsluha tlačidla pre posun zobrazenia tabuľky zásobníka na vrchol podľa registra SP.
+     */
     @FXML
     private void handleButtonToStackHeadAction(){
         if(cpu != null) {
@@ -894,7 +986,7 @@ public class CPUController implements Initializable {
         //vycistenie editoru ak boli chyby
         clearCodeStyle(STYLE_PARAGRAPH_ERROR);
 
-        //zobrazenie stavu
+        //zobrazenie stavu parsovania
         progressBar.progressProperty().unbind();
         progressBar.progressProperty().bind(parserTask.progressProperty());
         lbStatus.setText("Parsujem...");
@@ -916,7 +1008,6 @@ public class CPUController implements Initializable {
 
                 updateGUITableProgMemory();
 
-                f_code_parsed = true; //kod je uspesne prevedeny na program a moze byt vykonany
                 lbStatus.setText("Program zavedený");
 
                 //ak ma byt spustene vykonavanie CPU
@@ -945,7 +1036,6 @@ public class CPUController implements Initializable {
                 program = null;
                 updateGUITableProgMemory();
 
-                f_code_parsed = false;
                 //zobrazenie stavu
                 lbStatus.setText("Chyba v kóde");
             }
@@ -956,63 +1046,47 @@ public class CPUController implements Initializable {
     }
 
     /**
-     * Vytvorí nové vlákno s CPU, ktoré vykonáva aktuálne zavedený program.
-     * Nastavuje akcie, ktoré sa vykonajú po ukončení vlákna alebo zmene stavu CPU.
+     * Vytvorenie, inicializácia a spustenie CPU, na ktorom sa vykonáva parsovaný program.
+     * Pridáva listener na zmenu stavu a nastavuje intLevel a microstep flagy.
+     */
+    private void initCPU(){
+        this.cos_cpu = new ConsoleOutputStream(console);
+        this.cpu = new CPU(cos_cpu, Bus.getBus());
+        this.cpu.setDaemon(true);
+
+        this.cpu.stateProperty().addListener( (observable,  oldValue,  newValue) -> onCPUStateChanged(newValue) );
+
+        this.cpu.start();
+
+        this.cpu.setIntLevel(f_intBylevel);
+        this.cpu.setMicrostep(f_microstep);
+    }
+
+    /**
+     * Ak beží vlákno s CPU, resetuje jeho stav, zavedie aktuálny parsovaný program a spustí vykonávanie.
+     * Ak vlákno s CPU nie je aktívne, zavolá initCPU a znovu seba.
      */
     private void startExecution(){
-        //vytvorenie CPU vlakna a spustenie vykonavania
-        cos_cpu = new ConsoleOutputStream(console);
-        cpu = new CPU(program, cos_cpu, f_async, f_intBylevel, f_microstep, f_startPaused);
-
-        Thread cpuThread = new Thread(cpu);
-        cpuThread.setDaemon(true);
-
-        //po uspesnom vykonani programu
-        cpu.setOnSucceeded(new EventHandler<WorkerStateEvent>() {
-            @Override
-            public void handle(WorkerStateEvent event) {
-                onCPUDone("Program ukončený");
+        //ak cpu bezi
+        if(this.cpu != null && this.cpu.isAlive()){
+            if (this.program.hasIOInstruction() && !Bus.getBus().isUsbConnected()) {
+                if (!breadboardController.powerOn())
+                    //ak bola simulacia vypnuta, pockaj chvilu na zahriatie
+                    try {
+                        Thread.sleep(100);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
             }
-        });
 
-        //po zastaveni vykonavania programu
-        cpu.setOnCancelled(new EventHandler<WorkerStateEvent>() {
-            @Override
-            public void handle(WorkerStateEvent event) {
-                onCPUDone("Program zrušený");
-            }
-        });
-
-        cpu.setOnFailed(new EventHandler<WorkerStateEvent>() {
-            @Override
-            public void handle(WorkerStateEvent event) {
-                Throwable ex = cpu.getException();
-
-                Alert alert = new Alert(Alert.AlertType.ERROR);
-                alert.setTitle("Chyba");
-                alert.setContentText(ex.getMessage());
-
-                if(ex instanceof NonExistingInterruptLabelException){
-                    alert.setHeaderText("Chyba prerušenia");
-                } else {
-                    alert.setHeaderText("Nastala chyba pri vykonávaní programu");
-                    ex.printStackTrace();
-                }
-
-                alert.showAndWait();
-
-                onCPUDone("Program ukončený s chybou");
-            }
-        });
-
-        cpu.statesProperty().addListener(new ChangeListener<CPUStates>() {
-            @Override
-            public void changed(ObservableValue<? extends CPUStates> observable, CPUStates oldValue, CPUStates newValue) {
-                onCPUStateChanged(newValue);
-            }
-        });
-
-        cpuThread.start();
+            this.cos_cpu.setUnused();
+            this.cpu.reset();
+            this.cpu.loadProgram(this.program);
+            this.cpu.startExecute(f_startPaused);
+        } else {
+            initCPU();
+            startExecution();
+        }
     }
 
     /**
@@ -1026,15 +1100,16 @@ public class CPUController implements Initializable {
                     onCPURunning();
                     break;
                 case Paused:
-                    onCPUPaused(false);
-                    break;
-                case MicroStep:
-                    onCPUPaused(true);
+                    onCPUPaused();
                     break;
                 case Waiting:
                     onCPUWaiting();
-                case AsyncWaiting:
-                    onCPUAsyncWaiting();
+                    break;
+                case Idle:
+                    onCPUIdle("Nečinný");
+                    break;
+                default:
+                    onCPUIdle("Nejasný stav");
             }
         };
 
@@ -1046,9 +1121,13 @@ public class CPUController implements Initializable {
             toDo.accept(state);
     }
 
+    /**
+     * Metóda volaná pri prechode CPU do stavu bežiaci.
+     */
     private void onCPURunning(){
         f_paused.setValue(false);
 
+        //ak sa predtym nevykonaval program
         if(!f_in_execution.getValue()) {
             f_in_execution.setValue(true);
             tsConnectBusUsb.setDisable(true);
@@ -1070,17 +1149,17 @@ public class CPUController implements Initializable {
         codeEditor.setEditable(false);
     }
 
-    private void onCPUPaused(boolean isMicrostep){
+    /**
+     * Metóda volaná pri prechode CPU do stavu pozastavený.
+     */
+    private void onCPUPaused() {
         f_paused.setValue(true);
 
         updateExecutionLine( program.getLineOfInstruction(cpu.getRegPC()-1) );
 
         progressBar.progressProperty().unbind();
         progressBar.setProgress(0.5);
-        if(isMicrostep)
-            lbStatus.setText(cpu.getMessage());
-        else
-            lbStatus.setText("Program pozastavnený");
+        lbStatus.setText(cpu.getMessage());
 
         btnStart.setText(BTN_TXT_CONTINUE);
 
@@ -1094,6 +1173,9 @@ public class CPUController implements Initializable {
         updateGUI();
     }
 
+    /**
+     * Metóda volaná pri prechode CPU do stavu čakajúci.
+     */
     private void onCPUWaiting(){
         f_paused.setValue(true);
 
@@ -1112,21 +1194,10 @@ public class CPUController implements Initializable {
         btnStop.setDisable(false);
     }
 
-    private void onCPUAsyncWaiting(){
-        progressBar.progressProperty().unbind();
-        progressBar.setProgress(-1);
-
-        lbStatus.setText(cpu.getMessage());
-
-        btnParse.setDisable(true);
-        btnStart.setDisable(true);
-        btnStep.setDisable(true);
-        btnPause.setDisable(true);
-        btnReset.setDisable(true);
-        btnStop.setDisable(false);
-    }
-
-    private void onCPUDone(String statusText){
+    /**
+     * Metóda volaná pri prechode CPU do stavu nečinný.
+     */
+    private void onCPUIdle(String statusText){
         f_in_execution.setValue(false);
         f_paused.setValue(false);
 
@@ -1135,7 +1206,7 @@ public class CPUController implements Initializable {
         updateExecutionLine( -1 );
 
         progressBar.progressProperty().unbind();
-        progressBar.setProgress(1);
+        progressBar.setProgress(0);
         lbStatus.setText(statusText);
 
         btnStart.setText(BTN_TXT_START);
@@ -1149,13 +1220,14 @@ public class CPUController implements Initializable {
 
         codeEditor.setEditable(true);
 
-        if(cos_cpu.isUsed()) console.appendText("\n");
-
         updateGUI();
     }
 
     //AKTUALIZACIA GUI
 
+    /**
+     * Aktualizácia registrov a tabuliek GUI.
+     */
     private void updateGUI(){
         updateGUIRegisters();
         updateGUITables();
@@ -1165,7 +1237,7 @@ public class CPUController implements Initializable {
      * Aktializuje hodnoty v registroch na hodnoty z CPU. Ak CPU neexistuje, nastavý hodnoty na 0.
      */
     private void updateGUIRegisters(){
-        if(cpu != null) {
+        if(cpu != null && cpu.isAlive()) {
             tfRegA.setText(getDisplayRepresentation(cpu.getRegA(), displayFormRegisters));
             tfRegB.setText(getDisplayRepresentation(cpu.getRegB(), displayFormRegisters));
             tfRegC.setText(getDisplayRepresentation(cpu.getRegC(), displayFormRegisters));
@@ -1194,14 +1266,18 @@ public class CPUController implements Initializable {
         }
     }
 
-
-
+    /**
+     * Aktualizácia všetkých tabuliek - zásobník, pamäť programu, RAM.
+     */
     private void updateGUITables(){
         updateGUITableStack();
         updateGUITableProgMemory();
         updateGUITableRAM();
     }
 
+    /**
+     * Aktualizácia tabuľky zásobníka podľa hodnôt z CPU.
+     */
     private void updateGUITableStack(){
         if(cpu != null) {
             byte[] stack = cpu.getStack();
@@ -1225,6 +1301,9 @@ public class CPUController implements Initializable {
         handleButtonToStackHeadAction();
     }
 
+    /**
+     * Aktualizácia tabuľky zavedených konštánt programu.
+     */
     private void updateGUITableProgMemory(){
         if(program != null){
             byte[] progMem = program.getMemory();
@@ -1239,6 +1318,9 @@ public class CPUController implements Initializable {
         }
     }
 
+    /**
+     * Aktualizácia tabuľky pamäte RAM.
+     */
     private void updateGUITableRAM(){
         if(cpu != null) {
             byte[] RAM = cpu.getRAM();
@@ -1297,13 +1379,15 @@ public class CPUController implements Initializable {
         private final SimpleStringProperty data;
 
         private short newAddress;
-        private short oldAddress;
         private byte newData;
         private byte oldData;
 
         private eRepresentation repAddress;
         private eRepresentation repData;
 
+        /**
+         * Bezparametrický konštruktor pre vytvorenie bunky s nulovou adresou a nulovou hodnotou v decimálnej sústave.
+         */
         MemoryTableCell(){
             this.address = new SimpleStringProperty("0");
             this.data = new SimpleStringProperty("0");
@@ -1311,23 +1395,37 @@ public class CPUController implements Initializable {
             this.repData = eRepresentation.Dec;
         }
 
+        /**
+         * Konštruktor pre vytvorenie bunky s decimálnou reprezentáciou.
+         *
+         * @param address Adresa
+         * @param data    Dáta na adrese
+         */
         MemoryTableCell(int address, int data){
             this.address = new SimpleStringProperty(Integer.toString(address));
             this.data = new SimpleStringProperty(Integer.toString(data));
             this.repAddress = eRepresentation.Dec;
             this.repData = eRepresentation.Dec;
 
-            newAddress = oldAddress = (short) address;
+            newAddress = (short) address;
             newData = oldData = (byte) data;
         }
 
+        /**
+         * Konštruktor pre naplenenie hodnôt bunky aj s určenou reprezentáciou.
+         *
+         * @param address Adresa
+         * @param data Dáta na adrese
+         * @param defRepresentationAddress Reprezentácia zobrazenia adresy
+         * @param defRepresentationData Reprezentácia zobrazenia dát
+         */
         MemoryTableCell(int address, int data, eRepresentation defRepresentationAddress, eRepresentation defRepresentationData){
             this.address = new SimpleStringProperty(Integer.toString(address));
             this.data = new SimpleStringProperty(Integer.toString(data));
             this.repAddress = defRepresentationAddress;
             this.repData = defRepresentationData;
 
-            newAddress = oldAddress = (short) address;
+            newAddress = (short) address;
             newData = oldData = (byte) data;
         }
 
@@ -1339,18 +1437,32 @@ public class CPUController implements Initializable {
             return data;
         }
 
+        /**
+         * Vracia adresu uloženú v bunke ako integer.
+         *
+         * @return Adresa uložená v bunke.
+         */
         public int getAddressInt(){
             return Short.toUnsignedInt(newAddress);
         }
 
+        /**
+         * Nastavenie adresy v bunke.
+         *
+         * @param address Nová adresa v bunke.
+         */
         public void setAddress(short address){
             this.address.setValue(
                     getDisplayRepresentation(address, repAddress)
             );
-            oldAddress = newAddress;
             newAddress = address;
         }
 
+        /**
+         * Nastavenie dát v bunke.
+         *
+         * @param data Nové dáta v bunke.
+         */
         public void setData(byte data){
             this.data.setValue(
                     getDisplayRepresentation(data, repData)
@@ -1360,24 +1472,49 @@ public class CPUController implements Initializable {
             newData = data;
         }
 
+        /**
+         * Vráti aktuálne nastavenie reprezentácie adresy.
+         *
+         * @return Reprezantácia adresy v bunke.
+         */
         public eRepresentation getAddressRepresentation(){
             return repAddress;
         }
 
+        /**
+         * Zmena reprezentácie adresy.
+         *
+         * @param newRep Nová reprezentácia adresy použítá pri zobrazení.
+         */
         public void changeAddressRepresentation(eRepresentation newRep){
-           address.setValue( getDisplayRepresentation(newAddress, newRep) );
-           repAddress = newRep;
+            address.setValue( getDisplayRepresentation(newAddress, newRep) );
+            repAddress = newRep;
         }
 
+        /**
+         * Vráti aktuálne nastavenie reprezentácie dát.
+         *
+         * @return Reprezentácia dát v bunke.
+         */
         public eRepresentation getDataRepresentation(){
             return repData;
         }
 
+        /**
+         * Zmena reprezentácie dát.
+         *
+         * @param newRep Nová reprezentácia dát použítá pri zobrazení.
+         */
         public void changeDataRepresentation(eRepresentation newRep){
-           data.setValue( getDisplayRepresentation(newData, newRep) );
-           repData = newRep;
+            data.setValue( getDisplayRepresentation(newData, newRep) );
+            repData = newRep;
         }
 
+        /**
+         * Informácia, či sa po zmene dát nové dáta líšia od starých.
+         *
+         * @return Ture ak sa nové dáta líšia od starých, flase inak.
+         */
         public boolean isChanged(){
             return oldData != newData;
         }
@@ -1390,14 +1527,31 @@ public class CPUController implements Initializable {
     public static class StackTableCell extends MemoryTableCell{
         private static SimpleIntegerProperty stackHead = new SimpleIntegerProperty(0);
 
+        /**
+         * Bezparametriký konštruktor, krotý volá bezparametrický konštruktor predka.
+         */
         public StackTableCell(){
             super();
         }
 
+        /**
+         * Konštruktor nastavujúci adresu a dáta. Reprezentácia ostáva decimálna.
+         *
+         * @param address Adresa
+         * @param data Dáta na adrese
+         */
         public StackTableCell(int address, int data){
             super(address, data);
         }
 
+        /**
+         * Konštruktor s nastavením obsahu aj reprezentáciou.
+         *
+         * @param address Adrese
+         * @param data Dáta na adrese
+         * @param defRepresentationAddress Reprezentácia adresy.
+         * @param defRepresentationData Reprezentácia dát.
+         */
         public StackTableCell(int address, int data, eRepresentation defRepresentationAddress, eRepresentation defRepresentationData){
             super(address, data, defRepresentationAddress, defRepresentationData);
         }
@@ -1406,10 +1560,20 @@ public class CPUController implements Initializable {
             return stackHead;
         }
 
+        /**
+         * Nastavnie adresy, na ktorej sa nachádza vrchol zásobníka.
+         *
+         * @param head Adresa vrcholu zásobníka.
+         */
         public static void setStackHead(int head){
             stackHead.setValue(head);
         }
 
+        /**
+         * Vrátenie adresy, na ktorej sa nachádza vrchol zásobíka.
+         *
+         * @return Adresa, na ktorej sa nachádza vrchol zásobníka.
+         */
         public static int getStackHead(){
             return stackHead.getValue();
         }

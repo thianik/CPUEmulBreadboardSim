@@ -2,20 +2,26 @@ package sk.uniza.fri.cp.BreadboardSim.Components;
 
 
 import javafx.scene.Group;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.Shape;
 import javafx.scene.text.Text;
-import sk.uniza.fri.cp.BreadboardSim.Board;
-import sk.uniza.fri.cp.BreadboardSim.Devices.Led;
-import sk.uniza.fri.cp.BreadboardSim.GridSystem;
-import sk.uniza.fri.cp.BreadboardSim.Potential;
-import sk.uniza.fri.cp.BreadboardSim.Socket;
+import sk.uniza.fri.cp.BreadboardSim.Board.Board;
+import sk.uniza.fri.cp.BreadboardSim.Board.GridSystem;
+import sk.uniza.fri.cp.BreadboardSim.Devices.LED;
+import sk.uniza.fri.cp.BreadboardSim.SchoolBreadboard;
+import sk.uniza.fri.cp.BreadboardSim.Socket.Potential;
+import sk.uniza.fri.cp.BreadboardSim.Socket.Socket;
 
 
 /**
- * @author Moris
+ * Komponent 7-segmentového displeja.
+ *
+ * @author Tomáš Hianik
  * @version 1.0
  * @created 17-mar-2017 16:16:34
  */
@@ -24,39 +30,52 @@ public class HexSegment extends Component{
 	private static final Color SEGMENT_ON_COLOR = Color.RED;
 	private static final Color SEGMENT_OFF_COLOR = Color.LIGHTGRAY;
 
-	private static int id = 1;
+    private static int segmentID = 1;
+    private int oneSegmentId = 1;
 
 	private HexSegment instance;
 	private OneSegment[] segments;
 	private Socket[] inputSockets;
 	private Socket commonGndSocket;
 	private Group commonGndSocketGroup;
+
 	private Rectangle background;
 
 	private enum SegmentType {
-		HORIZONTAL, VERTICAL, DOT;
-	}
+        HORIZONTAL, VERTICAL, DOT
+    }
 
-	public HexSegment(Board board){
-		super(board, id++);
-		this.instance = this;
+    /**
+     * Konštruktor pre itemPicker.
+     */
+    public HexSegment() {
+    }
 
-		GridSystem grid = board.getGrid();
+    /**
+     * Vytvorenie objektu 7-segmentového displeja.
+     *
+     * @param board Plocha simulátora.
+     */
+    public HexSegment(Board board){
+        super(board);
+        this.instance = this;
+        //this.setId("HexSegment"+segmentID);
+
+        GridSystem grid = board.getGrid();
 
         this.gridWidth = grid.getSizeX() * 8;
         this.gridHeight = grid.getSizeY() * 16;
 
-		//this.background = new Rectangle(this.gridWidth, this.gridHeight, Color.rgb(51,100,68));
-		//this.background.setOpacity(0);
+        this.background = new Rectangle(this.gridWidth, this.gridHeight, SchoolBreadboard.BACKGROUND_COLOR);
 
-		this.inputSockets = new Socket[8];
-		Group inputSocketsGroup = generateInputSockets();
-		inputSocketsGroup.setLayoutX(grid.getSizeX());
+        this.inputSockets = new Socket[8];
+        Group inputSocketsGroup = generateInputSockets();
+        inputSocketsGroup.setLayoutX(grid.getSizeX());
         inputSocketsGroup.setLayoutY(grid.getSizeY());
 
         //vyvod na uzemnenie segmentov
-        commonGndSocket = new Socket(this, 8);
-        Text gndSocketText = Board.getLabelText("A" + this.getComponentId(), grid.getSizeMin());
+        commonGndSocket = new Socket(this);
+        Text gndSocketText = Board.getLabelText("A" + segmentID++, grid.getSizeMin());
         gndSocketText.setLayoutX(grid.getSizeX());
         gndSocketText.setLayoutY(0.25 * gndSocketText.getBoundsInParent().getHeight());
 
@@ -64,21 +83,30 @@ public class HexSegment extends Component{
         this.commonGndSocketGroup.setLayoutX(grid.getSizeX() * 5);
         this.commonGndSocketGroup.setLayoutY(grid.getSizeY() * 8);
 
-		this.segments = new OneSegment[8];
-		Group segmentsGroup = generateSegments();
-		segmentsGroup.setLayoutX(- segments[0].getThicknessCoef());
-		segmentsGroup.setLayoutY(grid.getSizeY() * 9);
+        this.segments = new OneSegment[8];
+        Group segmentsGroup = generateSegments();
+        segmentsGroup.setLayoutX(- segments[0].getThicknessCoef());
+        segmentsGroup.setLayoutY(grid.getSizeY() * 9);
 
-		//pripojenie segmentov ku katode, anodu maju spolocnu
-		for (int i = 0; i < 8; i++) {
-			this.segments[i].connect(this.inputSockets[i]);
-		}
+        //pripojenie segmentov ku katode, anodu maju spolocnu
+        for (int i = 0; i < 8; i++) {
+            this.segments[i].connect(this.inputSockets[i]);
+        }
 
-		this.getChildren().addAll( inputSocketsGroup, segmentsGroup, commonGndSocketGroup);
-	}
+        this.getChildren().addAll(background, inputSocketsGroup, segmentsGroup, commonGndSocketGroup);
 
-	public Group getCommonGndSocketGroup(){
-	    return commonGndSocketGroup;
+        //registracia vsetkych soketov
+        this.addAllSockets(inputSockets);
+        this.addSocket(commonGndSocket);
+    }
+
+    void hideBackground() {
+        this.background.setOpacity(0);
+        this.background.setMouseTransparent(true);
+    }
+
+    Group getCommonGndSocketGroup() {
+        return commonGndSocketGroup;
     }
 
 	private Group generateInputSockets(){
@@ -87,8 +115,8 @@ public class HexSegment extends Component{
 		Group sockets = new Group();
 
 		for (int i = 0; i < 8; i++) {
-			Socket socket = new Socket(this, i);
-			socket.setLayoutY(grid.getSizeY() * i);
+            Socket socket = new Socket(this);
+            socket.setLayoutY(grid.getSizeY() * i);
 
 			Text text = Board.getLabelText(String.valueOf((char) (i+97)), grid.getSizeMin());
 			text.setLayoutX(grid.getSizeX());
@@ -96,8 +124,8 @@ public class HexSegment extends Component{
 			sockets.getChildren().add(text);
 
 			inputSockets[i] = socket;
-			//super.socketsForDevices.add(socket);
-		}
+            //super.sockets.add(socket);
+        }
 
 		sockets.getChildren().addAll(inputSockets);
 		return sockets;
@@ -148,26 +176,40 @@ public class HexSegment extends Component{
 		return segmentsGroup;
 	}
 
-	private class OneSegment extends Region{
+    @Override
+    public void delete() {
+        super.delete();
+        for (OneSegment segment : segments) {
+            segment.delete();
+        }
+    }
+
+    @Override
+    public Pane getImage() {
+        return new Pane(new ImageView(new Image("/icons/components/7segment.png")));
+    }
+
+    private class OneSegment extends Region {
 
         private static final int GRID_LENGTH = 2;
 
 	    private final SegmentType type;
-		private Led led;
+        private LED LED;
 
 		private double thicknessCoef;
 		private Shape segmentShape;
 		private boolean inverted;
 
 		private Socket innerGndSocket;
+        Potential innerPotential;
 
 		OneSegment(SegmentType type){
 			this.type = type;
 			this.thicknessCoef = 0.5;
-
+            this.setId("HexSegment" + (segmentID - 1) + "_OneSegment" + oneSegmentId++);
 			//vytvorenie fiktivneho vnutorneho soketu pre pripojenie gnd ledky a napojenie na potencial zo spolocneho gnd soketku
-			this.innerGndSocket = new Socket(instance, 0);
-			new Potential(this.innerGndSocket, commonGndSocket);
+            this.innerGndSocket = new Socket(instance);
+            new Potential(this.innerGndSocket, commonGndSocket);
 
 			GridSystem grid = getBoard().getGrid();
 
@@ -179,17 +221,19 @@ public class HexSegment extends Component{
 				case DOT: segmentShape = new Rectangle(grid.getSizeX() * this.thicknessCoef, grid.getSizeY() * this.thicknessCoef, SEGMENT_OFF_COLOR);
 			}
 
-			this.led = new Led(getBoard(), segmentShape, SEGMENT_ON_COLOR);
-            this.led.makeImmovable();
-            this.led.setInverseAnodeLogic(true);
+			this.LED = new LED(getBoard(), segmentShape, SEGMENT_ON_COLOR, HexSegment.this);
+            this.LED.makeImmovable();
+            this.LED.setInverseAnodeLogic(true);
 
-			this.getChildren().addAll(led);
-		}
+            this.getChildren().addAll(LED);
+        }
 
 		void connect(Socket input){
-			input.connect(this.led.getCathode());
-			this.innerGndSocket.connect(this.led.getAnode());
-		}
+            Socket innerSocket = new Socket(input.getComponent());
+            innerPotential = new Potential(innerSocket, input);
+            innerSocket.connect(this.LED.getCathode());
+            this.innerGndSocket.connect(this.LED.getAnode());
+        }
 
 		void invert(){
 			GridSystem grid = getBoard().getGrid();
@@ -210,6 +254,8 @@ public class HexSegment extends Component{
 
 		double getThicknessCoef(){ return thicknessCoef; }
 
-
+        void delete() {
+            this.innerPotential.delete();
+        }
 	}
 }

@@ -3,32 +3,29 @@ package sk.uniza.fri.cp.BreadboardSim;
 
 import javafx.event.EventHandler;
 import javafx.scene.Group;
-import javafx.scene.control.Label;
-import javafx.scene.input.KeyCode;
-import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
-import javafx.scene.layout.*;
-import javafx.scene.paint.Color;
-
-import java.util.List;
+import javafx.scene.layout.Pane;
+import sk.uniza.fri.cp.BreadboardSim.Board.Board;
 
 /**
- * @author Moris
+ * Výber a zvýraznenie objektov na ploche.
+ *
+ * @author Tomáš Hianik
  * @version 1.0
- * @created 17-mar-2017 16:16:34
+ * @created 17.3.2017
  */
 public abstract class HighlightGroup extends Group implements Selectable {
 
-	private List<Warning> warnings;
-	private Warning sendedWarning;
+    private Pane cachedDescription;
+    private boolean isSelectable;
+    private boolean isSelected;
 
-	private boolean isSelectable;
-
-	public HighlightGroup(){
-	    this.isSelectable = true;
+    protected HighlightGroup() {
+        this.isSelectable = true;
 
 		EventHandler<MouseEvent> onMouseClickEventHandler = (event) -> {
-			Board board = getBoard();
+            if (!event.isPrimaryButtonDown()) return;
+            Board board = getBoard();
 
 			//ak je objekt na ploche
 			if(board != null) {
@@ -44,53 +41,43 @@ public abstract class HighlightGroup extends Group implements Selectable {
 			}
 		};
 
-		this.addEventFilter(MouseEvent.MOUSE_PRESSED, onMouseClickEventHandler);
+        this.addEventHandler(MouseEvent.MOUSE_PRESSED, onMouseClickEventHandler);
 
 	}
 
-	/**
-	 * 
-	 * @param turnOn
-	 */
-	public void highlightSelect(boolean turnOn){
+    /**
+     * Vráti popis objektu, ak je cachovaný, inak null.
+     *
+     * @return Panel s popisom objektu.
+     */
+    public Pane getDescription(){
+        if (this.cachedDescription != null) return this.cachedDescription;
+        return null;
+    }
 
-	}
-
-	/**
-	 * 
-	 * @param sender
-	 * @param description
-	 */
-	public void highlightAddWarning(HighlightGroup sender, String description){
-
-	}
-
-	/**
-	 * 
-	 * @param warning
-	 */
-	public void setMyWarning(Warning warning){
-
-	}
-
-	public Pane getDescription(){
-		return new Pane(new Label("No description \n" + this.getClass().getSimpleName()));
-	}
+    /**
+     * Cachovanie panelu s popisom.
+     *
+     * @param descriptionPane Panel s popisom.
+     */
+    protected void cacheDescription(Pane descriptionPane) {
+        this.cachedDescription = descriptionPane;
+    }
 
     @Override
 	public void select(){
-
-	}
+        this.isSelected = true;
+    }
 
 	@Override
 	public void deselect(){
-
-	}
+        this.isSelected = false;
+    }
 
 	@Override
 	public void delete(){
-
-	}
+        this.isSelected = false;
+    }
 
     @Override
     public boolean isSelectable() {
@@ -100,5 +87,14 @@ public abstract class HighlightGroup extends Group implements Selectable {
     @Override
     public void setSelectable(boolean newValue) {
         this.isSelectable = newValue;
+    }
+
+    /**
+     * Kontrola, či je objekt vybratý.
+     *
+     * @return True ak je, false inak.
+     */
+    public boolean isSelected() {
+        return this.isSelected;
     }
 }

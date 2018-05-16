@@ -3,7 +3,10 @@ package sk.uniza.fri.cp.Bus;
 import com.sun.jna.Native;
 
 /**
- * Created by Moris on 11.3.2017.
+ * Trieda pre prístup k natívnym metódam knižnice k041.dll určenej pre 32bit platformu MS Windows.
+ *
+ * @author Tomáš Hianik
+ * @created  11.3.2017.
  */
 public class k041Library {
     public static native int USBInitDevice();

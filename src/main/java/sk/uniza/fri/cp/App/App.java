@@ -2,25 +2,27 @@ package sk.uniza.fri.cp.App;
 
 import javafx.application.Application;
 import javafx.event.EventHandler;
+import javafx.event.EventType;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.image.Image;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
-import javafx.scene.input.MouseEvent;
 import javafx.stage.Stage;
-import javafx.stage.StageStyle;
-import javafx.stage.WindowEvent;
 import sk.uniza.fri.cp.App.BreadboardControl.BreadboardController;
 import sk.uniza.fri.cp.App.CPUControl.CPUController;
-import sk.uniza.fri.cp.BreadboardSim.Movable;
+
 
 /**
- * Created by Moris on 7.2.2017.
+ * Aplikácia simulátora vývojovej dosky FRI UNIZA a emulátor 8 bitového CPU.
+ *
+ * @author Tomáš Hianik
+ * @created 7.2.2017
  */
 public class App extends Application {
-    private final int CPU_WINDOW_WIDTH = 1280;
-    private final int CPU_WINDOW_HEIGHT = 640;
+    private static final int CPU_WINDOW_WIDTH = 1280;
+    private static final int CPU_WINDOW_HEIGHT = 640;
 
     public static void main(String[] args) {
         launch();
@@ -39,29 +41,44 @@ public class App extends Application {
         //priradenie CSS stylov k scene
         mainScene.getStylesheets().add(getClass().getResource("/css/CPUEmul_style.css").toExternalForm());
 
-        //zachytenie vsetkych klaves (okrem funkcnych klaves) na mainScene (http://stackoverflow.com/questions/25397742/javafx-keyboard-event-shortcut-key)
+        //zachytenie vsetkych klaves (okrem funkcnych klaves) na mainScene
+        //(http://stackoverflow.com/questions/25397742/javafx-keyboard-event-shortcut-key)
         //a posielanie ich do CPU
-        mainScene.addEventFilter(KeyEvent.KEY_PRESSED, new EventHandler<KeyEvent>() {
-            public void handle(KeyEvent ke) {
-                if(ke.getCode().isFunctionKey()) return;
-
+        EventHandler<KeyEvent> onKeyPressed = (ke) -> {
+            if (ke.getEventType() == KeyEvent.KEY_PRESSED) {
                 CPUController controller = CpuLayoutLoader.getController();
-                if (controller.isExecuting())
-                     controller.keyboardInput(ke);
+                switch (ke.getCode()) {
+                    case UP:
+                    case DOWN:
+                    case LEFT:
+                    case RIGHT:
+                        if (controller.isExecuting()) {
+                            controller.keyboardInput(ke);
+                            ke.consume();
+                        }
+                }
             }
-        });
+        };
+        EventHandler<KeyEvent> onKeyTyped = (ke) -> {
+            CPUController controller = CpuLayoutLoader.getController();
+            if (controller.isExecuting()) {
+                controller.keyboardInput(ke);
+                ke.consume();
+            }
+        };
+
+        mainScene.addEventFilter(KeyEvent.KEY_TYPED, onKeyTyped);
+        mainScene.addEventFilter(KeyEvent.ANY, onKeyPressed);
 
         //pri kliknuti na tlacidlo zatvorenia okna
-        primaryStage.setOnCloseRequest(new EventHandler<WindowEvent>() {
-                                           @Override
-                                           public void handle(WindowEvent event) {
-                                               if (!((CPUController) CpuLayoutLoader.getController()).exit())
-                                                   event.consume(); //ak si to uzivatel rozmysli, nezatvaraj aplikaciu
-                                           }
-                                       });
+        primaryStage.setOnCloseRequest(event -> {
+            if (!((CPUController) CpuLayoutLoader.getController()).exit())
+                event.consume(); //ak si to uzivatel rozmysli, nezatvaraj aplikaciu
+        });
 
         primaryStage.setScene(mainScene);
         primaryStage.setTitle("CPU Emulator");
+        primaryStage.getIcons().add(new Image(getClass().getResourceAsStream("/icons/cpu_icon.png")));
         primaryStage.show();
 
         //Breadboard
@@ -74,16 +91,21 @@ public class App extends Application {
 
         Scene breadboardScene = new Scene(breadboardContent);
         breadboardScene.getStylesheets().add(getClass().getResource("/css/BreadboardSim_style.css").toExternalForm());
-        Stage breadboardStage = new Stage();
+        breadboardScene.addEventFilter(KeyEvent.KEY_TYPED, onKeyTyped);
+        breadboardScene.addEventFilter(KeyEvent.ANY, onKeyPressed);
 
-        breadboardScene.addEventFilter(KeyEvent.KEY_RELEASED, event ->{
-                    //ak bol stalceny delete
-                    if(event.getCode().equals(KeyCode.DELETE)){
+        Stage breadboardStage = new Stage();
+        breadboardStage.setTitle("Simulátor - Nový obvod");
+        breadboardStage.getIcons().add(new Image(getClass().getResourceAsStream("/icons/simulator_icon_128.png")));
+        breadboardScene.addEventFilter(KeyEvent.KEY_RELEASED, event -> {
+            //ak bol stalceny delete alebo backspace
+            if (event.getCode().equals(KeyCode.DELETE) || event.getCode().equals(KeyCode.BACK_SPACE)) {
                         ((BreadboardController) breadboardLayoutLoader.getController()).callDelete();
                     }
                 }
         );
+
         breadboardStage.setScene(breadboardScene);
-        breadboardStage.show();
+        ((CPUController) CpuLayoutLoader.getController()).setBreadboardStage(breadboardStage, breadboardLayoutLoader.getController());
     }
 }

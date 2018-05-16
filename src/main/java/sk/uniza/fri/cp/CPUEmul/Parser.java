@@ -1,17 +1,19 @@
 package sk.uniza.fri.cp.CPUEmul;
 
-import com.sun.org.apache.xerces.internal.impl.xpath.regex.Match;
 import javafx.concurrent.Task;
 import sk.uniza.fri.cp.CPUEmul.Exceptions.InvalidCodeLinesException;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.StringReader;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Parsuje prikazy z editoru do pola pre vykonavanie
- * @author Moris
+ * Trieda pre vytvorenie vlákna na parsovanie kódu do inštrukcií procesora.
+ *
+ * @author Tomáš Hianik
  * @version 1.0
  * @created 07-feb-2017 18:40:27
  */
@@ -31,7 +33,6 @@ public class Parser extends Task<Program>{
     private ArrayList<Byte> progMemory;
     private TreeMap<Integer, Integer> interruptionLabels; //<cislo prerusenia, adresa instrukcie>
 
-
     //POMOCNE
     //TreeMap pre zapisanie navestia a indexu instrukcie na ktoru odkazuje
     private TreeMap<String, Integer> labels = new TreeMap<>();
@@ -42,26 +43,102 @@ public class Parser extends Task<Program>{
     //uchovavanie chyb pre vypis na konzolu
     private ArrayList<String> errors;
     private ArrayList<Integer> errorLines;
-    //private PrintWriter printWriter;
 
-
+    /**
+     * Vytvorenie vlákna pre parsovanie kódu.
+     *
+     * @param code Kód, ktorý sa má parsovať na inštrukcie programu
+     * @param numberOfCodeLines Počet riadkov kódu pre približný odhad postupu pri parsovaní
+     */
 	public Parser(String code, int numberOfCodeLines){
         this.code = code;
-        numOfCodeLines = numberOfCodeLines;
-        //printWriter = pw;
-        instructions = new ArrayList<>(numberOfCodeLines);
-        instructionsWithLabels = new ArrayList<>();
-        progMemory = new ArrayList<>();
-        lineIndexToInstructionIndex = new TreeMap<>();
-        interruptionLabels = new TreeMap<>();
+        this.numOfCodeLines = numberOfCodeLines;
+        this.instructions = new ArrayList<>(numberOfCodeLines);
+        this.instructionsWithLabels = new ArrayList<>();
+        this.progMemory = new ArrayList<>();
+        this.lineIndexToInstructionIndex = new TreeMap<>();
+        this.interruptionLabels = new TreeMap<>();
 
-        hasError = false;
+        this.hasError = false;
 	}
 
     /**
-     * Parsovanie kodu programu
+     * Funkcia prijíma reťazec a kontroluje, či obsahuje inštrukciu, ktorá ale nemusi byť v správnom tvare
+     *
+     * @param line Reťazec s inštrukciou
+     * @return True - riadok obsahuje inštrukciu
      */
+    public static boolean isInstrucionLine(String line){
+        //odstranenie komentarov
+        Pattern patternComment = Pattern.compile(COMMENT_PATTERN);
+        line = patternComment.matcher(line).replaceAll("");
+        if(line.isEmpty()) return false;
 
+        //odstranenie navestia
+        Pattern patternLabel = Pattern.compile(LABEL_PATTERN);
+        line = patternLabel.matcher(line).replaceAll("");
+        if(line.isEmpty()) return false;
+
+        line = line.trim();
+
+        //pokus sa rozdelit instrukciu a parametre
+        String[] instructionParts = line.split("\\s*,\\s*|\\s+"); //rozdelenie instrukcie (medzery a ciarka)
+
+        //je instrukcia platna?
+        try {
+            enumInstructionsSet.valueOf(instructionParts[0].toUpperCase());
+            return true;
+        } catch (IllegalArgumentException e){
+            return false;
+        }
+    }
+
+    /**
+     * Funkcia pre parsovanie reťazca obsahujúceho číslo v decimálnej, binárnej, hexa, octa sústave alebo znak.
+     *
+     * @param constant Reťazec s číslom alebo znakom
+     * @return Ak sa podarilo parsovať číslo z jednej zo sústav alebo znak, vráti jeho reprezentáciu, inak -1.
+     */
+    static int parseConstant(String constant){
+
+        //hexa
+        if(constant.matches("0x.+")){
+            return Integer.parseInt(constant.substring(2), 16);
+        }
+
+        //binary
+        if(constant.matches("[0-1]+b$")){
+            return Integer.parseInt(constant.substring(0, constant.length()-1), 2);
+        }
+
+        //octa
+        if(constant.matches("^0[0-7]+")){
+            return Integer.parseInt(constant, 8);
+        }
+
+        //dec
+        if(constant.matches("(^[1-9][0-9]*)|(^0$)")){
+            return Integer.parseInt(constant);
+        }
+
+        //char
+        if(constant.matches(Regexes.rByteChar)){
+            return (int) constant.charAt(1);
+        }
+
+        try{
+            return Integer.parseInt(constant);
+        } catch (NumberFormatException e){
+            return -1;
+        }
+    }
+
+    /**
+     * Spustenie obsluhy vlákna a teda parsovanie kódu programu.
+     *
+     * @return Program obsahujúci inštrukcie pre procesor.
+     * @throws InvalidCodeLinesException Chyby pri parsovaní riadkov kódu.
+     */
     @Override
     protected Program call() throws InvalidCodeLinesException {
         int lineIndex = 0;
@@ -97,11 +174,20 @@ public class Parser extends Task<Program>{
                     //existuje uz dane navestie?
                     if(!labels.containsKey(label)) {
                         //kontrola, ci sa jedna o navestie pre prerusenie
-                        if(label.matches("int.*")){
-                            //navestie zacina int -> musi byt int00 az int0f
-                            if(label.matches("int0\\p{XDigit}")){
+                        if(label.matches("[iI][nN][tT].*")){
+                            // Karpis - navestie musi byt int00 az int15
+                            // alebo aj int00 az int0f
+                            if(label.matches("[iI][nN][tT]([0]\\d|[1][012345]|[0][abcdef])")){
                                 //splna podmienky navestia pre prerusenie
-                                int intNumber = Integer.parseInt(label.substring(4,5), 16);
+                                int intNumber;
+
+                                if(label.matches("int0\\p{XDigit}")){
+                                    // hexa
+                                    intNumber = Integer.parseInt(label.substring(4,5), 16);
+                                } else {
+                                    // dec
+                                    intNumber = Integer.parseInt(label.substring(3,5), 10);
+                                }
 
                                 if(!interruptionLabels.containsKey(intNumber)){
                                     interruptionLabels.put(intNumber, instructions.size()); //index nasledujucej instrukcie, ktora bude pridana
@@ -113,10 +199,11 @@ public class Parser extends Task<Program>{
                                 //asi to malo byt prerusenie ale je v zlom tvare
                                 addError("Nesprávny tvar návestia pre prerušenie '" + label + "'", lineIndex);
                             }
-                        } else {
-                            //obycajne navestie
-                            labels.put(label, instructions.size()); //index nasledujucej instrukcie, ktora bude pridana
                         }
+
+                        //obycajne navestie aj prerusenie, aby sa bolo mozne nan odkazova
+                        labels.put(label, instructions.size()); //index nasledujucej instrukcie, ktora bude pridana
+
                     } else {
                         addError("Návestie " + label + " už existuje", lineIndex);
                     }
@@ -194,6 +281,8 @@ public class Parser extends Task<Program>{
                                 case 2:
                                     instructions.add(new Instruction(codeInstruction, instructionParts.get(1), instructionParts.get(2)));
                                     break;
+                                default:
+                                    break;
                             }
 
                             //ak instrukcia pouziva navestie
@@ -243,7 +332,7 @@ public class Parser extends Task<Program>{
     }
 
     /**
-     * Metoda prevadza navestia na indexy, kam navestie ukazuje
+     * Metóda prevádza návestia na indexy, kam návestie ukazuje.
      */
     private void transformLabelsToIndexes(){
 	    //prechadzaj vsetky instrukcie, ktore pouzivaju navestie
@@ -271,9 +360,10 @@ public class Parser extends Task<Program>{
     }
 
     /**
-     * hlada a vracia riadok instrukcie
-     * @param instructionIndex Index instrukcie ku ktorej sa hlada riaok
-     * @return Index riadku na ktorom je instrukcia, ak sa nenasla, vracia -1
+     * Hľadá a vracia riadok inštrukcie.
+     *
+     * @param instructionIndex Index inštrukcie ku ktorej sa hľadá riadok
+     * @return Index riadku na ktorom je inštrukcia, ak sa nenašla, vracia -1
      */
     private int getLineOfInstruction(int instructionIndex){
         for (Map.Entry<Integer, Integer> entry : lineIndexToInstructionIndex.entrySet()) {
@@ -293,73 +383,6 @@ public class Parser extends Task<Program>{
         errors.add("["+(lineIndex+1)+"] " + err);
         errorLines.add(lineIndex);
         hasError = true;
-    }
-
-
-    //STATICKE
-
-    /**
-     * Funkcia prijima retazec a kontroluje, ci obsahuje instrukciu, ktora nemusi byt spravna
-     * @param line Retazec s instrukciou
-     * @return True - riadok obsahuje instrukciu
-     */
-    public static boolean isInstrucionLine(String line){
-        //odstranenie komentarov
-        Pattern patternComment = Pattern.compile(COMMENT_PATTERN);
-        line = patternComment.matcher(line).replaceAll("");
-        if(line.isEmpty()) return false;
-
-        //odstranenie navestia
-        Pattern patternLabel = Pattern.compile(LABEL_PATTERN);
-        line = patternLabel.matcher(line).replaceAll("");
-        if(line.isEmpty()) return false;
-
-        line = line.trim();
-
-        //pokus sa rozdelit instrukciu a parametre
-        String[] instructionParts = line.split("\\s*,\\s*|\\s+"); //rozdelenie instrukcie (medzery a ciarka)
-
-        //je instrukcia platna?
-        try {
-            enumInstructionsSet codeInstruction = enumInstructionsSet.valueOf(instructionParts[0].toUpperCase());
-            return true;
-        } catch (IllegalArgumentException e){
-            return false;
-        }
-    }
-
-    public static int parseConstant(String constant){
-
-        //hexa
-        if(constant.matches("0x.+")){
-            return Integer.parseInt(constant.substring(2), 16);
-        }
-
-        //binary
-        if(constant.matches("[0-1]+b$")){
-            return Integer.parseInt(constant.substring(0, constant.length()-1), 2);
-        }
-
-        //octa
-        if(constant.matches("^0[0-7]+")){
-            return Integer.parseInt(constant, 8);
-        }
-
-        //dec
-        if(constant.matches("(^[1-9][0-9]*)|(^0$)")){
-            return Integer.parseInt(constant);
-        }
-
-        //char
-        if(constant.matches(iRegexes.rByteChar)){
-            return (int) constant.charAt(1);
-        }
-
-        try{
-            return Integer.parseInt(constant);
-        } catch (NumberFormatException e){
-            return -1;
-        }
     }
 
 }//end Parser

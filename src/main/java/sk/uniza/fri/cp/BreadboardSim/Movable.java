@@ -1,17 +1,20 @@
 package sk.uniza.fri.cp.BreadboardSim;
 
-
 import javafx.event.EventHandler;
+import javafx.geometry.Bounds;
 import javafx.geometry.Point2D;
 import javafx.scene.Cursor;
-import javafx.scene.input.MouseDragEvent;
 import javafx.scene.input.MouseEvent;
-import sk.uniza.fri.cp.BreadboardSim.Devices.Device;
+import sk.uniza.fri.cp.BreadboardSim.Board.Board;
+import sk.uniza.fri.cp.BreadboardSim.Board.GridSystem;
+import sk.uniza.fri.cp.BreadboardSim.Wire.Joint;
 
 /**
- * @author Moris
+ * Objekt s ktorým je možné pohybovať pomocou kurzora na ploche simulátora.
+ *
+ * @author Tomáš Hianik
  * @version 1.0
- * @created 17-mar-2017 16:16:35
+ * @created 17.3.2017
  */
 public abstract class Movable extends HighlightGroup {
 
@@ -27,8 +30,8 @@ public abstract class Movable extends HighlightGroup {
 		public void handle(MouseEvent event) {
 			if(!event.isPrimaryButtonDown()) return;
 
-			nodeOffsetX = event.getSceneX() - getLayoutX();
-			nodeOffsetY = event.getSceneY() - getLayoutY();
+            nodeOffsetX = event.getSceneX() - getLayoutX() * board.getAppliedScale();
+            nodeOffsetY = event.getSceneY() - getLayoutY() * board.getAppliedScale();
 
 			event.consume();
 		}
@@ -44,21 +47,25 @@ public abstract class Movable extends HighlightGroup {
 			//ak nebol nastaveny offset, zrejme nejde o kliknutie na objekt a tahanie ale vytvorenie noveho objektu
 			//ten chceme chitit v strede
 			if(nodeOffsetX == -1){
-				nodeOffsetX = getBoundsInParent().getWidth()/2;
-				nodeOffsetY = getBoundsInParent().getHeight()/2;
-			}
+                Point2D layout = getParent().sceneToLocal(event.getSceneX(), event.getSceneY());
+                Bounds boundsInParent = getBoundsInParent();
+                nodeOffsetX = event.getSceneX() - (layout.getX() - boundsInParent.getWidth() / 2.0 - boundsInParent.getMinX()) * board.getAppliedScale();
+                nodeOffsetY = event.getSceneY() - (layout.getY() - boundsInParent.getHeight() / 2.0 - boundsInParent.getMinY()) * board.getAppliedScale();
+            }
 
 			GridSystem grid = board.getGrid();
 			int gridX;
 			int gridY;
 
 			if(event.getSource() instanceof Joint) {
-				gridX = (int) (Math.round((event.getSceneX() - board.getOriginSceneOffsetX()) / grid.getSizeX()) * grid.getSizeX()) / grid.getSizeX();
-				gridY = (int) (Math.round((event.getSceneY() - board.getOriginSceneOffsetY()) / grid.getSizeY()) * grid.getSizeY()) / grid.getSizeY();
-			} else {
-				gridX = (int) (Math.round((event.getSceneX() - nodeOffsetX) / grid.getSizeX()) * grid.getSizeX()) / grid.getSizeX();
-				gridY = (int) (Math.round((event.getSceneY() - nodeOffsetY) / grid.getSizeY()) * grid.getSizeY()) / grid.getSizeY();
-			}
+                //jointy chytame za stred
+                Point2D boardXY = board.sceneToBoard(event.getSceneX(), event.getSceneY());
+                gridX = (int) (Math.round(boardXY.getX() / grid.getSizeX()) * grid.getSizeX()) / grid.getSizeX();
+                gridY = (int) (Math.round(boardXY.getY() / grid.getSizeY()) * grid.getSizeY()) / grid.getSizeY();
+            } else {
+                gridX = (int) (Math.round((event.getSceneX() - nodeOffsetX) / grid.getSizeX() / board.getAppliedScale()) * grid.getSizeX()) / grid.getSizeX();
+                gridY = (int) (Math.round((event.getSceneY() - nodeOffsetY) / grid.getSizeY() / board.getAppliedScale()) * grid.getSizeY()) / grid.getSizeY();
+            }
 
 			//ak sa pozicia zmenila
 			if (gridPosX != gridX || gridPosY != gridY) {
@@ -110,13 +117,11 @@ public abstract class Movable extends HighlightGroup {
 	 * @param deltaY Y-ova zmena pozicie na mriezke oproti aktualnej
 	 */
 	public void moveBy(double deltaX, double deltaY){
-//		this.gridPosX += deltaX / board.getGrid().getSizeX();
-//		this.gridPosY += deltaY / board.getGrid().getSizeY();
-//		Point2D point = board.getGrid().gridToLocal(this.gridPosX, this.gridPosY);
-		//this.relocate(point.getX(), point.getY());
-		this.setLayoutX(getLayoutX() + deltaX);
-		this.setLayoutY(getLayoutY() + deltaY);
+        this.gridPosX += Math.round(deltaX) / board.getGrid().getSizeX();
+        this.gridPosY += Math.round(deltaY) / board.getGrid().getSizeY();
 
+        this.setLayoutX(getLayoutX() + deltaX);
+        this.setLayoutY(getLayoutY() + deltaY);
 	}
 
 	/**
@@ -127,8 +132,8 @@ public abstract class Movable extends HighlightGroup {
 	public void moveBy(int deltaX, int deltaY){
 		this.gridPosX += deltaX;
 		this.gridPosY += deltaY;
-		Point2D point = board.getGrid().gridToLocal(this.gridPosX, this.gridPosY);
-		this.relocate(point.getX(), point.getY());
+        Point2D point = board.getGrid().gridToPixel(this.gridPosX, this.gridPosY);
+        this.relocate(point.getX(), point.getY());
 	}
 
 	/**
@@ -145,8 +150,8 @@ public abstract class Movable extends HighlightGroup {
 	 * @param posY Suradnica Y na ploche board
 	 */
 	public void moveTo(double posX, double posY){
-		this.setLayoutX(posX);
-		this.setLayoutY(posY);
+        this.setLayoutX(posX);
+        this.setLayoutY(posY);
 		//this.relocate(posX, posY);
 	}
 
@@ -159,8 +164,8 @@ public abstract class Movable extends HighlightGroup {
 		this.gridPosX = gridPosX;
 		this.gridPosY = gridPosY;
 
-		Point2D point = getBoard().getGrid().gridToLocal(gridPosX, gridPosY);
-		this.setLayoutX(point.getX());
+        Point2D point = getBoard().getGrid().gridToPixel(gridPosX, gridPosY);
+        this.setLayoutX(point.getX());
 		this.setLayoutY(point.getY());
 		//this.relocate(point.getX(), point.getY());
 	}
@@ -173,9 +178,19 @@ public abstract class Movable extends HighlightGroup {
 		return this.board;
 	}
 
-	public int getGridPosX(){ return gridPosX; }
+    /**
+     * Vráti X-ovú pozíciu na ploche v jednotkách mriežky.
+     *
+     * @return X-ová pozícia na ploche v jednotkách mriežky.
+     */
+    public int getGridPosX(){ return gridPosX; }
 
-	public int getGridPosY(){ return gridPosY; }
+    /**
+     * Vráti Y-ovú pozíciu na ploche v jednotkách mriežky.
+     *
+     * @return Y-ová pozícia na ploche v jednotkách mriežky.
+     */
+    public int getGridPosY(){ return gridPosY; }
 
 	/**
 	 * Aktualizácia premenných pozície. Nepremiestňuje objekt a nemusí odpovedať naozajstrej pozícií v rámci plochy.

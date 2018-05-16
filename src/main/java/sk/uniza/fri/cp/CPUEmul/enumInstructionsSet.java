@@ -1,11 +1,16 @@
 package sk.uniza.fri.cp.CPUEmul;
 
+import static sk.uniza.fri.cp.CPUEmul.Regexes.rByte;
+import static sk.uniza.fri.cp.CPUEmul.Regexes.rShort;
+
 /**
- * @author Moris
+ * Inštrukčná sada CPU Emulátora.
+ *
+ * @author Tomáš Hianik
  * @version 1.0
  * @created 07-feb-2017 18:40:27
  */
-public enum enumInstructionsSet implements iRegexes{
+enum enumInstructionsSet{
 
     //artimeticke a logicke inst.
     ADD("(?i)A|B|C|D", "(?i)A|B|C|D"),
@@ -71,10 +76,13 @@ public enum enumInstructionsSet implements iRegexes{
     SCALL("(?i)KPR|KEY|DSP"),
     BYTE(rByte);
 
+    /**
+     * Počet parametrov inštrukcie
+     */
     private int numOfParameters;
-    private String firstRegex;
-    private String secondRegex;
-    private boolean usesLabel;
+    private String firstRegex; //regex pre prvý paremeter
+    private String secondRegex; //regex pre druhý parameter
+    private boolean usesLabel; //indikátor použitia návestia v inštrukcií
 
     enumInstructionsSet(){
         numOfParameters = 0;
@@ -97,18 +105,38 @@ public enum enumInstructionsSet implements iRegexes{
         secondRegex = secondArg;
     }
 
+    /**
+     * Vracia počet parametrov inštrukcie.
+     *
+     * @return Počet parametrov inštrukcie.
+     */
     public int getNumOfParameters() {
         return numOfParameters;
     }
 
+    /**
+     * Regex výraz pre prvý parameter inštrukcie.
+     *
+     * @return Regex výraz pre prvý parameter.
+     */
     public String getFirstRegex() {
         return firstRegex;
     }
 
+    /**
+     * Regex výraz pre druhý parameter inštrukcie.
+     *
+     * @return Regex výraz pre prvý parameter.
+     */
     public String getSecondRegex() {
         return secondRegex;
     }
 
+    /**
+     * Používa inštrukcia návestie?
+     *
+     * @return True ak inštrukcia používa navestie, false inak.
+     */
     public boolean usesLabel() {
         return usesLabel;
     }

@@ -1,52 +1,96 @@
 package sk.uniza.fri.cp.CPUEmul;
 
 /**
- * @author Moris
+ * Trieda pre inštrukciu programu spolu s parametrami.
+ *
+ * @author Tomáš Hianik
  * @version 1.0
  * @created 07-feb-2017 18:40:27
  */
-public class Instruction {
+class Instruction {
 
 	private String firstParameter;
 	private String secondParameter;
 	private enumInstructionsSet type;
 
-	public Instruction(enumInstructionsSet typeOfInstruction){
+    /**
+     * Konštruktor pre inštrukciu bez parametrov.
+     *
+     * @param typeOfInstruction Typ inštrukcie
+     */
+	Instruction(enumInstructionsSet typeOfInstruction){
 		this.type = typeOfInstruction;
 		this.firstParameter = null;
 		this.secondParameter = null;
 	}
 
-	public Instruction(enumInstructionsSet typeOfInstruction, String firstParameter){
+    /**
+     * Konštruktor pre inštrukciu s jedným parametrom.
+     *
+     * @param typeOfInstruction Typ inštrukcie
+     * @param firstParameter Prvý parameter inštrukcie
+     */
+	Instruction(enumInstructionsSet typeOfInstruction, String firstParameter){
 		this.type = typeOfInstruction;
 		this.firstParameter = firstParameter;
 		this.secondParameter = null;
 	}
 
-	public Instruction(enumInstructionsSet typeOfInstruction, String firstParameter, String secondParameter){
+    /**
+     * Konštruktor pre inštrukciu s dvoma parametrami.
+     *
+     * @param typeOfInstruction Typ inštrukcie
+     * @param firstParameter Prvý parameter inštrukcie
+     * @param secondParameter Druhý parameter inštrukcie
+     */
+	Instruction(enumInstructionsSet typeOfInstruction, String firstParameter, String secondParameter){
 		this.type = typeOfInstruction;
 		this.firstParameter = firstParameter;
 		this.secondParameter = secondParameter;
 	}
 
-	public String getFirstParameter() {
+    /**
+     * Prvý parameter inštrukcie, ak ho inštrukcia má.
+     *
+     * @return Prvý parameter inštrukcie.
+     */
+	String getFirstParameter() {
 		return firstParameter;
 	}
 
-	public void setFirstParameter(String firstParameter) {
+    /**
+     * Nastavenie prvého parametra inštrukcie, ak ho inštrukcia má.
+     *
+     * @param firstParameter Nový prvý parameter inštrukcie.
+     */
+	void setFirstParameter(String firstParameter) {
 		this.firstParameter = firstParameter;
 	}
 
-	public String getSecondParameter() {
+    /**
+     * Druhý parameter inštrukcie, ak ho inštrukcia má.
+     *
+     * @return Druhý parameter inštrukcie.
+     */
+	String getSecondParameter() {
 		return secondParameter;
 	}
 
-	public void setSecondParameter(String secondParameter) {
+    /**
+     * Nastavenie druhého parametra inštrukcie, ak ho inštrukcia má.
+     *
+     * @param secondParameter Nový druhý parameter inštrukcie.
+     */
+	void setSecondParameter(String secondParameter) {
 		this.secondParameter = secondParameter;
 	}
 
-	public enumInstructionsSet getType(){
+    /**
+     * Typ inštrukcie z inštrukčnej sady.
+     *
+     * @return Typ inštrukcie
+     */
+	enumInstructionsSet getType(){
 		return type;
 	}
-
-}//end Instruction
+}

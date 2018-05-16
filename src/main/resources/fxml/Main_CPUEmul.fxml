@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import java.lang.String?>
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.ButtonBar?>
@@ -21,6 +22,7 @@
 <?import javafx.scene.control.TitledPane?>
 <?import javafx.scene.control.ToggleButton?>
 <?import javafx.scene.control.ToggleGroup?>
+<?import javafx.scene.control.Tooltip?>
 <?import javafx.scene.input.KeyCodeCombination?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.BorderPane?>
@@ -32,7 +34,8 @@
 <?import javafx.scene.text.Font?>
 <?import org.controlsfx.control.ToggleSwitch?>
 
-<BorderPane fx:id="rootPane" prefHeight="640.0" prefWidth="1000.0" xmlns="http://javafx.com/javafx/8.0.111" xmlns:fx="http://javafx.com/fxml/1" fx:controller="sk.uniza.fri.cp.App.CPUControl.CPUController">
+<BorderPane fx:id="rootPane" prefHeight="640.0" prefWidth="1000.0" xmlns="http://javafx.com/javafx/8.0.141"
+            xmlns:fx="http://javafx.com/fxml/1" fx:controller="sk.uniza.fri.cp.App.CPUControl.CPUController">
    <top>
       <VBox BorderPane.alignment="CENTER">
          <children>
@@ -43,34 +46,54 @@
                     <MenuItem mnemonicParsing="false" onAction="#handleMenuFileNewAction" text="Nový">
                            <accelerator>
                               <KeyCodeCombination alt="UP" code="N" control="DOWN" meta="UP" shift="UP" shortcut="UP" />
-                           </accelerator></MenuItem>
+                           </accelerator>
+                        <styleClass>
+                            <String fx:value="item"/>
+                            <String fx:value="item-new"/>
+                        </styleClass>
+                    </MenuItem>
                         <MenuItem mnemonicParsing="false" onAction="#handleMenuFileOpenAction" text="Otvoriť...">
                            <accelerator>
                               <KeyCodeCombination alt="UP" code="O" control="DOWN" meta="UP" shift="UP" shortcut="UP" />
-                           </accelerator></MenuItem>
+                           </accelerator>
+                            <styleClass>
+                                <String fx:value="item"/>
+                                <String fx:value="item-open"/>
+                            </styleClass>
+                        </MenuItem>
                         <MenuItem mnemonicParsing="false" onAction="#handleMenuFileSaveAction" text="Uložiť">
                            <accelerator>
                               <KeyCodeCombination alt="UP" code="S" control="DOWN" meta="UP" shift="UP" shortcut="UP" />
-                           </accelerator></MenuItem>
+                           </accelerator>
+                            <styleClass>
+                                <String fx:value="item"/>
+                                <String fx:value="item-save"/>
+                            </styleClass>
+                        </MenuItem>
                         <MenuItem mnemonicParsing="false" onAction="#handleMenuFileSaveAsAction" text="Uložiť ako...">
                            <accelerator>
                               <KeyCodeCombination alt="UP" code="S" control="DOWN" meta="UP" shift="DOWN" shortcut="UP" />
-                           </accelerator></MenuItem>
+                           </accelerator>
+                            <styleClass>
+                                <String fx:value="item"/>
+                                <String fx:value="item-save-as"/>
+                            </styleClass>
+                        </MenuItem>
                         <SeparatorMenuItem mnemonicParsing="false" />
-                        <MenuItem mnemonicParsing="false" onAction="#handleMenuFileExitAction" text="Koniec" />
+                      <MenuItem mnemonicParsing="false" onAction="#handleMenuFileExitAction" styleClass="item-close"
+                                text="Koniec"/>
                   </items>
                 </Menu>
                 <Menu mnemonicParsing="false" text="Nastavenia">
                   <items>
-                        <CheckMenuItem fx:id="chmiSettingsSync" mnemonicParsing="false" onAction="#handleMenuSettingSyncAction" selected="true" text="Synchónne" />
-                        <CheckMenuItem fx:id="chmiSettingsAsync" mnemonicParsing="false" onAction="#handleMenuSettingAsyncAction" text="Asynchónne" />
-                        <SeparatorMenuItem mnemonicParsing="false" />
                         <CheckMenuItem fx:id="chmiSettingsINTLevel" mnemonicParsing="false" onAction="#handleMenuSettingsINTLevelAction" selected="true" text="INT - Level" />
                         <CheckMenuItem fx:id="chmiSettingsINTChange" mnemonicParsing="false" onAction="#handleMenuSettingsINTChangeAction" text="INT - Zmena" />
                         <SeparatorMenuItem mnemonicParsing="false" />
                         <CheckMenuItem fx:id="chmiSettingsMicrostep" mnemonicParsing="false" onAction="#handleMenuSettingsMicrostepAction" text="Mikro krokovanie" />
                         <SeparatorMenuItem mnemonicParsing="false" />
-                        <CheckMenuItem fx:id="chmiSettingsAllowUpdateGUI" mnemonicParsing="false" onAction="#handleMenuSettingsAllowUpdateGUIAction" text="Povoliť aktualizáciu GUI" />
+                      <CheckMenuItem fx:id="chmiSettingsAllowUpdateGUI" mnemonicParsing="false"
+                                     onAction="#handleMenuSettingsAllowUpdateGUIAction" selected="true"
+                                     text="Povoliť aktualizáciu GUI"/>
                   </items>
                 </Menu>
                 <Menu mnemonicParsing="false" text="Pomoc">
@@ -80,28 +103,75 @@
                 </Menu>
               </menus>
             </MenuBar>
-            <HBox alignment="CENTER">
+             <HBox fx:id="toolBox" alignment="CENTER">
                <children>
-                  <ButtonBar buttonMinWidth="100.0" maxWidth="1.7976931348623157E308" prefHeight="40.0" prefWidth="200.0">
+                   <ButtonBar buttonMinWidth="25.0">
+                       <buttons>
+                           <Button accessibleHelp="Nový súbor" mnemonicParsing="false"
+                                   onAction="#handleMenuFileNewAction" styleClass="btn-new">
+                               <tooltip>
+                                   <Tooltip text="Nový kód"/>
+                               </tooltip>
+                           </Button>
+                           <Button layoutX="20.0" layoutY="18.0" mnemonicParsing="false"
+                                   onAction="#handleMenuFileOpenAction" styleClass="btn-open">
+                               <tooltip>
+                                   <Tooltip text="Otvoriť kód"/>
+                               </tooltip>
+                           </Button>
+                           <Button layoutX="115.0" layoutY="18.0" mnemonicParsing="false"
+                                   onAction="#handleMenuFileSaveAction" styleClass="btn-save">
+                               <tooltip>
+                                   <Tooltip text="Uložiť kód"/>
+                               </tooltip>
+                           </Button>
+                           <Button layoutX="65.0" layoutY="18.0" mnemonicParsing="false"
+                                   onAction="#handleMenuFileSaveAsAction" styleClass="btn-save-as">
+                               <tooltip>
+                                   <Tooltip text="Uložiť kód ako"/>
+                               </tooltip>
+                           </Button>
+                       </buttons>
+                   </ButtonBar>
+                   <ButtonBar buttonMinWidth="110.0" maxWidth="1.7976931348623157E308" prefHeight="40.0">
                     <buttons>
-                        <Button fx:id="btnParse" layoutX="280.0" layoutY="18.0" mnemonicParsing="false" onAction="#handleButtonParseAction" text="Zaveď [F4]" />
-                        <Button fx:id="btnStart" mnemonicParsing="false" onAction="#handleButtonStartAction" text="Spusti [F5]" />
-                      <Button fx:id="btnStep" mnemonicParsing="false" onAction="#handleButtonStepAction" text="Krok [F7]" />
-                        <Button fx:id="btnPause" layoutX="450.0" layoutY="18.0" mnemonicParsing="false" onAction="#handleButtonPauseAction" text="Pauza [F9]" />
-                        <Button fx:id="btnReset" layoutX="370.0" layoutY="18.0" mnemonicParsing="false" onAction="#handleButtonResetAction" text="Reset [F12]" />
-                        <Button fx:id="btnStop" layoutX="535.0" layoutY="18.0" mnemonicParsing="false" onAction="#handleButtonStopAction" text="Stop [F10]" />
-                        <Button mnemonicParsing="false" onMousePressed="#handleButtonDevInt01ActionPressed" onMouseReleased="#handleButtonDevInt01ActionReleased" text="DEV - Int01" textFill="#b20b0b" />
+                        <Button fx:id="btnParse" alignment="BASELINE_LEFT" layoutX="280.0" layoutY="18.0"
+                                mnemonicParsing="false" onAction="#handleButtonParseAction" styleClass="btn-parse"
+                                text="Syntax [F4]"/>
+                        <Button fx:id="btnStart" alignment="BASELINE_LEFT" mnemonicParsing="false"
+                                onAction="#handleButtonStartAction" styleClass="btn-play" text="Spusti [F5]"/>
+                        <Button fx:id="btnStep" alignment="BASELINE_LEFT" mnemonicParsing="false"
+                                onAction="#handleButtonStepAction" styleClass="btn-step" text="Krok [F7]"/>
+                        <Button fx:id="btnPause" alignment="BASELINE_LEFT" layoutX="450.0" layoutY="18.0"
+                                mnemonicParsing="false" onAction="#handleButtonPauseAction" styleClass="btn-pause"
+                                text="Pauza [F9]"/>
+                        <Button fx:id="btnReset" alignment="BASELINE_LEFT" layoutX="370.0" layoutY="18.0"
+                                mnemonicParsing="false" onAction="#handleButtonResetAction" styleClass="btn-reset"
+                                text="Reset [F12]"/>
+                        <Button fx:id="btnStop" alignment="BASELINE_LEFT" layoutX="535.0" layoutY="18.0"
+                                mnemonicParsing="false" onAction="#handleButtonStopAction" styleClass="btn-stop"
+                                text="Stop [F10]"/>
                     </buttons>
                   </ButtonBar>
+                   <ButtonBar prefHeight="40.0" prefWidth="200.0" HBox.hgrow="ALWAYS">
+                       <buttons>
+                           <Button fx:id="btnSimulator" mnemonicParsing="false" onAction="#handleButtonSimulatorAction"
+                                   text="Simulátor"/>
+                       </buttons>
+                       <padding>
+                           <Insets left="20.0" right="20.0"/>
+                       </padding>
+                   </ButtonBar>
                   <Region HBox.hgrow="ALWAYS" />
-                  <ToggleSwitch fx:id="tsConnectBusUsb" alignment="CENTER" contentDisplay="CENTER" maxHeight="-Infinity" text="Komunikovať cez USB" HBox.hgrow="NEVER">
+                   <ToggleSwitch fx:id="tsConnectBusUsb" alignment="CENTER" contentDisplay="CENTER"
+                                 maxHeight="-Infinity" text="Komunikovať cez USB " HBox.hgrow="NEVER">
                      <HBox.margin>
                         <Insets />
                      </HBox.margin>
                   </ToggleSwitch>
                </children>
                <padding>
-                  <Insets right="10.0" />
+                   <Insets left="10.0" right="10.0"/>
                </padding>
             </HBox>
          </children>
@@ -116,11 +186,14 @@
                   <Label fx:id="lbStatus" text="Stav" />
                </children>
             </HBox>
-            <HBox fx:id="hboxUpdateGUIInt" alignment="CENTER_RIGHT" disable="true" minWidth="50.0" prefHeight="100.0" prefWidth="50.0" spacing="5.0" HBox.hgrow="ALWAYS">
+             <HBox fx:id="hboxUpdateGUIInt" alignment="CENTER_RIGHT" minWidth="50.0" prefHeight="100.0" prefWidth="50.0"
+                   spacing="5.0" HBox.hgrow="ALWAYS">
                <children>
                   <Label alignment="CENTER_RIGHT" contentDisplay="RIGHT" text="Interval obnovy GUI" textAlignment="RIGHT" />
-                  <Slider fx:id="sliderUpdateGUIInt" blockIncrement="5.0" max="150.0" min="10.0" snapToTicks="true" value="10.0" HBox.hgrow="NEVER" />
-                  <Label fx:id="lbUpdateGUIIntValue" alignment="CENTER_RIGHT" contentDisplay="RIGHT" minWidth="25.0" text="10" textAlignment="RIGHT" />
+                   <Slider fx:id="sliderUpdateGUIInt" blockIncrement="5.0" majorTickUnit="10.0" max="150.0" min="10.0"
+                           minorTickCount="5" snapToTicks="true" value="150.0" HBox.hgrow="NEVER"/>
+                   <Label fx:id="lbUpdateGUIIntValue" alignment="CENTER_RIGHT" contentDisplay="RIGHT" minWidth="25.0"
+                          text="150" textAlignment="RIGHT"/>
                   <Label text="ms" />
                </children>
             </HBox>
@@ -167,10 +240,25 @@
                                                    <toggleGroup>
                                                       <ToggleGroup fx:id="btnGroupRegisters" />
                                                    </toggleGroup>
+                                                      <font>
+                                                          <Font size="11.0"/>
+                                                      </font>
                                                   </ToggleButton>
-                                                  <ToggleButton text="Hex" toggleGroup="$btnGroupRegisters" />
-                                                  <ToggleButton text="Bin" toggleGroup="$btnGroupRegisters" />
-                                                <ToggleButton text="ASCII" toggleGroup="$btnGroupRegisters" />
+                                                 <ToggleButton text="Hex" toggleGroup="$btnGroupRegisters">
+                                                     <font>
+                                                         <Font size="11.0"/>
+                                                     </font>
+                                                 </ToggleButton>
+                                                 <ToggleButton text="Bin" toggleGroup="$btnGroupRegisters">
+                                                     <font>
+                                                         <Font size="11.0"/>
+                                                     </font>
+                                                 </ToggleButton>
+                                                 <ToggleButton text="ASCII" toggleGroup="$btnGroupRegisters">
+                                                     <font>
+                                                         <Font size="11.0"/>
+                                                     </font>
+                                                 </ToggleButton>
                                              </children>
                                           </HBox>
                                           <Separator layoutX="10.0" layoutY="110.0" />
@@ -324,7 +412,8 @@
                                                    <children>
                                                       <HBox alignment="TOP_CENTER" spacing="5.0" VBox.vgrow="NEVER">
                                                          <children>
-                                                            <HBox alignment="CENTER" maxWidth="1.7976931348623157E308" prefWidth="90.0" spacing="2.0">
+                                                             <HBox alignment="CENTER" maxWidth="1.7976931348623157E308"
+                                                                   prefWidth="80.0" spacing="2.0">
                                                                <children>
                                                                   <ToggleButton selected="true" text="Dec">
                                                                      <font>
@@ -345,9 +434,9 @@
                                                                </HBox.margin>
                                                             </HBox>
                                                             <Separator orientation="VERTICAL" prefWidth="5.0" />
-                                                            <HBox alignment="CENTER" prefWidth="120.0">
+                                                             <HBox alignment="CENTER" prefWidth="130.0">
                                                                <children>
-                                                                  <ToggleButton minWidth="28.0" selected="true" text="Dec">
+                                                                   <ToggleButton selected="true" text="Dec">
                                                                      <font>
                                                                         <Font size="9.0" />
                                                                      </font>
@@ -355,17 +444,20 @@
                                                                         <ToggleGroup fx:id="btnGroupStackData" />
                                                                      </toggleGroup>
                                                                   </ToggleButton>
-                                                                  <ToggleButton minWidth="28.0" text="Hex" toggleGroup="$btnGroupStackData">
+                                                                   <ToggleButton text="Hex"
+                                                                                 toggleGroup="$btnGroupStackData">
                                                                      <font>
                                                                         <Font size="9.0" />
                                                                      </font>
                                                                   </ToggleButton>
-                                                                  <ToggleButton minWidth="25.0" text="Bin" toggleGroup="$btnGroupStackData">
+                                                                   <ToggleButton text="Bin"
+                                                                                 toggleGroup="$btnGroupStackData">
                                                                      <font>
                                                                         <Font size="9.0" />
                                                                      </font>
                                                                   </ToggleButton>
-                                                                  <ToggleButton minWidth="33.0" text="ASCII" toggleGroup="$btnGroupStackData">
+                                                                   <ToggleButton text="ASCII"
+                                                                                 toggleGroup="$btnGroupStackData">
                                                                      <font>
                                                                         <Font size="9.0" />
                                                                      </font>
@@ -397,7 +489,8 @@
                                                    <children>
                                                       <HBox alignment="TOP_CENTER" spacing="5.0" VBox.vgrow="NEVER">
                                                          <children>
-                                                            <HBox alignment="CENTER" maxWidth="1.7976931348623157E308" prefWidth="120.0" spacing="2.0">
+                                                             <HBox alignment="CENTER" maxWidth="1.7976931348623157E308"
+                                                                   prefWidth="90.0" spacing="2.0">
                                                                <children>
                                                                   <ToggleButton selected="true" text="Dec">
                                                                      <toggleGroup>
@@ -420,7 +513,8 @@
                                                             <Separator orientation="VERTICAL" prefWidth="5.0" />
                                                             <HBox alignment="CENTER" prefWidth="120.0">
                                                                <children>
-                                                                  <ToggleButton selected="true" text="Dec">
+                                                                   <ToggleButton minWidth="28.0" selected="true"
+                                                                                 text="Dec">
                                                                      <toggleGroup>
                                                                         <ToggleGroup fx:id="btnGroupProgMemoryData" />
                                                                      </toggleGroup>
@@ -428,17 +522,20 @@
                                                                         <Font size="9.0" />
                                                                      </font>
                                                                   </ToggleButton>
-                                                                  <ToggleButton text="Hex" toggleGroup="$btnGroupProgMemoryData">
+                                                                   <ToggleButton minWidth="28.0" text="Hex"
+                                                                                 toggleGroup="$btnGroupProgMemoryData">
                                                                      <font>
                                                                         <Font size="9.0" />
                                                                      </font>
                                                                   </ToggleButton>
-                                                                  <ToggleButton text="Bin" toggleGroup="$btnGroupProgMemoryData">
+                                                                   <ToggleButton minWidth="28.0" text="Bin"
+                                                                                 toggleGroup="$btnGroupProgMemoryData">
                                                                      <font>
                                                                         <Font size="9.0" />
                                                                      </font>
                                                                   </ToggleButton>
-                                                                  <ToggleButton text="ASCII" toggleGroup="$btnGroupProgMemoryData">
+                                                                   <ToggleButton minWidth="33.0" text="ASCII"
+                                                                                 toggleGroup="$btnGroupProgMemoryData">
                                                                      <font>
                                                                         <Font size="9.0" />
                                                                      </font>
@@ -452,7 +549,10 @@
                                                       </HBox>
                                                       <TableView fx:id="tableViewProgMemory" VBox.vgrow="ALWAYS">
                                                          <columns>
-                                                            <TableColumn fx:id="tableColumnProgMemoryAddr" editable="false" minWidth="100.0" prefWidth="125.0" sortable="false" text="Addr" />
+                                                             <TableColumn fx:id="tableColumnProgMemoryAddr"
+                                                                          editable="false" minWidth="70.0"
+                                                                          prefWidth="70.0" sortable="false"
+                                                                          text="Addr"/>
                                                             <TableColumn fx:id="tableColumnProgMemoryData" editable="false" minWidth="100.0" prefWidth="125.0" sortable="false" text="Data" />
                                                          </columns>
                                                          <columnResizePolicy>
@@ -469,7 +569,8 @@
                                                    <children>
                                                       <HBox alignment="TOP_CENTER" spacing="5.0" VBox.vgrow="NEVER">
                                                          <children>
-                                                            <HBox alignment="CENTER" maxWidth="1.7976931348623157E308" prefWidth="120.0" spacing="2.0">
+                                                             <HBox alignment="CENTER" maxWidth="1.7976931348623157E308"
+                                                                   prefWidth="90.0" spacing="2.0">
                                                                <children>
                                                                   <ToggleButton selected="true" text="Dec">
                                                                      <font>
@@ -492,7 +593,8 @@
                                                             <Separator orientation="VERTICAL" prefWidth="5.0" />
                                                             <HBox alignment="CENTER" prefWidth="120.0">
                                                                <children>
-                                                                  <ToggleButton selected="true" text="Dec">
+                                                                   <ToggleButton minWidth="28.0" selected="true"
+                                                                                 text="Dec">
                                                                      <font>
                                                                         <Font size="9.0" />
                                                                      </font>
@@ -500,17 +602,20 @@
                                                                         <ToggleGroup fx:id="btnGroupRAMData" />
                                                                      </toggleGroup>
                                                                   </ToggleButton>
-                                                                  <ToggleButton text="Hex" toggleGroup="$btnGroupRAMData">
+                                                                   <ToggleButton minWidth="28.0" text="Hex"
+                                                                                 toggleGroup="$btnGroupRAMData">
                                                                      <font>
                                                                         <Font size="9.0" />
                                                                      </font>
                                                                   </ToggleButton>
-                                                                  <ToggleButton text="Bin" toggleGroup="$btnGroupRAMData">
+                                                                   <ToggleButton minWidth="28.0" text="Bin"
+                                                                                 toggleGroup="$btnGroupRAMData">
                                                                      <font>
                                                                         <Font size="9.0" />
                                                                      </font>
                                                                   </ToggleButton>
-                                                                  <ToggleButton text="ASCII" toggleGroup="$btnGroupRAMData">
+                                                                   <ToggleButton minWidth="33.0" text="ASCII"
+                                                                                 toggleGroup="$btnGroupRAMData">
                                                                      <font>
                                                                         <Font size="9.0" />
                                                                      </font>
@@ -524,7 +629,9 @@
                                                       </HBox>
                                                       <TableView fx:id="tableViewRAM" VBox.vgrow="ALWAYS">
                                                          <columns>
-                                                            <TableColumn fx:id="tableColumnRAMAddr" editable="false" minWidth="100.0" prefWidth="125.0" sortable="false" text="Addr" />
+                                                             <TableColumn fx:id="tableColumnRAMAddr" editable="false"
+                                                                          minWidth="70.0" prefWidth="70.0"
+                                                                          sortable="false" text="Addr"/>
                                                             <TableColumn fx:id="tableColumnRAMData" editable="false" minWidth="100.0" prefWidth="125.0" sortable="false" text="Data" />
                                                          </columns>
                                                          <columnResizePolicy>

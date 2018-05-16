@@ -1,76 +1,99 @@
 package sk.uniza.fri.cp.BreadboardSim.Components;
 
+import javafx.application.Platform;
 import javafx.event.Event;
 import javafx.event.EventHandler;
 import javafx.scene.Group;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.MenuItem;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
-import javafx.scene.layout.Region;
+import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Rectangle;
-
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
-import sk.uniza.fri.cp.BreadboardSim.*;
+import sk.uniza.fri.cp.BreadboardSim.Board.Board;
+import sk.uniza.fri.cp.BreadboardSim.Board.BoardChangeEvent;
+import sk.uniza.fri.cp.BreadboardSim.Board.GridSystem;
+import sk.uniza.fri.cp.BreadboardSim.Devices.Device;
+import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.InputPin;
+import sk.uniza.fri.cp.BreadboardSim.Devices.Pin.Pin;
+import sk.uniza.fri.cp.BreadboardSim.SchoolBreadboard;
+import sk.uniza.fri.cp.BreadboardSim.Socket.Potential;
+import sk.uniza.fri.cp.BreadboardSim.Socket.Socket;
+import sk.uniza.fri.cp.BreadboardSim.Socket.SocketType;
+import sk.uniza.fri.cp.BreadboardSim.Socket.SocketsFactory;
+
+import java.util.List;
 
 /**
- * Komponent s klavesnicou
- * @author Moris
+ * Komponent s klavesnicou.
+ *
+ * @author Tomáš Hianik
  * @version 1.0
  * @created 17-mar-2017 16:16:35
  */
 public class NumKeys extends Component {
 
-	private static int id = 1;
+    private Socket[] columnSockets;
+    private Socket[] rowSockets;
+    private Button[][] buttons;
 
-	private Rectangle background;
-	private Group buttonsGroup;
-
-	private Socket[] columnSockets;
-	private Socket[] rowSockets;
-
-	//konetxtove menu
-	private ContextMenu contextMenu;
+    //kontextove menu
+    private ContextMenu contextMenu;
 	private MenuItem miChangeButtonBehaviour;
 	private boolean twoClick;
-	boolean leftMouseButtonDown;
+    private boolean leftMouseButtonDown;
 
-	public NumKeys(Board board){
-		super(board, id++);
+    /**
+     * Konštruktor pre itemPicker.
+     */
+    public NumKeys() {
+    }
 
-		columnSockets = new Socket[4];
-		rowSockets = new Socket[4];
+    /**
+     * Konštruktor pre vytvorenie objektu určeného pre plochu siumlátora.
+     *
+     * @param board Plocha simulátora
+     */
+    public NumKeys(Board board) {
+        super(board);
 
-		//grafika
-		GridSystem grid = getBoard().getGrid();
+        columnSockets = new Socket[4];
+        rowSockets = new Socket[4];
+        buttons = new Button[4][4];
 
-		this.gridWidth = grid.getSizeX() * 22;
-		this.gridHeight = grid.getSizeY() * 17;
-		background = new Rectangle(this.gridWidth, this.gridHeight, Color.rgb(51,100,68));
+        //grafika
+        GridSystem grid = getBoard().getGrid();
 
-		//sokety
-		Group columnGroup = generateColumnSockets();
-		columnGroup.setLayoutX(grid.getSizeX() * 6);
-		columnGroup.setLayoutY(grid.getSizeY() * 2);
+        this.gridWidth = grid.getSizeX() * 22;
+        this.gridHeight = grid.getSizeY() * 17;
+        Rectangle background = new Rectangle(this.gridWidth, this.gridHeight, SchoolBreadboard.BACKGROUND_COLOR);
+
+        //sokety
+        Group columnGroup = generateColumnSockets();
+        columnGroup.setLayoutX(grid.getSizeX() * 6);
+        columnGroup.setLayoutY(grid.getSizeY() * 2);
 
         Group rowGroup = generateRowSockets();
         rowGroup.setLayoutX(grid.getSizeX() * 15);
         rowGroup.setLayoutY(grid.getSizeY() * 2);
 
         //GND
-		Group gndGroup = SocketsFactory.getHorizontalPower(this, 1, 4, Potential.Value.LOW, getPowerSockets());
-		Text rowText = Board.getLabelText("GND", grid.getSizeMin());
-		rowText.setLayoutX(grid.getSizeX() * 4);
-		rowText.setLayoutY(rowText.getBoundsInParent().getHeight()/2.0);
-		gndGroup.getChildren().add(rowText);
+        Group gndGroup = SocketsFactory.getHorizontalPower(this, 4, Potential.Value.LOW, getPowerSockets());
+        Text rowText = Board.getLabelText("GND", grid.getSizeMin());
+        rowText.setLayoutX(grid.getSizeX() * 4);
+        rowText.setLayoutY(rowText.getBoundsInParent().getHeight()/2.0);
+        gndGroup.getChildren().add(rowText);
 
         gndGroup.setLayoutX(grid.getSizeX() * 15);
         gndGroup.setLayoutY(grid.getSizeY());
 
         //+5V
-        Group vccGroup = SocketsFactory.getHorizontalPower(this, 1, 2, Potential.Value.HIGH, getPowerSockets());
+        Group vccGroup = SocketsFactory.getHorizontalPower(this, 2, Potential.Value.HIGH, getPowerSockets());
         Text vccText = Board.getLabelText("+5V", grid.getSizeMin());
         vccText.setLayoutX(grid.getSizeX()/2.0 - vccText.getBoundsInLocal().getWidth()/2.0);
         vccText.setLayoutY( grid.getSizeY() * 1.5);
@@ -79,46 +102,56 @@ public class NumKeys extends Component {
         vccGroup.setLayoutX(grid.getSizeX() * 11);
         vccGroup.setLayoutY(grid.getSizeY() * 2);
 
-		//tlacitka
-		buttonsGroup = new Group();
+        //tlacitka
+        Group buttonsGroup = new Group();
 
-		for (int y = 0; y < 4; y++) {
-			for (int x = 0; x < 4; x++) {
-				Button button = new Button(rowSockets[x], columnSockets[3-y]);
-				button.setLayoutX(button.getWidth() * x);
-				button.setLayoutY(button.getHeight() * (3-y));
+        String[] btnLabels = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F"};
 
-				buttonsGroup.getChildren().add(button);
-			}
-		}
+        for (int y = 0; y < 4; y++) {
+            for (int x = 0; x < 4; x++) {
+                Button button = new Button(board, rowSockets[3 - y], columnSockets[x], y, x, btnLabels[x + y * 4]);
+                button.setUserData(x + ", " + y);
+                button.setLayoutX(button.getWidth() * x);
+                button.setLayoutY(button.getHeight() * (3-y));
+
+                buttons[x][y] = button;
+                buttonsGroup.getChildren().add(button);
+            }
+        }
         buttonsGroup.setLayoutX(grid.getSizeX() * 5);
-		buttonsGroup.setLayoutY(grid.getSizeY() * 4);
+        buttonsGroup.setLayoutY(grid.getSizeY() * 4);
 
-		this.getChildren().addAll(background, buttonsGroup, columnGroup, rowGroup, gndGroup, vccGroup);
+        this.getChildren().addAll(background, buttonsGroup, columnGroup, rowGroup, gndGroup, vccGroup);
 
-		//kontextove menu pre zmenu spravania tlacitok
-		this.miChangeButtonBehaviour = new MenuItem("Dva kliky");
-		this.miChangeButtonBehaviour.setOnAction(event -> {
-			twoClick = !twoClick;
-			miChangeButtonBehaviour.setText(twoClick?"Jeden klik":"Dva kliky");
-		});
+        //registracia vsetkych soketov komponentu
+        this.addAllSockets(getPowerSockets());
+        this.addAllSockets(columnSockets);
+        this.addAllSockets(rowSockets);
 
-		this.contextMenu = new ContextMenu();
-		this.contextMenu.getItems().add(this.miChangeButtonBehaviour);
 
-		this.addEventHandler(MouseEvent.MOUSE_PRESSED, event -> {
-			leftMouseButtonDown = event.isSecondaryButtonDown();
-			if(!leftMouseButtonDown && contextMenu.isShowing())
-				contextMenu.hide();
-			});
+        //kontextove menu pre zmenu spravania tlacitok
+        this.miChangeButtonBehaviour = new MenuItem("Dva kliky");
+        this.miChangeButtonBehaviour.setOnAction(event -> {
+            twoClick = !twoClick;
+            miChangeButtonBehaviour.setText(twoClick?"Jeden klik":"Dva kliky");
+        });
 
-		this.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
-			if(leftMouseButtonDown) {
-				this.contextMenu.show(this, event.getScreenX(), event.getScreenY());
-				leftMouseButtonDown = false;
-			}
-		});
-	}
+        this.contextMenu = new ContextMenu();
+        this.contextMenu.getItems().add(this.miChangeButtonBehaviour);
+
+        this.addEventHandler(MouseEvent.MOUSE_PRESSED, event -> {
+            leftMouseButtonDown = event.isSecondaryButtonDown();
+            if(!leftMouseButtonDown && contextMenu.isShowing())
+                contextMenu.hide();
+        });
+
+        this.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
+            if(leftMouseButtonDown) {
+                this.contextMenu.show(this, event.getScreenX(), event.getScreenY());
+                leftMouseButtonDown = false;
+            }
+        });
+    }
 
 	private Group generateColumnSockets(){
 
@@ -127,8 +160,8 @@ public class NumKeys extends Component {
 		Group columnGroup = new Group();
 
 		for (int i = 0; i < 4; i++) {
-			Socket socket = new Socket(this, i);
-			socket.setType(SocketType.WEAK_OUT);
+            Socket socket = new Socket(this);
+            socket.setType(SocketType.WEAK_OUT);
 			socket.setPotential(Potential.Value.HIGH);
 
 			socket.setLayoutX(grid.getSizeX() * i);
@@ -162,9 +195,10 @@ public class NumKeys extends Component {
         Group rowGroup = new Group();
 
         for (int i = 0; i < 4; i++) {
-            Socket socket = new Socket(this, i);
-            //socket.setType(SocketType.IN);
+            Socket socket = new Socket(this);
+            //socket.setType(SocketType.);
             socket.setLayoutX(grid.getSizeX() * (3-i) );
+            socket.setUserData(i);
 
             Text numberText = new Text(String.valueOf(i+1));
             numberText.setFont(Font.font(grid.getSizeX()));
@@ -188,33 +222,43 @@ public class NumKeys extends Component {
         return rowGroup;
     }
 
-	private class Button extends Region {
-		private final Color DEFAULT_BUTTON_COLOR = Color.BLACK;
+    @Override
+    public Pane getImage() {
+        return new Pane(new ImageView(new Image("/icons/components/hwKeys.png")));
+    }
+
+    private class Button extends Device {
+        private final Color DEFAULT_BUTTON_COLOR = Color.BLACK;
 		private final Color DEFAULT_HOVER_BUTTON_COLOR = Color.DARKGRAY;
 		private final Color PUSHED_BUTTON_COLOR = Color.RED;
 		private final Color PUSHED_HOVER_BUTTON_COLOR = Color.DARKRED;
 
-		private Socket row;
-		private Socket column;
+        private final Socket row;
+        private final Socket column;
+
+        private final int rowPos;
+        private final int columnPos;
+
+        private final InputPin rowInputPin;
 
 		//eventy
 		private boolean mouseHover;
-		private boolean pressed;
+        private volatile boolean pressed;
 
 		//grafika
-		private Circle button;
-		private Group buttonBase;
+        private final Circle button;
+        private final Group buttonBase;
 
-		private double width;
-		private double height;
+        private final double width;
+        private final double height;
 
 		private EventHandler<MouseEvent> onMouseEnter = new EventHandler<MouseEvent>() {
             @Override
             public void handle(MouseEvent event) {
             	if(pressed)
-					button.setFill(PUSHED_HOVER_BUTTON_COLOR);
-            	else
-                	button.setFill(DEFAULT_HOVER_BUTTON_COLOR);
+                    setColor(PUSHED_HOVER_BUTTON_COLOR);
+                else
+                    setColor(DEFAULT_HOVER_BUTTON_COLOR);
 
                 mouseHover = true;
 
@@ -226,11 +270,11 @@ public class NumKeys extends Component {
             @Override
             public void handle(MouseEvent event) {
             	if(event.isPrimaryButtonDown())
-                	button.setFill(PUSHED_BUTTON_COLOR);
-            	else if(pressed)
-            		button.setFill(PUSHED_HOVER_BUTTON_COLOR);
-            	else
-            		button.setFill(DEFAULT_BUTTON_COLOR);
+                    setColor(PUSHED_BUTTON_COLOR);
+                else if(pressed)
+                    setColor(PUSHED_HOVER_BUTTON_COLOR);
+                else
+                    setColor(DEFAULT_BUTTON_COLOR);
 
             	mouseHover = false;
 
@@ -242,15 +286,15 @@ public class NumKeys extends Component {
             @Override
             public void handle(MouseEvent event) {
             	if(event.isPrimaryButtonDown() && !contextMenu.isShowing()) {
-					button.setFill(PUSHED_BUTTON_COLOR);
+                    setColor(PUSHED_BUTTON_COLOR);
 
 					pressed = !twoClick || !pressed;
 
 					if (pressed)
-						fireEvent(true);
+                        simulate();//fireEvent(true);
 
-					event.consume();
-				}
+                    event.consume();
+                }
             }
         };
 
@@ -261,34 +305,39 @@ public class NumKeys extends Component {
 				if(!twoClick) pressed = false;
 
 				if(!pressed) {
-					fireEvent(false);
+                    simulate();//fireEvent(false);
 
 					if(mouseHover)
-						button.setFill(DEFAULT_HOVER_BUTTON_COLOR);
-					else
-						button.setFill(DEFAULT_BUTTON_COLOR);
-				} else {
+                        setColor(DEFAULT_HOVER_BUTTON_COLOR);
+                    else
+                        setColor(DEFAULT_BUTTON_COLOR);
+                } else {
 					if(mouseHover)
-						button.setFill(PUSHED_HOVER_BUTTON_COLOR);
-					else
-						button.setFill(PUSHED_BUTTON_COLOR);
-				}
+                        setColor(PUSHED_HOVER_BUTTON_COLOR);
+                    else
+                        setColor(PUSHED_BUTTON_COLOR);
+                }
 
 				event.consume();
 			}
 		};
 
-		Button(Socket row, Socket column){
-			this.row = row;
+        Button(Board board, Socket row, Socket column, int rowPos, int columnPos, String label) {
+            super(board);
+            this.row = row;
 			this.column = column;
+            this.rowInputPin = new InputPin(this, "ROW PIN " + row.getUserData());
+            this.rowPos = rowPos;
+            this.columnPos = columnPos;
+
+            Socket innerSocket = new Socket(row.getComponent());
+            new Potential(innerSocket, this.row);
+            innerSocket.connect(this.rowInputPin);
 
 			GridSystem grid = getBoard().getGrid();
 
 			width = grid.getSizeX()*3;
 			height = grid.getSizeY()*3;
-
-			this.setWidth(width);
-			this.setHeight(height);
 
 			//button core
 			button = new Circle(grid.getSizeX(), Color.BLACK);
@@ -302,8 +351,8 @@ public class NumKeys extends Component {
 			Rectangle baseBck = new Rectangle(width - 2*shrinkX, height - 2*shrinkY, Color.LIGHTGRAY);
 			baseBck.setLayoutX(shrinkX);
 			baseBck.setLayoutY(shrinkY);
-			baseBck.setArcWidth(grid.getSizeX()/2);
-			baseBck.setArcHeight(grid.getSizeY()/2);
+			baseBck.setArcWidth(grid.getSizeX()/2.0);
+			baseBck.setArcHeight(grid.getSizeY()/2.0);
 
 			double boltRadius = grid.getSizeX() / 5.0;
 			double boltOffset = grid.getSizeX() / 2.5;
@@ -324,6 +373,14 @@ public class NumKeys extends Component {
 			bottomRightBolt.setCenterX(width - boltOffset);
 			bottomRightBolt.setCenterY(height - boltOffset);
 
+            // button label
+            Text labelText = new Text(label);
+            labelText.setX(-labelText.getBoundsInParent().getWidth() / 2.0 + shrinkX + baseBck.getWidth() / 2.0);
+            labelText.setY(labelText.getBoundsInParent().getHeight() / 2.0 + baseBck.getHeight() / 2.0);
+            labelText.setFill(Color.valueOf("white"));
+            labelText.setFont(Font.font(grid.getSizeY() * 1.4));
+            labelText.setMouseTransparent(true);
+
 			buttonBase = new Group(baseBck, topLeftBolt, topRightBolt, bottomLeftBolt, bottomRightBolt);
 
 			button.addEventFilter(MouseEvent.MOUSE_ENTERED, onMouseEnter);
@@ -332,16 +389,65 @@ public class NumKeys extends Component {
 			button.addEventFilter(MouseEvent.MOUSE_RELEASED, onMouseRelease);
 			button.addEventFilter(MouseEvent.MOUSE_DRAGGED, Event::consume);
 
-			this.getChildren().addAll(buttonBase, button);
-		}
+            this.getChildren().addAll(buttonBase, button, labelText);
 
-		//simulacia stlacenia tlacidla
-		private void fireEvent(boolean pushed){
-			//ak je riadok napojeny na zem
-			if(this.row.getPotential().getValue() == Potential.Value.LOW){
-				getBoard().addEvent(new BoardChangeEvent(this.column, pushed? Potential.Value.LOW : Potential.Value.HIGH));
-			}
-		}
+            this.makeImmovable();
+        }
 
-	}
+
+        public double getWidth() {
+            return width;
+        }
+
+        public double getHeight() {
+            return height;
+        }
+
+        private void setColor(Color newColor) {
+            if (Platform.isFxApplicationThread()) button.setFill(newColor);
+            else Platform.runLater(() -> button.setFill(newColor));
+        }
+
+        /**
+         * Je stlacene tlacidlo a riadok zapojeny?
+         *
+         * @return
+         */
+        private boolean isActive() {
+            return this.pressed && this.isLow(this.rowInputPin);
+        }
+
+        /**
+         * Je niekto v stlpci aktivny?
+         *
+         * @return
+         */
+        private boolean shouldBeColumnLow() {
+            for (int y = 0; y < 4; y++) {
+                Button btn = buttons[columnPos][y];
+                if (btn != null && btn.isActive()) return true;
+            }
+
+            return false;
+        }
+
+        @Override
+        public void simulate() {
+            if (shouldBeColumnLow()) {
+                getBoard().addEvent(new BoardChangeEvent(this.column, Potential.Value.LOW));
+            } else {
+                getBoard().addEvent(new BoardChangeEvent(this.column, Potential.Value.HIGH));
+            }
+        }
+
+        @Override
+        public void reset() {
+
+        }
+
+        @Override
+        public List<Pin> getPins() {
+            return null;
+        }
+    }
 }
