@@ -33,9 +33,6 @@ public class BoardLayersManager {
 	private ArrayList<Device> devices;
 	private ArrayList<Wire> wires;
 
-    private int lastComponentId = 0;
-    private int lastSchoolBreadboardId = 0;
-
     /**
      * Správca vrstiev plochy simulátora.
      *
@@ -64,6 +61,49 @@ public class BoardLayersManager {
 		this.wiresLayer.setPickOnBounds(false);
 	}
 
+
+    /**
+     * Najdenie co najmensieho nepouziteho Id komponentu
+     */
+	private int getComponentId() {
+	    int id;
+	    boolean found;
+
+	    for(id = 0;;id++)
+        {
+            found = true;
+            for (Component comp : components) {
+                if (Integer.parseInt(comp.getId().substring(1)) == id) {
+                    found = false;
+                    break;
+                }
+            }
+            if (found)
+                return id;
+        }
+    }
+
+    /**
+     * Najdenie co najmensieho nepouziteho Id SchoolBreadBoard
+     */
+    private int getSBBId() {
+        int id;
+        boolean found;
+
+        for(id = 0;;id++)
+        {
+            found = true;
+            for (SchoolBreadboard schb : schoolBreadboards) {
+                if (Integer.parseInt(schb.getId().substring(2)) == id) {
+                    found = false;
+                    break;
+                }
+            }
+            if (found)
+                return id;
+        }
+    }
+
     /**
      * Pridanie nového objektu na plochu.
      * Podľa typu sa automaticky priradí do správnej vrstvy.
@@ -82,7 +122,7 @@ public class BoardLayersManager {
 		if(object instanceof Component){
 			Component component = (Component) object;
             if (component.getId() == null)
-                component.setId("c" + lastComponentId++);
+                component.setId("c" + getComponentId());
             this.componentsLayer.getChildren().add(component);
             this.components.add(component);
             return true;
@@ -100,7 +140,7 @@ public class BoardLayersManager {
 
             //ak nema priradene ID, prirad mu nove
             if (schoolBreadboard.getId() == null)
-                schoolBreadboard.setId("sb" + lastSchoolBreadboardId++);
+                schoolBreadboard.setId("sb" + getSBBId());
 
             this.componentsLayer.getChildren().add(schoolBreadboard);
             this.schoolBreadboards.add(schoolBreadboard);
@@ -108,10 +148,7 @@ public class BoardLayersManager {
             for (Component schBComponent : schoolBreadboard.getComponents()) {
                 if (schBComponent.getId() == null)
                     //ak este nebolo ID nastavene prirad mu nove
-                    schBComponent.setId("c" + lastComponentId++);
-                else if (Integer.parseInt(schoolBreadboard.getId().substring(2)) > lastComponentId)
-                    //ak uz bolo ID nastavene (napr. pri nacitavani), zisti ci nie je vacsie ako posledne triedy
-                    lastComponentId = Integer.parseInt(schoolBreadboard.getId().substring(2));
+                    schBComponent.setId("c" + getComponentId());
 
                 this.components.add(schBComponent);
             }

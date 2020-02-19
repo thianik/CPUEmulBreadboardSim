@@ -37,6 +37,7 @@ import org.controlsfx.control.ToggleSwitch;
 import org.fxmisc.flowless.VirtualizedScrollPane;
 import org.fxmisc.richtext.CodeArea;
 import org.fxmisc.richtext.InlineCssTextArea;
+import sk.uniza.fri.cp.App.AboutDialog;
 import sk.uniza.fri.cp.App.BreadboardControl.BreadboardController;
 import sk.uniza.fri.cp.App.CPUControl.CodeEditor.CodeEditorFactory;
 import sk.uniza.fri.cp.App.CPUControl.CodeEditor.RichTextFXHelpers;
@@ -48,6 +49,7 @@ import sk.uniza.fri.cp.CPUEmul.Exceptions.InvalidCodeLinesException;
 import sk.uniza.fri.cp.CPUEmul.Parser;
 import sk.uniza.fri.cp.CPUEmul.Program;
 
+import javax.swing.*;
 import java.io.*;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -142,7 +144,7 @@ public class CPUController implements Initializable {
 
     @FXML
     private Button btnSimulator;
-    private Stage breadboardStage;
+    public Stage breadboardStage;
     private BreadboardController breadboardController;
 
     @FXML private ToggleSwitch tsConnectBusUsb;
@@ -320,8 +322,8 @@ public class CPUController implements Initializable {
         btnStart.setDisable(false);
         btnStep.setDisable(false);
         btnPause.setDisable(true);
-        btnReset.setDisable(true);
         btnStop.setDisable(true);
+        btnReset.setDisable(true);
 
         btnSimulator.setDisable(true);
 
@@ -762,6 +764,15 @@ public class CPUController implements Initializable {
     }
 
     /**
+     * Okno about
+     */
+    @FXML
+    private void handleMenuAboutAction(){
+        JDialog f = new AboutDialog(new JFrame());
+        f.setVisible(true);
+    }
+
+    /**
      * Výstraha pre užívateľa s otázkou na ďalší postup, ak aktuálny súbor nie je uložený.
      *
      * @return true - volajúca procedúra môže pokračovať, false - užívateľ nechce pokračovať
@@ -863,7 +874,7 @@ public class CPUController implements Initializable {
      * Obsluha tlačidla pre pozastavenie vykonávania CPU.
      */
 	@FXML
-	private void handleButtonPauseAction(){
+    public void handleButtonPauseAction(){
         if(cpu == null) return;
         cpu.pauseExecute();
 	}
@@ -872,7 +883,7 @@ public class CPUController implements Initializable {
      * Obsluha tlačidla pre resetovanie stavu CPU a stavu zbernice.
      */
 	@FXML
-	private void handleButtonResetAction(){
+    public void handleButtonResetAction(){
 	    if(cpu != null)
             cpu.reset();
 
@@ -887,7 +898,7 @@ public class CPUController implements Initializable {
      * Ak bolo CPU pozastavené, spustí pokračovanie vo vykonávaní.
      */
 	@FXML
-	private void handleButtonStartAction(){
+	public void handleButtonStartAction(){
         f_startPaused = false;
         if (f_in_execution.getValue() && f_paused.getValue()) {
             //ak je iba pozastavene vykonavanie
@@ -901,7 +912,7 @@ public class CPUController implements Initializable {
      * Obsluha tlačidla pre vkonanie kroku a presunu na ďalšiu inštrukciu.
      */
 	@FXML
-	private void handleButtonStepAction(){
+    public void handleButtonStepAction(){
         f_startPaused = true;
         if (f_in_execution.getValue()) {
             cpu.step();
@@ -914,7 +925,7 @@ public class CPUController implements Initializable {
      * Obsluha tlačidla pre zastavenie vykonávania CPU.
      */
 	@FXML
-	private void handleButtonStopAction(){
+    public void handleButtonStopAction(){
         cpu.stopExecute();
         cos_cpu.clearBuffer();
     }
@@ -1143,10 +1154,15 @@ public class CPUController implements Initializable {
         btnStart.setDisable(true);
         btnStep.setDisable(true);
         btnPause.setDisable(false);
-        btnReset.setDisable(true);
         btnStop.setDisable(false);
+        btnReset.setDisable(true);
+
+        // tlacidla v simulatore
+        breadboardController.setButtons(1);
 
         codeEditor.setEditable(false);
+        // focus na editor (aby stlacenie medzery nesposobilo koniec programu, ak je focus na tlacidle Stop)
+        codeEditor.requestFocus();
     }
 
     /**
@@ -1167,8 +1183,11 @@ public class CPUController implements Initializable {
         btnStart.setDisable(false);
         btnStep.setDisable(false);
         btnPause.setDisable(true);
-        btnReset.setDisable(true);
         btnStop.setDisable(false);
+        btnReset.setDisable(true);
+
+        // tlacidla v simulatore
+        breadboardController.setButtons(2);
 
         updateGUI();
     }
@@ -1190,8 +1209,11 @@ public class CPUController implements Initializable {
         btnStart.setDisable(true);
         btnStep.setDisable(true);
         btnPause.setDisable(true);
-        btnReset.setDisable(true);
         btnStop.setDisable(false);
+        btnReset.setDisable(true);
+
+        // tlacidla v simulatore
+        breadboardController.setButtons(3);
     }
 
     /**
@@ -1215,8 +1237,11 @@ public class CPUController implements Initializable {
         btnStart.setDisable(false);
         btnStep.setDisable(false);
         btnPause.setDisable(true);
-        btnReset.setDisable(false);
         btnStop.setDisable(true);
+        btnReset.setDisable(false);
+
+        // tlacidla v simulatore
+        breadboardController.setButtons(4);
 
         codeEditor.setEditable(true);
 

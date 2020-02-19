@@ -12,6 +12,8 @@ import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import org.controlsfx.control.ToggleSwitch;
+import sk.uniza.fri.cp.App.AboutDialog;
+import sk.uniza.fri.cp.App.CPUControl.CPUController;
 import sk.uniza.fri.cp.BreadboardSim.Board.Board;
 import sk.uniza.fri.cp.BreadboardSim.Components.Breadboard;
 import sk.uniza.fri.cp.BreadboardSim.Components.HexSegment;
@@ -25,6 +27,7 @@ import sk.uniza.fri.cp.BreadboardSim.SchoolBreadboard;
 import sk.uniza.fri.cp.BreadboardSim.Wire.Wire;
 import sk.uniza.fri.cp.Bus.Bus;
 
+import javax.swing.*;
 import java.io.File;
 import java.net.URL;
 import java.nio.file.Paths;
@@ -43,13 +46,20 @@ public class BreadboardController implements Initializable {
 
     private File currentFile; //otvorený súbor
     private Board board;
+    private CPUController cpuController;
 
     @FXML private VBox root;
     @FXML private AnchorPane boardPane;
 
     //panel s nastrojmi
-    @FXML
-    private ToggleSwitch tsPower;
+    @FXML private ToggleSwitch tsPower;
+
+    // ovladanie CPU
+    @FXML private Button btnF5spusti;
+    @FXML private Button btnF7krok;
+    @FXML private Button btnF9pauza;
+    @FXML private Button btnF10stop;
+    @FXML private Button btnF12reset;
 
     //pravy panel
     @FXML private VBox toolsBox;
@@ -58,8 +68,7 @@ public class BreadboardController implements Initializable {
 
     //stavovy riadok
     @FXML private Label lbCoordinates;
-    @FXML
-    private Label lbZoom;
+    @FXML private Label lbZoom;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -114,6 +123,9 @@ public class BreadboardController implements Initializable {
         //aktualne priblizenie
         this.board.zoomScaleProperty().addListener((observable, oldValue, newValue) ->
                 this.lbZoom.setText(((int) (newValue.doubleValue() * 100)) + "%"));
+
+        // tlacidla na ovladanie CPU
+        setButtons(0);
     }
 
     /**
@@ -255,6 +267,46 @@ public class BreadboardController implements Initializable {
     }
 
     /**
+     * Spustenie programu.
+     */
+    @FXML
+    public void handleF5Action() {
+        cpuController.handleButtonStartAction();
+    }
+
+    /**
+     * Krokovanie.
+     */
+    @FXML
+    public void handleF7Action() {
+        cpuController.handleButtonStepAction();
+    }
+
+    /**
+     * Pauza.
+     */
+    @FXML
+    public void handleF9Action() {
+        cpuController.handleButtonPauseAction();
+    }
+
+    /**
+     * Zastavenie programu.
+     */
+    @FXML
+    public void handleF10Action() {
+        cpuController.handleButtonStopAction();
+    }
+
+    /**
+     * Reset programu.
+     */
+    @FXML
+    public void handleF12Action() {
+        cpuController.handleButtonResetAction();
+    }
+
+    /**
      * Výstraha pre užívateľa s otázkou na ďalší postup, ak aktuálny obvod nie je uložený.
      *
      * @return true - volajúca procedúra môže pokračovať, false - užívateľ nechce pokračovať
@@ -340,5 +392,65 @@ public class BreadboardController implements Initializable {
         }
 
         return false;
+    }
+
+    /**
+     * Odlozenie handle na CPU controller.
+     */
+    public void setCPUController(CPUController cpuController) {
+        this.cpuController = cpuController;
+    }
+
+    /**
+     * Povolenie/zakazanie tlacidiel.
+     */
+    public void setButtons(int typ) {
+        switch(typ)
+        {
+            case 0 :                                // inicializacia
+                btnF5spusti.setDisable(false);
+                btnF7krok.setDisable(false);
+                btnF9pauza.setDisable(true);
+                btnF10stop.setDisable(true);
+                btnF12reset.setDisable(true);
+                break;
+
+            case 1:                                 // beziaci program
+                btnF5spusti.setDisable(true);
+                btnF7krok.setDisable(true);
+                btnF9pauza.setDisable(false);
+                btnF10stop.setDisable(false);
+                btnF12reset.setDisable(true);
+                // zobrat focus z tlacidla (aby stlacenie medzery nesposobilo koniec programu, ak je focus na Stop)
+                if (cpuController.breadboardStage.isShowing())
+                    toolsSplitPane.requestFocus();
+                break;
+
+            case 2:                                 // pozastaveny program
+                btnF5spusti.setDisable(false);
+                btnF7krok.setDisable(false);
+                btnF9pauza.setDisable(true);
+                btnF10stop.setDisable(false);
+                btnF12reset.setDisable(true);
+                break;
+
+            case 3:                                 // cakajuci program
+                btnF5spusti.setDisable(true);
+                btnF7krok.setDisable(true);
+                btnF9pauza.setDisable(true);
+                btnF10stop.setDisable(false);
+                btnF12reset.setDisable(true);
+                break;
+
+            case 4 :                                // necinny program
+                btnF5spusti.setDisable(false);
+                btnF7krok.setDisable(false);
+                btnF9pauza.setDisable(true);
+                btnF10stop.setDisable(true);
+                btnF12reset.setDisable(false);
+                break;
+
+            default: break;
+        }
     }
 }

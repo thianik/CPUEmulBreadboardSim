@@ -91,8 +91,28 @@ public class App extends Application {
 
         Scene breadboardScene = new Scene(breadboardContent);
         breadboardScene.getStylesheets().add(getClass().getResource("/css/BreadboardSim_style.css").toExternalForm());
+
+        EventHandler<KeyEvent> onKeyPressedBoard = (ke) -> {
+            if (ke.getEventType() == KeyEvent.KEY_PRESSED) {
+
+                BreadboardController controller = breadboardLayoutLoader.getController();
+                switch (ke.getCode()) {
+                    case F5:
+                        controller.handleF5Action(); break;
+                    case F7:
+                        controller.handleF7Action(); break;
+                    case F9:
+                        controller.handleF9Action(); break;
+                    case F10:
+                        controller.handleF10Action(); break;
+                    case F12:
+                        controller.handleF12Action(); break;
+                }
+            }
+        };
+
         breadboardScene.addEventFilter(KeyEvent.KEY_TYPED, onKeyTyped);
-        breadboardScene.addEventFilter(KeyEvent.ANY, onKeyPressed);
+        breadboardScene.addEventFilter(KeyEvent.ANY, onKeyPressedBoard);
 
         Stage breadboardStage = new Stage();
         breadboardStage.setTitle("Simulátor - Nový obvod");
@@ -107,5 +127,7 @@ public class App extends Application {
 
         breadboardStage.setScene(breadboardScene);
         ((CPUController) CpuLayoutLoader.getController()).setBreadboardStage(breadboardStage, breadboardLayoutLoader.getController());
+        // odlozenie handle na CPU controller
+        ((BreadboardController) breadboardLayoutLoader.getController()).setCPUController(CpuLayoutLoader.getController());
     }
 }

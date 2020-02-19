@@ -802,20 +802,24 @@ public class CPU extends Thread {
 
         //synchronizovane citanie
 //        LOGGER.debug("IA_ LOW");
+//        System.out.println("IA_ LOW");
         bus.setIA_(false);
 //        LOGGER.debug("IA_ Cakanie na steady state");
         this.waitForSteadySimulation(null, true);
 //        LOGGER.debug("IA_ Nacitanie dat");
         byte data = bus.getDataBus();
 //        LOGGER.debug("IA_ Nacitane " + Byte.toUnsignedInt(data));
+//        System.out.println(("IA_ Nacitane " + Byte.toUnsignedInt(data)));
         bus.setIA_(true);
 //        LOGGER.debug("IA_ HIGH");
+//        System.out.println("IA_ HIGH");
 
         //odlozenie PC na zasobnik
         push(regPC);
 
         //nastavenie adresy instrukcie prerusenia
         int intNumber = data & 0x0f;
+//        System.out.println("IA_ Nacitane " + intNumber);
         regPC = (short) program.getAddressOfInterrupt(intNumber);
     }
 

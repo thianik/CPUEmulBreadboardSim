@@ -98,7 +98,7 @@
                 </Menu>
                 <Menu mnemonicParsing="false" text="Pomoc">
                   <items>
-                    <MenuItem mnemonicParsing="false" text="O programe..." />
+                    <MenuItem mnemonicParsing="false" onAction="#handleMenuAboutAction" text="O programe..." />
                   </items>
                 </Menu>
               </menus>
@@ -133,7 +133,7 @@
                            </Button>
                        </buttons>
                    </ButtonBar>
-                   <ButtonBar buttonMinWidth="110.0" maxWidth="1.7976931348623157E308" prefHeight="40.0">
+                   <ButtonBar buttonMinWidth="100.0" maxWidth="1.7976931348623157E308" prefHeight="40.0">
                     <buttons>
                         <Button fx:id="btnParse" alignment="BASELINE_LEFT" layoutX="280.0" layoutY="18.0"
                                 mnemonicParsing="false" onAction="#handleButtonParseAction" styleClass="btn-parse"
@@ -145,12 +145,12 @@
                         <Button fx:id="btnPause" alignment="BASELINE_LEFT" layoutX="450.0" layoutY="18.0"
                                 mnemonicParsing="false" onAction="#handleButtonPauseAction" styleClass="btn-pause"
                                 text="Pauza [F9]"/>
-                        <Button fx:id="btnReset" alignment="BASELINE_LEFT" layoutX="370.0" layoutY="18.0"
-                                mnemonicParsing="false" onAction="#handleButtonResetAction" styleClass="btn-reset"
-                                text="Reset [F12]"/>
                         <Button fx:id="btnStop" alignment="BASELINE_LEFT" layoutX="535.0" layoutY="18.0"
                                 mnemonicParsing="false" onAction="#handleButtonStopAction" styleClass="btn-stop"
                                 text="Stop [F10]"/>
+                        <Button fx:id="btnReset" alignment="BASELINE_LEFT" layoutX="370.0" layoutY="18.0"
+                                mnemonicParsing="false" onAction="#handleButtonResetAction" styleClass="btn-reset"
+                                text="Reset [F12]"/>
                     </buttons>
                   </ButtonBar>
                    <ButtonBar prefHeight="40.0" prefWidth="200.0" HBox.hgrow="ALWAYS">

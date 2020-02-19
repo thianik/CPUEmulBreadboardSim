@@ -197,7 +197,8 @@ public class Parser extends Task<Program>{
 
                             } else {
                                 //asi to malo byt prerusenie ale je v zlom tvare
-                                addError("Nesprávny tvar návestia pre prerušenie '" + label + "'", lineIndex);
+                                // Karpis: Nasl. riadok zablokovany, aby boli mozne navestia zacinajuce na "int"
+                                //addError("Nesprávny tvar návestia pre prerušenie '" + label + "'", lineIndex);
                             }
                         }
 

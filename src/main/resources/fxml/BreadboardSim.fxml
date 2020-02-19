@@ -19,17 +19,17 @@
    <children>
        <HBox>
            <children>
-               <ButtonBar buttonMinWidth="100.0" HBox.hgrow="NEVER">
+               <ButtonBar buttonMinWidth="85.0" HBox.hgrow="NEVER">
                    <buttons>
                        <Button alignment="BASELINE_LEFT" mnemonicParsing="false" onAction="#handleLoadAction"
-                               text="Otvoriť">
+                               text="Otvor">
                            <styleClass>
                                <String fx:value="btn"/>
                                <String fx:value="btn-open"/>
                            </styleClass>
                        </Button>
                        <Button alignment="BASELINE_LEFT" mnemonicParsing="false" onAction="#handleSaveAction"
-                               text="Uložiť">
+                               text="Ulož">
                            <styleClass>
                                <String fx:value="btn"/>
                                <String fx:value="btn-save"/>
@@ -39,19 +39,36 @@
                            </opaqueInsets>
                        </Button>
                        <Button alignment="BASELINE_LEFT" mnemonicParsing="false" onAction="#handleSaveAsAction"
-                               text="Uložiť ako">
+                               text="Ulož ako">
                            <styleClass>
                                <String fx:value="btn"/>
                                <String fx:value="btn-save-as"/>
                            </styleClass>
                        </Button>
                        <Button alignment="BASELINE_LEFT" mnemonicParsing="false" onAction="#handleClearBoardAction"
-                               text="Vyčistiť">
+                               text="Nový">
                            <styleClass>
                                <String fx:value="btn"/>
                                <String fx:value="btn-clear"/>
                            </styleClass>
                        </Button>
+                   </buttons>
+                   <padding>
+                       <Insets right="10.0"/>
+                   </padding>
+               </ButtonBar>
+               <ButtonBar buttonMinWidth="78.0" HBox.hgrow="NEVER">
+                   <buttons>
+                       <Button fx:id="btnF5spusti" alignment="BASELINE_LEFT" mnemonicParsing="false" onAction="#handleF5Action"
+                               text="Spusti [F5]"/>
+                       <Button fx:id="btnF7krok" alignment="BASELINE_LEFT" mnemonicParsing="false" onAction="#handleF7Action"
+                               text="Krok [F7]"/>
+                       <Button fx:id="btnF9pauza" alignment="BASELINE_LEFT" mnemonicParsing="false" onAction="#handleF9Action"
+                               text="Pauza [F9]"/>
+                       <Button fx:id="btnF10stop" alignment="BASELINE_LEFT" mnemonicParsing="false" onAction="#handleF10Action"
+                               text="Stop [F10]"/>
+                       <Button fx:id="btnF12reset" alignment="BASELINE_LEFT" mnemonicParsing="false" onAction="#handleF12Action"
+                               text="Reset [F12]"/>
                    </buttons>
                    <padding>
                        <Insets right="10.0"/>

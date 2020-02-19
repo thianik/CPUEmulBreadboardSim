@@ -179,7 +179,6 @@ public class Board extends ScrollPane {
         this.addEventFilter(MouseDragEvent.MOUSE_DRAG_RELEASED, onMouseDragReleasedHandle);
         this.addEventHandler(MouseDragEvent.MOUSE_DRAG_EXITED, onMouseDragExitedHandle);
 
-
         //ZOOM
         //credit: http://stackoverflow.com/questions/16680295/javafx-correct-scaling
 
@@ -565,7 +564,6 @@ public class Board extends ScrollPane {
 
         return null;
     }
-
 
     /**
      * ZOOM
