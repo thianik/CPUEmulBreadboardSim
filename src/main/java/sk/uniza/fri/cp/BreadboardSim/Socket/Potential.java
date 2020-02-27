@@ -210,13 +210,17 @@ public class Potential {
                         this.value = Value.HIGH;
                     }
                 }
-                else if(this.parent1.type == SocketType.WEAK_OUT){
-                    //ak je iba prvy typu WEAK OUT, berie si jeho hodnotu
-                    this.value = this.parent1.value;
-                }
                 else {
-                    //ak je iba druhy typu WEAK OUT, berie si jeho hodnotu
-                    this.value = this.parent2.value;
+                    if ((
+                            (this.parent2.type == SocketType.IO || this.parent2.type == SocketType.TRI_OUT)
+                            && this.parent2.getValue() != Value.NC
+                        )
+                        || this.parent2.type == SocketType.OUT
+                    ) {
+                        this.value = this.parent2.value;
+                    } else {
+                        this.value = this.parent1.value;
+                    }
                 }
             }
 			else if(this.type == SocketType.OUT){
